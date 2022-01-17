@@ -303,13 +303,13 @@ function [vLineHandleTree, hLineHandleTree, textHandleTree] = plot(obj, heightTr
             if isempty(content)
                 content = '?';
             end
-            if class(content) == "TargetPoint"
+            if class(content) == "targetPoint"
 %                 content = content.GetType + "  " +...
 %                     num2str(content.Location(1))+...
 %                     "  " + num2str(content.Location(2));
                 content = num2str([content.ID]);
             end
-            if class(content) == "TargetGroup"
+            if class(content) == "targetGroup"
                 content = num2str([content.TargetList.ID]);
             end
             if ~ischar(content)
