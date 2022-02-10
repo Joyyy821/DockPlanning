@@ -8,6 +8,12 @@ classdef targetGroup < matlab.mixin.Copyable
     
     methods (Access = public)
         function obj = targetGroup(target_lst)
+%             if nargin == 0
+%                 obj.TargetList = [];
+%                 obj.Boundary = [0, 0; 0, 0];
+%                 obj.Size = 0;
+%             end
+%             
             if nargin > 0
                 obj.TargetList = target_lst;
                 obj.Size = length(target_lst);

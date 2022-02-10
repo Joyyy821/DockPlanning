@@ -70,6 +70,7 @@ all_tar = targetGroup(Tars);
 display.updateMap("CurrentTarget", all_tar);
 
 %% Display both targets and robots
+clc; clear all; close all;
 addpath('display');
 Map_Size = [15, 15]; % length*width
 % Rect
@@ -85,15 +86,29 @@ end
 all_tar = targetGroup(Tars);
 
 % robots = [];
-N = 1;
-robots(1) = robot(1, [10, 11, 0]);
-robots(1).CognMap = zeros(Map_Size(1), Map_Size(2));
-robots(1).Goal = [all_tar.TargetList(1).Location 0];
+N = 8;
+for i=1:N
+    robots(i) = robot(i, [2+2*ceil(i/2), 11+2*(1-rem(i, 2)), 0]);
+    robots(i).CognMap = zeros(Map_Size(1), Map_Size(2));
+    robots(i).Goal = [all_tar.TargetList(i).Location 0];
+end
 display = display2D(Map_Size, "FinalTarget", all_tar, ...
                                 "Robot", robots);
 % robots(1).Astar();
-pause(4);
-while robots(1).move()
+pause(10);
+arrive_flag = logical(zeros(1, N));
+while true
+    for i = 1:N
+        if ~arrive_flag(i)
+            arrive_flag(i) = ~robots(i).move();
+%         else
+%             arrive_flag(i) = false;
+        end
+    end
     display.updateMap("Robot", robots);
-    pause(1);
+    disp(arrive_flag);
+    if all(arrive_flag)
+        break;
+    end
+%     pause(1);
 end
