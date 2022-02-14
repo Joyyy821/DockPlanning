@@ -114,13 +114,23 @@ classdef robot < handle
                 delta = 0.1; x_th = 2;
                 if all(loc - nextLoc)
                     if norm(loc-nextLoc) > x_th
-                       l = obj.insertPath(i, delta);
-                       i = i + l;
-                       continue;
+%                        l = obj.insertPath(i, delta);
+                        l = obj.insertPath_re(i);
+                        i = i + l;
+                        continue;
                     else
-                        % TODO: again, check obstacle
-                        nextLoc = [nextLoc(1) loc(2)];
-%                       nextLoc = [obj.Location(1) nextLoc(2)];
+                        % check obstacle
+%                         nextLoc = [nextLoc(1) loc(2)];
+%                         if obj.CognMap(nextLoc) == 1
+%                             nextLoc = [loc(1) nextLoc(2)];
+%                         end
+                        if obj.CognMap(nextLoc(1), loc(2)) == 0
+                            nextLoc = [nextLoc(1) loc(2)];
+                        elseif obj.CognMap(loc(1), nextLoc(2)) == 0
+                            nextLoc = [loc(1) nextLoc(2)];
+                        else
+                            disp("Wrong path!!");
+                        end
                         obj.Path = [obj.Path(1:i, :); nextLoc;...
                             obj.Path(i+1:end, :)];
                         i = i + 1;
@@ -145,6 +155,74 @@ classdef robot < handle
                 end
                 i = i + 1;
             end
+        end
+        
+        function i_l = insertPath_re(obj, i_s)
+            % Find the inserted path recursively
+            % i_s: starting index, i_e: ending index
+            s = obj.Path(i_s, :); e = obj.Path(i_s+1, :);
+            mid = round(s+(e-s)/2);
+            if obj.CognMap(mid(1), mid(2))
+                % Avoid collision
+                dir = [0, 1; 1, 0; -1, 0; 0, -1; 1, 1; 1, -1; -1, -1; -1, 1];
+                mid_lst = zeros(1, length(dir));
+                for idx = 1:length(dir)
+                    mid_lst(idx) = obj.CognMap(mid(1)+dir(idx, 1), ...
+                        mid(2)+dir(idx, 2));
+%                     mid_lst = [obj.CognMap(mid(1)+dir(1, 1), mid(2)+dir(1, 2)), ...
+%                         obj.CognMap(mid(1)+dir(2, 1), mid(2)+dir(2, 2)), ...
+%                         obj.CognMap(mid(1)+dir(3, 1), mid(2)+dir(3, 2)), ...
+%                         obj.CognMap(mid(1)+dir(4, 1), mid(2)+dir(4, 2))];
+                end
+                i_dir = find(~mid_lst);
+                if isempty(i_dir)
+                    disp("Avoid obstacle failed.");
+                else
+                    for idx=i_dir
+                        temp = mid + dir(idx, :);
+                        if ~(all(temp == s) || all(temp == e))
+                            mid = temp;
+                            break;
+                        end
+                    end
+                end
+            end
+            if all(mid == s) || all(mid == e)
+                i_l = 0;
+%                 return
+            else
+                % Insert mid
+                obj.Path = [obj.Path(1:i_s, :); mid; obj.Path(i_s+1:end, :)];
+                i_l = 1;
+            end
+            d_s = mid - s; d_e = e - mid;
+            if any(abs(d_s) > 1)
+                i_ll = obj.insertPath_re(i_s);
+            elseif all(abs(d_s) == [1, 1])
+                next_loc = [mid(1), s(2)];
+                if obj.CognMap(next_loc) == 1
+                    next_loc = [s(1) mid(2)];
+                end
+                obj.Path = [obj.Path(1:i_s, :); next_loc; ...
+                    obj.Path(i_s+1:end, :)];
+                i_ll = 1;
+            else
+                i_ll = 0;
+            end
+            if any(abs(d_e) > 1)
+                i_lr = obj.insertPath_re(i_s+i_ll+1);
+            elseif all(abs(d_e) == [1, 1])
+                next_loc = [e(1), mid(2)];
+                if obj.CognMap(next_loc) == 1
+                    next_loc = [mid(1) e(2)];
+                end
+                obj.Path = [obj.Path(1:i_s+i_ll+1, :); next_loc; ...
+                    obj.Path(i_s+i_ll+2:end, :)];
+                i_lr = 1;
+            else
+                i_lr = 0;
+            end
+            i_l = i_l + i_ll + i_lr;
         end
         
         function l = insertPath(obj, p_i, dist)

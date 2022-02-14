@@ -5,13 +5,17 @@ classdef module < handle
     %   (2) have fixed locations if attached to robot/bank/growing
     %   structure; 
     %   (3) have uncertain locations if not attached (because of the drift
-    %   of water).
+    %   of water);
+    %   (4) are able to communicate with nearby modules and robots;
+    %   (5) can detect the obstacles in the nearby environment;
+    %   (6) can active dock to other modules and robots.
     
     properties (Access = public)
         % Can be directly modified by the user.
         ID            (1, 1) int32 {mustBeNonnegative} % ID of the module
         Status        (1, 1) logical % Attached (1) / Unattached (0)
         Loc           (1, 3) double  % Current module location [x, y, z]
+        g_map         map
     end
     
     methods

@@ -40,7 +40,8 @@ MAP(1:40,90:90)=1;
 MAP(100:105,70:80)=1;
 
 %Start Positions
-robots(1) = robot(1, [15, 15, 0]);
+% robots(1) = robot(1, [15, 15, 0]);
+robots(1) = robot(1, [39, 40, 0]);
 robots(1).CognMap = MAP;
 robots(1).Goal = [110, 80, 0];
 p = robots(1).Astar();
