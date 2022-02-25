@@ -112,3 +112,45 @@ while true
     end
 %     pause(1);
 end
+
+%% Robot navigation to a target position with carrying module
+clc; clear all; close all;
+addpath('display');
+% Initialization
+g_map = map(15, 15);
+g_map.setDist("robot", 5, "module", 2);
+g_map.obstacleMap(2, 3:6) = 1;
+obstacle = [[2, 3]; [2, 4]; [2, 5]; [2, 6]];
+
+tar = targetPoint(1, [4, 5], g_map);
+tar_gp = targetGroup(tar);
+rob = robot(1, [10, 1, 0], g_map);
+mod = module(1, [1, 1, 0], g_map);
+display = display2D(g_map.mapSize, "FinalTarget", tar_gp, ...
+                                "Robot", rob, ...
+                                "Module", mod, ...
+                                "Obstacle", obstacle);
+
+pause(10);
+
+% Fetch module
+arrive = 0;
+if rob.fetchModule(mod) == 2
+    while ~arrive
+        arrive = ~rob.move();
+        display.updateMap("Robot", rob);
+    end
+end
+
+rob.fetchModule(mod);
+mod.dock("robot", rob);
+
+% Navigate to the target point
+rob.Goal = [tar.Location + [1, 0], 0];
+arrive = 0;
+while ~arrive
+    arrive = ~rob.move();
+    mod.move();
+    % Update robot and module position at the same time
+    display.updateMap("Robot", rob, "Module", mod);
+end

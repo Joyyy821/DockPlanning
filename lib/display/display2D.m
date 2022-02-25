@@ -22,6 +22,8 @@ classdef display2D < handle
                 options.FinalTarget  targetGroup
                 options.CurrentTarget targetGroup
                 options.Robot  robot
+                options.Module module
+                options.Obstacle     % TODO: data type
             end
             %DISPLAY2D Constructor
             %   version 2 for extension and robot navigation
@@ -37,6 +39,13 @@ classdef display2D < handle
             if isfield(options, "Robot")
                 loc =  obj.objToLoc(options.Robot);
                 obj.Robot_Current_Position = loc;
+            end
+            if isfield(options, "Module")
+                loc = obj.objToLoc(options.Module);
+                obj.Object_Current_Position = loc;
+            end
+            if isfield(options, "Obstacle")
+                obj.Obstacle = options.Obstacle;
             end
             obj.runGUI2D();
         end
@@ -77,6 +86,8 @@ classdef display2D < handle
                 obj
                 options.CurrentTarget  targetGroup
                 options.Robot  robot
+                options.Module module
+%                 options.Obstacle     % TODO: data type
             end
             % TODO: update the properties and ws variables
 %             disp(obj.GUI2D.Num_robot);
@@ -88,6 +99,12 @@ classdef display2D < handle
                 obj.Robot_Current_Position = obj.objToLoc(options.Robot);
                 assignin('base', 'Robot_Current_Position', obj.Robot_Current_Position);
             end
+            if isfield(options, "Module")
+                obj.Object_Current_Position = obj.objToLoc(options.Module);
+                assignin('base', 'Object_Current_Position', obj.Object_Current_Position);
+            end
+%             if isfield(options, "Obstacle")
+%                 obj.Obstacle
 %             disp(obj.GUI2D.Num_robot);
             obj.GUI2D.show();
         end
@@ -110,6 +127,10 @@ classdef display2D < handle
                     id = r.ID;
                     loc(id, :) = r.Location(1:2);
                 end
+            elseif class(e) == "module"
+                % TODO: 改成moduleGroup
+                % 该函数默认只能传一个module
+                loc = e.Location(1:2);
             end
         end
         

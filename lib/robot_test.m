@@ -38,18 +38,19 @@ MAP(10:20,80:128)=1;
 MAP(20:40,80:90)=1;
 MAP(1:40,90:90)=1;
 MAP(100:105,70:80)=1;
+MAP = MAP.';
 
 %Start Positions
-% robots(1) = robot(1, [15, 15, 0]);
-robots(1) = robot(1, [39, 40, 0]);
+robots(1) = robot(1, [15, 15, 0]);
+% robots(1) = robot(1, [125, 65, 0]);
 robots(1).CognMap = MAP;
-robots(1).Goal = [110, 80, 0];
+robots(1).Goal = [80, 110, 0];
 p = robots(1).Astar();
 
-imagesc((MAP))
+imagesc((MAP.'))
 colormap(flipud(gray));
 hold on;
-plot(p(:, 2), p(:, 1));
+plot(p(:, 1), p(:, 2));
 
 % while robots(1).move()
 %     disp(robots(1).Location);

@@ -6,6 +6,7 @@ classdef targetPoint < matlab.mixin.Copyable
         Location      (1, 2) double  % Current target position
         NextPosition  (1, 2) double  % Next position of the target point
         PrevPositions (:, 2) double  % Previous positions of the target point
+        GlobalMap      map
     end
     
     properties (Access = private)
@@ -15,12 +16,12 @@ classdef targetPoint < matlab.mixin.Copyable
     
     methods (Access = public)
         % Constructor function
-        function obj = targetPoint(id, loc, nextPos, prevPos, type)
+        function obj = targetPoint(id, loc, g_map, nextPos, prevPos, type)
             if nargin == 0
                 % error("User needs to specify the type at least.");
                 obj.Type = "Object";
             end
-            if nargin >= 5
+            if nargin >= 6
                 % Assign type
                 if (type == "Robot") || (type == "robot")
                     obj.Type = "Robot";
@@ -39,10 +40,14 @@ classdef targetPoint < matlab.mixin.Copyable
                 obj.Location = loc;  % Assign location
             end
             if nargin >= 3
+                obj.GlobalMap = g_map;
+                obj.GlobalMap.targetMap(loc(1), loc(2)) = 1;
+            end
+            if nargin >= 4
 %                 disp("nextPos: "); disp(nextPos);
                 obj.NextPosition = nextPos;  % Assign next position
             end
-            if nargin == 4
+            if nargin == 5
                 obj.PrevPositions = prevPos;  % Assign previous positions
             end
         end

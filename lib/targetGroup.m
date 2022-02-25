@@ -33,7 +33,7 @@ classdef targetGroup < matlab.mixin.Copyable
             end
         end
         
-        function obj = AddTarget(obj, target)
+        function AddTarget(obj, target)
             % Add to the target list.
             obj.TargetList = [obj.TargetList; target];
             obj.Size = obj.Size + 1;
