@@ -18,6 +18,7 @@ classdef module < handle
         LeadRobot     (1, 1) robot   % leading robot of the module
         % Remark: robot position = module position + PosShift.
         PosShift      (1, 3) double  % Position difference compares with the lead robot
+        ignoredPos         int32
         CognMap
         GlobalMap      map
     end
@@ -38,7 +39,7 @@ classdef module < handle
             obj.Location = loc;
             obj.Status = 0;
             obj.GlobalMap = g_map;
-            obj.GlobalMap.moduleMap(loc(1), loc(2)) = 1;
+            obj.GlobalMap.moduleMap(loc(1), loc(2)) = id;
         end
         
         % function 查询地图，并返回是否被阻挡
@@ -76,10 +77,18 @@ classdef module < handle
                 rob_loc = obj.Location(1:2)+obj.PosShift(1:2);
                 obj.CognMap(rob_loc(1), rob_loc(2)) = 0; % robot
                 obj.CognMap(obj.Location(1), obj.Location(2)) = 0;
-%                 siblings = obj.LeadRobot.carriedModule.ModuleList;
-%                 for s = siblings
-%                     obj.CognMap(s.Location(1), s.Location(2)) = 0;
-%                 end
+                siblings = obj.LeadRobot.carriedModule.ModuleList;
+                for i=1:obj.LeadRobot.carriedModule.Size
+                    s = siblings(i);
+                    obj.CognMap(s.Location(1), s.Location(2)) = 0;
+                end
+                if ~isempty(obj.ignoredPos)
+                    [n, ~] = size(obj.ignoredPos);
+                    for i=1:n
+                        loc = obj.ignoredPos(i, :);
+                        obj.CognMap(loc(1), loc(2)) = 0;
+                    end
+                end
                 
                 % Obstacle expansion
                 [allx, ally] = find(obj.CognMap);
@@ -88,7 +97,8 @@ classdef module < handle
                     for j = 1:8
                         x = allx(i)+all_dir(j, 1);
                         y = ally(i)+all_dir(j, 2);
-                        if x <= 0 || y <= 0
+                        if x <= 0 || y <= 0 || x > obj.GlobalMap.mapSize(1) ...
+                            || y > obj.GlobalMap.mapSize(2)
                             continue
                         end
                         obj.CognMap(x, y) = 1;
@@ -111,7 +121,7 @@ classdef module < handle
 %                 disp(obj.PosShift);
                 next_loc = obj.LeadRobot.Location - obj.PosShift;
                 obj.GlobalMap.moduleMap(obj.Location(1), obj.Location(2)) = 0;
-                obj.GlobalMap.moduleMap(next_loc(1), next_loc(2)) = 1;
+                obj.GlobalMap.moduleMap(next_loc(1), next_loc(2)) = obj.ID;
                 obj.Location = next_loc;
                 success = true;
             end

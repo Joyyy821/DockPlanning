@@ -3,7 +3,7 @@ clear
 
 %%% Generating a MAP
 %1 represent an object that the path cannot penetrate, zero is a free path
-MAP=int8(zeros(128,140));
+MAP=false(128,140);
 MAP(1:64,1)=1;
 MAP(120,3:100)=1;
 MAP(125:128,40:60)=1;
@@ -38,16 +38,27 @@ MAP(10:20,80:128)=1;
 MAP(20:40,80:90)=1;
 MAP(1:40,90:90)=1;
 MAP(100:105,70:80)=1;
+% imagesc(MAP);
+% colormap(flipud(gray));
+%%
 MAP = MAP.';
 
+% Initial g map
+[Nx, Ny] = size(MAP);
+gmap = map(Nx, Ny);
+gmap.obstacleMap = MAP;
+gmap.setDist("robot", 3, "module", 3);
+
 %Start Positions
-robots(1) = robot(1, [15, 15, 0]);
+robots(1) = robot(1, [15, 15, 0], gmap);
 % robots(1) = robot(1, [125, 65, 0]);
 robots(1).CognMap = MAP;
 robots(1).Goal = [80, 110, 0];
+% robots(1).Goal = [110, 80, 0];
 p = robots(1).Astar();
 
-imagesc((MAP.'))
+% imagesc(flip(MAP))
+imagesc(MAP.');
 colormap(flipud(gray));
 hold on;
 plot(p(:, 1), p(:, 2));

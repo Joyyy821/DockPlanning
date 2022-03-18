@@ -33,6 +33,20 @@ classdef targetGroup < matlab.mixin.Copyable
             end
         end
         
+        function ids = getIDs(obj)
+            ids = zeros(1, obj.Size);
+            for i=1:obj.Size
+                ids(i) = obj.TargetList(i).ID;
+            end
+        end
+        
+        function locs = getLocs(obj)
+            locs = zeros(obj.Size, 2);
+            for i=1:obj.Size
+                locs(i, :) = obj.TargetList(i).Location;
+            end
+        end
+        
         function AddTarget(obj, target)
             % Add to the target list.
             obj.TargetList = [obj.TargetList; target];

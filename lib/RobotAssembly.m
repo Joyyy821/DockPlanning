@@ -1,4 +1,4 @@
-% Test file: construction w/o objects
+% Test file: construction w/o modules
 clc; clear all; close all;
 addpath('display');
 Map_Size = [15, 15]; % length*width
@@ -15,7 +15,7 @@ end
 all_tar = targetGroup(Tars);
 % Binary tree construction / extension
 ext = Extension(all_tar);
-ext.TargetToTree([5, 6]);
+ext.TargetToTree([5, 6], 2);
 
 % Robot initialization
 % for i=1:N

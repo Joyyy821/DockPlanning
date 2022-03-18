@@ -41,7 +41,7 @@ classdef targetPoint < matlab.mixin.Copyable
             end
             if nargin >= 3
                 obj.GlobalMap = g_map;
-                obj.GlobalMap.targetMap(loc(1), loc(2)) = 1;
+%                 obj.GlobalMap.targetMap(loc(1), loc(2)) = id;
             end
             if nargin >= 4
 %                 disp("nextPos: "); disp(nextPos);

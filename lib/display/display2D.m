@@ -7,6 +7,8 @@ classdef display2D < handle
         Robot_Size = [1, 1]       % length*width
         Obstacle = []
         Robot_Current_Position = []
+        Robot_Path = []
+        Robot_PathL = []
         Object_Current_Position = []
         Robot_Current_Target = []
         Object_Current_Target = []
@@ -39,6 +41,10 @@ classdef display2D < handle
             if isfield(options, "Robot")
                 loc =  obj.objToLoc(options.Robot);
                 obj.Robot_Current_Position = loc;
+                disp("paths: ");
+                disp(obj.Robot_Path);
+                disp("pathL:");
+                disp(obj.Robot_PathL);
             end
             if isfield(options, "Module")
                 loc = obj.objToLoc(options.Module);
@@ -66,6 +72,8 @@ classdef display2D < handle
             assignin('base', 'Robot_Size', obj.Robot_Size);
             assignin('base', 'Obstacle', obj.Obstacle);
             assignin('base', 'Robot_Current_Position', obj.Robot_Current_Position);
+            assignin('base', 'Robot_Path', obj.Robot_Path);
+            assignin('base', 'Robot_PathL', obj.Robot_PathL);
             assignin('base', 'Object_Current_Position', obj.Object_Current_Position);
             assignin('base', 'Robot_Current_Target', obj.Robot_Current_Target);
             assignin('base', 'Object_Current_Target', obj.Object_Current_Target);
@@ -87,6 +95,8 @@ classdef display2D < handle
                 options.CurrentTarget  targetGroup
                 options.Robot  robot
                 options.Module module
+%                 options.PartialTargetIDs
+                options.PartialTargets
 %                 options.Obstacle     % TODO: data type
             end
             % TODO: update the properties and ws variables
@@ -98,10 +108,23 @@ classdef display2D < handle
             if isfield(options, "Robot")
                 obj.Robot_Current_Position = obj.objToLoc(options.Robot);
                 assignin('base', 'Robot_Current_Position', obj.Robot_Current_Position);
+                assignin('base', 'Robot_Path', obj.Robot_Path);
+                assignin('base', 'Robot_PathL', obj.Robot_PathL);
             end
             if isfield(options, "Module")
                 obj.Object_Current_Position = obj.objToLoc(options.Module);
                 assignin('base', 'Object_Current_Position', obj.Object_Current_Position);
+            end
+            if isfield(options, "PartialTargets")
+%                 idxs = options.PartialTargetIDs;
+                locs = options.PartialTargets;
+                [n, ~] = size(locs);
+                for i=1:n
+                    if any(locs(i, :))
+                        obj.Object_Current_Target(i, :) = locs(i, :);
+                    end
+                end
+                assignin('base', 'Object_Current_Target', obj.Object_Current_Target);
             end
 %             if isfield(options, "Obstacle")
 %                 obj.Obstacle
@@ -109,7 +132,7 @@ classdef display2D < handle
             obj.GUI2D.show();
         end
         
-        function loc = objToLoc(~, e)
+        function loc = objToLoc(obj, e)
             %
             
             if class(e) == "targetGroup"
@@ -121,16 +144,41 @@ classdef display2D < handle
                     loc(id, :) = tar.Location;
                 end
             elseif class(e) == "robot"
+                % Load positions
                 N = length(e);
                 loc = zeros(N, 2);
+                path_l = zeros(1, N);
                 for r = e
                     id = r.ID;
                     loc(id, :) = r.Location(1:2);
+                    [path_l(id), ~] = size(r.Path);
+                    path_l(id) = path_l(id) + 1;
                 end
+                % Load paths
+                paths = zeros(sum(path_l), 2);
+                for r = e
+                    id = r.ID;
+                    s_idx = sum(path_l(1:id-1));
+                    if ~isempty(r.Path)
+                        paths(s_idx+1:s_idx+path_l(id), :) = ...
+                            [r.Location(1:2); r.Path];
+                    else
+                        paths(s_idx+1:s_idx+path_l(id), :) = r.Location(1:2);
+                    end
+                end
+                obj.Robot_Path = paths;
+                
+                obj.Robot_PathL = path_l;
             elseif class(e) == "module"
                 % TODO: 改成moduleGroup
                 % 该函数默认只能传一个module
-                loc = e.Location(1:2);
+                N = length(e);
+                loc = zeros(N, 2);
+                for m = e
+                    id = m.ID;
+                    loc(id, :) = m.Location(1:2);
+                end
+                % loc = e.Location(1:2);
             end
         end
         

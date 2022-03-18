@@ -2,7 +2,7 @@ classdef robot < handle
     %ROBOT represents robot that will construct the shape.
     %   The robots:
     %   (1) are identical and labelled;
-    %   (2）can locate themselves in the global map;
+    %   (2) can locate themselves in the global map;
     %   (3) can sense the neighbouring environment (location of 
     %   objects/modules/robots);
     %   (4) run planning algorithms and move to goal positions.
@@ -13,14 +13,17 @@ classdef robot < handle
         Status             (1, 1) uint8 % (1) initial; (2) fixed; (3) unfixed; (4) free
         isCarrying         (1, 1) logical % Carrying (1) / Not carrying (0) module
         carriedModule      moduleGroup    % Module
-        moduleToFetch      module
+        moduleToFetch      module % TODO: replace this attribute
+        ignoredPos         int32
         Location           (1, 3) double  % Current robot location [x, y, z]
         CognMap                      % Cognitive map of individual robot
         GlobalMap          map       % "pointer" to a global map object
         Goal          (1, 3) double  % Current robot goal [x, y, z]
+        priorPlanningID = 0 % The current planning position which has highest priority
         startPlace         (1, 3) double   % The location where the robot is initiated.
         Path = [] % Current planned path 
-        
+        stepCount = 1                % Number of total steps
+        pauseCmd  % Robot will not move if true.
     end
 	
     methods
@@ -31,30 +34,44 @@ classdef robot < handle
                 % Default construction function
                 obj.ID = 0;
                 obj.Location = [0, 0, 0];
-                obj.GlobalMap = map(0, 0);
+                obj.GlobalMap = map(15, 15);
                 return
+            end
+            if nargin == 2
+                gmap = map();
             end
             obj.ID = id;
             obj.Location = initLocation;
             obj.startPlace = initLocation;
             obj.GlobalMap = gmap;
-            obj.GlobalMap.robotMap(initLocation(1), initLocation(2)) = 1;
+            obj.GlobalMap.robotMap(initLocation(1), initLocation(2)) = id;
         end
         
-        function success = fetchModule(obj, m)
+        function success = fetchModule(obj, m, rob_dir)
             if m.Status == 1
                 success = 0;
                 return
             end
-            if obj.checkNeighbour(m)
+            if obj.checkNeighbour(m, rob_dir)
                 obj.isCarrying = 1;
                 obj.carriedModule = moduleGroup(m);
+                obj.carriedModule.LeadRobot = obj;
                 success = 1;
             else
-                obj.moduleToFetch = m.Location;
-                obj.Goal = m.Location + [1, 0, 0];    % TODO
+                obj.moduleToFetch = m;
+                obj.Goal = m.Location + [rob_dir, 0];    % TODO
                 success = 2;
             end
+        end
+        
+        function setIngorePos(obj, locs)
+            if obj.isCarrying
+                mlst = obj.carriedModule.ModuleList;
+                for i=1:obj.carriedModule.Size
+                    mlst(i).ignoredPos = locs;
+                end
+            end
+            obj.ignoredPos = locs;
         end
         
         function success = back2startPlace(obj)
@@ -69,6 +86,18 @@ classdef robot < handle
             end
         end
         
+        function decision = nearGoalCheck(obj)
+            if all(abs(obj.Goal(1:2) - obj.Location(1:2)) <= 1)
+                if all(obj.Goal(1:2) == obj.Location(1:2))
+                    decision = 1;
+                else
+                    decision = 2;
+                end
+            else
+                decision = 0;
+            end
+        end
+        
         function decision = canMove(obj, move_dir)
             obj.updateMap();
             % check robot
@@ -79,11 +108,14 @@ classdef robot < handle
             if obj.isCarrying
                 % check modules
                 mlst = obj.carriedModule.ModuleList;
-                for m = mlst
+                for i=1:obj.carriedModule.Size
+                    m = mlst(i);
                     disp("carried module: ");
                     disp(m);
-                    loc = m.Location;
+                    loc = m.Location(1:2);
                     cognmap = m.updateMap();
+                    disp("Module "+string(m.ID)+"'s cognMap:");
+                    disp(flip(cognmap.'));
                     if ~obj.checkNextStep(move_dir, loc, cognmap)
                         decision = -1;
                         return
@@ -95,90 +127,220 @@ classdef robot < handle
         
         function decision = checkNextStep(obj,move_dir, loc, cogn_map)
             if nargin == 2
-                loc = obj.Location;
+                loc = obj.Location(1:2);
                 cogn_map = obj.CognMap;
             end
             next_loc = loc + move_dir;
-            all_dir = [0 1; 1 0; 0 -1; -1 0; 1 1; 1 -1; -1 1; -1 -1];
-            check_list = [next_loc; next_loc+all_dir(1, :); ...
-                next_loc+all_dir(2, :); ...
-                next_loc+all_dir(3, :); ...
-                next_loc+all_dir(4, :); ...
-                next_loc+all_dir(5, :); ...
-                next_loc+all_dir(6, :); ...
-                next_loc+all_dir(7, :); ...
-                next_loc+all_dir(8, :)];
-            for i=1:5
-                if all(check_list(i, :) > 0)
-                    if cogn_map(check_list(i, 1), check_list(i, 2)) == 1
-                        decision = false;
-                        return
-                    end
-                end
+            if any(next_loc < 1) || any(next_loc > obj.GlobalMap.mapSize)
+                decision = false;
+                return
             end
-            decision = true;
+            if ~cogn_map(next_loc(1), next_loc(2))
+                decision = true;
+            else
+                decision = false;
+            end
+%             all_dir = [0 1; 1 0; 0 -1; -1 0; 1 1; 1 -1; -1 1; -1 -1];
+%             check_list = [next_loc; next_loc+all_dir(1, :); ...
+%                 next_loc+all_dir(2, :); ...
+%                 next_loc+all_dir(3, :); ...
+%                 next_loc+all_dir(4, :); ...
+%                 next_loc+all_dir(5, :); ...
+%                 next_loc+all_dir(6, :); ...
+%                 next_loc+all_dir(7, :); ...
+%                 next_loc+all_dir(8, :)];
+%             for i=1:9
+%                 if all(check_list(i, :) > 0)
+%                     if all(check_list(i, :) <= 15) || all(check_list(i, :) >= 1)
+%                         if cogn_map(check_list(i, 1), check_list(i, 2)) == 1
+%                             decision = false;
+%                             return
+%                         end
+%                     end
+%                 end
+%             end
+%             decision = true;
         end
         
-        function decision = checkNeighbour(obj, element)
+        function decision = checkNeighbour(obj, element, rob_dir)
 %             arguments
 %                 obj
 %                 element.robot  robot
 %                 element.module module
 %             end
             loc = element.Location;
-            if all(abs(obj.Location - loc) == [0, 1, 0]) || ...
-                    all(abs(obj.Location - loc) == [1, 0, 0])
-                decision = true;
-            else
-                decision = false;
+            if nargin == 2
+                if all(abs(obj.Location - loc) == [0, 1, 0]) || ...
+                        all(abs(obj.Location - loc) == [1, 0, 0])
+                    decision = true;
+                else
+                    decision = false;
+                end
+            end
+            if nargin == 3
+                if obj.Location(1:2) == loc(1:2) + rob_dir
+                    decision = true;
+                else
+                    decision = false;
+                end
             end
         end
         
+        function obstacleExpansion(obj)
+            % TODO
+            % get the module group size and the carring direction
+            obj.updateMap();
+            map_cp = obj.CognMap;
+            m_loc = obj.carriedModule.getBoundary();
+            loc = obj.Location(1:2);
+            % Extension length (in the extension direction, opposite from 
+            % the module carrying direction): 
+            % [left, lower; right, upper];
+            ext = m_loc - [loc; loc];
+            ext(1, :) = max(ext(1, :), [0, 0]);
+            ext(2, :) = abs(min(ext(2, :), [0, 0]));
+            % Combine the cogn map of robot and modules
+            mlst = obj.carriedModule.ModuleList;
+            for i=1:obj.carriedModule.Size
+                mod_map = mlst(i).updateMap();
+                obj.CognMap = obj.CognMap | mod_map;
+            end
+            % expand the obstacle accordingly
+            [M, N] = size(map_cp);
+            for i=1:M
+                for j=1:N
+                    if obj.CognMap(i, j) == 1
+                        left = max(i - ext(1, 1), 1);
+                        right = min(i + ext(2, 1), M);
+                        down = max(j - ext(1, 2), 1);
+                        up = min(j + ext(2, 2), N);
+                        map_cp(left:right, down:up) = 1;
+                    end
+                end
+            end
+            obj.CognMap = map_cp;
+        end
         
-        function isMove = move(obj)
+        function moveModule(obj)
+            mlst = obj.carriedModule.ModuleList;
+            for i=1:obj.carriedModule.Size
+                mlst(i).move();
+            end
+        end
+        
+        function isArrive = move(obj)
             e = 10e-3;
             if isempty(obj.Path)
                 if norm(obj.Location(1:2) - obj.Goal(1:2)) < e
                     disp("Robot "+string(obj.ID)+" already at the goal position "+...
                         "["+string(obj.Goal(1))+", "+string(obj.Goal(2))+"].");
-                    isMove = false;
+                    isArrive = true;
                     return
-                else
-                    p = obj.Astar();
-                    disp("path:");
-                    disp(p);
+%                 else
+%                     p = obj.Astar();
+%                     disp("path:");
+%                     disp(p);
                 end
             end
+            if obj.priorPlanningID == 0 || ~obj.isCarrying
+                obj.Astar();
+            else
+                m = obj.carriedModule.getModule(obj.priorPlanningID);
+                obj.Astar(m);
+            end
+            if obj.pauseCmd
+                disp("Robot "+string(obj.ID)+" stuck.");
+                isArrive = false;
+                return
+            end
+            disp("Robot "+string(obj.ID)+" at step No. "...
+                +string(obj.stepCount)+". Path: ");
+            disp(obj.Path);
             
+            while norm(obj.Path(1, 1:2) - obj.Location(1:2)) < e
+%                 disp("delete:");
+%                 disp(obj.Path(1, :));
+                obj.Path(1, :) = [];
+            end
             nextLoc = obj.Path(1, 1:2);
             move_dir = nextLoc - obj.Location(1:2);
-            decision = obj.canMove(move_dir);
-            if decision == 0
-                disp("Robot is blocked.");
-                obj.Astar();
-                disp("Replanned path:");
-                disp(obj.Path);
-            elseif decision == -1
-                disp("Module group is blocked.");
-                mlst = obj.carriedModule.ModuleList;
-                for m = mlst
-                    m_loc = m.Location;
-                    m_path = obj.Astar(m_loc);
-                    nextLoc = m_path(1, 1:2);
-                    move_dir = nextLoc - obj.Location(1:2);
-                    if obj.canMove(move_dir) == 1
-                        result = true;
-                        disp("Replanned path:");
-                        disp(obj.Path);
-                        break
+            cnt = 0;
+            while true
+                % Find a feasible path for the group
+                decision = obj.canMove(move_dir);
+                if decision ~= 1 && cnt < obj.carriedModule.Size
+                    % Rotate to the next one
+                    obj.priorPlanningID = ...
+                        obj.carriedModule.getNextModuleID(obj.priorPlanningID);
+                    disp("Group "+string(obj.ID)+" is block. Replanning path...");
+                    if obj.priorPlanningID == 0 && cnt == 0
+                        path = obj.Astar();
                     else
-                        result = false;
+                        cur_m = obj.carriedModule.getModule(obj.priorPlanningID);
+                        path = obj.Astar(cur_m);
+                    end
+                    if obj.pauseCmd
+                        disp("Robot "+string(obj.ID)+" stuck.");
+                        isArrive = false;
+                        return
+                    end
+                    % Update the move direction and count
+                    nextLoc = path(1, 1:2);
+                    move_dir = nextLoc - obj.Location(1:2);
+                    cnt =cnt + 1;
+                elseif decision == 1
+                    disp("Replan success from object No. "+...
+                        string(obj.priorPlanningID));
+                    disp(obj.Path);
+                    break
+                else
+                    % No path can work, consider obstacle expansion
+                    obj.obstacleExpansion();
+                    obj.AstarAlg(obj.Location(1:2), obj.Goal(1:2));
+                    
+                    if obj.pauseCmd == true
+                        disp("Group "+string(obj.ID)+" stuck.");
+                        return
+                    else
+                        disp("Replanned path by obstacle expansion:");
+                        disp(obj.Path);
+                        next_loc = obj.Path(2, 1:2);
+                        move_dir = next_loc - obj.Location(1:2);
+%                         break
                     end
                 end
-                if ~result
-                    % TODO: 障碍物增扩
-                end
             end
+%             decision = obj.canMove(move_dir);
+%             if decision == 0
+%                 disp("Robot "+string(obj.ID)+" is blocked.");
+%                 obj.Astar();
+%                 disp("Replanned path:");
+%                 disp(obj.Path);
+%             elseif decision == -1
+%                 disp("Module group is blocked.");
+%                 disp("ID: "+string(obj.ID));
+%                 mlst = obj.carriedModule.ModuleList;
+%                 for m = mlst
+%                     m_path = obj.Astar(m);
+%                     nextLoc = m_path(1, 1:2);
+%                     move_dir = nextLoc - obj.Location(1:2);
+%                     if obj.canMove(move_dir) == 1
+%                         result = true;
+%                         disp("Replanned path:");
+%                         disp(obj.Path);
+%                         break
+%                     else
+%                         result = false;
+%                     end
+%                 end
+%                 if ~result  % seperate planning failed
+%                     % TODO: 障碍物增扩
+%                     obj.obstacleExpansion();
+%                     obj.AstarAlg(obj.Location(1:2), obj.Goal(1:2));
+%                     disp("Replanned path by obstacle expansion:");
+%                     disp(obj.Path);
+%                 end
+%             end
             
             % Step 1: Check obstacle (attempt movement)
             % TODO: 实时避障
@@ -193,12 +355,12 @@ classdef robot < handle
             
             % Step 2: Move to the next location
             while norm(obj.Path(1, 1:2) - obj.Location(1:2)) < e
-                disp("delete:");
-                disp(obj.Path(1, :));
+%                 disp("delete:");
+%                 disp(obj.Path(1, :));
                 obj.Path(1, :) = [];
             end
             nextLoc = obj.Path(1, 1:2);
-            disp("next loc:");
+            disp("Robot "+string(obj.ID)+" next loc:");
             disp(nextLoc);
 %             if all(obj.Location(1:2) - nextLoc)
 %                 % TODO: again, check obstacle
@@ -209,42 +371,23 @@ classdef robot < handle
 %             end
             obj.Path(1, :) = [];
             obj.GlobalMap.robotMap(obj.Location(1), obj.Location(2)) = 0;
-            obj.GlobalMap.robotMap(nextLoc(1), nextLoc(2)) = 1;
+            obj.GlobalMap.robotMap(nextLoc(1), nextLoc(2)) = obj.ID;
             obj.Location(1:2) = nextLoc;
-            
-            isMove = true;
-        end
-        
-        function path = HAstar(obj, distance)
-            % default value
-            if (nargin<3)
-                distance = 0.01;
+            if obj.isCarrying
+                obj.moveModule();
             end
-            % 2D problem
-            startPose = [obj.Location(1:2) 0];
-            goalPose = [obj.Goal(1:2) 0];
-            % Create a state space object
-            stateSpace = stateSpaceSE2;
-            % Create a state validator object
-            validator = validatorOccupancyMap(stateSpace);
-            % Create a binary occupancy map and assign the map to the state validator object.
-            validator.Map = binaryOccupancyMap(obj.CognMap);
-            % Set the validation distance for the validator
-            validator.ValidationDistance = distance;
-            % Assign the state validator object to the plannerHybridAStar object
-            planner = plannerHybridAStar(validator);
-            % Compute a path for the given start and goal poses
-            pathObj = plan(planner,startPose,goalPose);
-            % Extract the path poses from the path object
-            disp("origin path: "); disp(pathObj.States);
-            obj.Path = floor(pathObj.States);
-            path = obj.Path;
+            obj.stepCount = obj.stepCount + 1;
+%             if obj.Location == obj.Goal
+%                 isArrive = true;
+%             else
+%                 isArrive = false;
+%             end
+            isArrive = false;
         end
         
         function updateMap(obj)
             obj.CognMap = obj.GlobalMap.getMap(obj.Location, "r");
-            % Ignore the carried module
-            % TODO: change to module group
+            % Ignore the carried module group
             if obj.isCarrying
                 N = obj.carriedModule.Size;
                 module_loc = zeros(N, 3);
@@ -254,7 +397,14 @@ classdef robot < handle
                 end
             end
             if ~isempty(obj.moduleToFetch)
-                obj.CognMap(obj.moduleToFetch(1), obj.moduleToFetch(2)) = 0;
+                obj.CognMap(obj.moduleToFetch.Location(1), obj.moduleToFetch.Location(2)) = 0;
+            end
+            if ~isempty(obj.ignoredPos)
+                [n, ~] = size(obj.ignoredPos);
+                for i=1:n
+                    loc = obj.ignoredPos(i, :);
+                    obj.CognMap(loc(1), loc(2)) = 0;
+                end
             end
             obj.CognMap(obj.Location(1), obj.Location(2)) = 0;
             
@@ -265,7 +415,8 @@ classdef robot < handle
                 for j = 1:8
                     x = allx(i)+all_dir(j, 1);
                     y = ally(i)+all_dir(j, 2);
-                    if x <= 0 || y <= 0
+                    if x <= 0 || y <= 0 || x > obj.GlobalMap.mapSize(1) ...
+                            || y > obj.GlobalMap.mapSize(2)
                         continue
                     end
                     obj.CognMap(x, y) = 1;
@@ -281,30 +432,58 @@ classdef robot < handle
             end
         end
         
-        function path = Astar(obj, loc)
+        function path = Astar(obj, m)
             if nargin == 1
                 loc = obj.Location;
+                obj.updateMap();
+            else
+                loc = m.Location;
+                obj.CognMap = m.updateMap();
             end
 %             obj.CognMap = obj.GlobalMap.getMap(obj.Location, "r");
             pos_shift = obj.Location - loc;
-            obj.updateMap();
-            Connecting_Distance=8;
+            
+%             disp("Robot "+string(obj.ID)+"'s CognMap: ");
+%             obj.GlobalMap.showMap(obj.CognMap);
             start = loc(1:2);
             goal = obj.Goal(1:2) - pos_shift(1:2);
+            obj.AstarAlg(start, goal, pos_shift);
+            if obj.Path == Inf
+                path = [];
+                obj.Path = [];
+                obj.pauseCmd = true;
+            else
+                obj.pauseCmd = false;
+                path = obj.Path;
+                path(1, :) = [];
+            end
+        end
+        
+        function AstarAlg(obj, start, goal, pos_shift)
+            if nargin == 3
+                pos_shift = zeros(1, 3);
+            end
+            Connecting_Distance=0;
             [m, n] = size(obj.CognMap);
             GoalRegister=int8(zeros(m,n));
             GoalRegister(goal(1),goal(2))=1;
             path = ASTARPATH(start(2), start(1), obj.CognMap, ...
                         GoalRegister, Connecting_Distance);
             path = flip(path);
-            [n, ~] = size(path);
-            for i = 1:n
-                path(i, :) = path(i, :) - pos_shift(1:2);
-            end
             obj.Path = path;
-            obj.modifyPath();
-            path = obj.Path;
-            path(1, :) = [];
+            if path == Inf
+                % obj.Path = obj.Location(1:2);
+                obj.pauseCmd = true;
+                return
+            else
+                obj.pauseCmd = false;
+            end
+            
+%             obj.modifyPath();
+            [n, ~] = size(obj.Path);
+            for i = 1:n
+                obj.Path(i, :) = obj.Path(i, :) + pos_shift(1:2);
+            end
         end
         
         function modifyPath(obj)
@@ -380,7 +559,8 @@ classdef robot < handle
                 end
                 idx_checked = find(~mid_check, 1);
                 if isempty(idx_checked)
-                    disp("Avoid collision failed.");
+                    disp("Avoid collision failed when inserted path.");
+                    mid = round(mid);
                 else
                     mid = [temp_mid(idx_checked, 1), temp_mid(idx_checked, 2)];
                 end

@@ -57,6 +57,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
                        'target', {}, ... % Label of the current target
                        ...'targetPosition', {}, ... % Position of the current target
                        'path', {},... % Planed path for the items to move
+                       ...'pathL', {}, ... % Path length
                        'pathHandler', {} ... % Handler of the path line (1D)
                        )
 
@@ -91,8 +92,9 @@ classdef GUI2D_exported < matlab.apps.AppBase
         
         % Representation of items
         Robot_fig = imread("robot.jpg")
-        Color_list = ["r", "#0072BD", "[0.5 0.5 0.5]", "#D95319", 'w'] % Color used for display
+        Color_list = ["r", "#0072BD", "[0.5 0.5 0.5]", "#D95319", 'w', '#4DBEEE'] % Color used for display
         % (1) Robot (2) Object (3) Obstacle (4) Path (5) white (for text)
+        % (6) Current target
         Target_alpha = 0.5
         Path_shape = '-'
         Path_width = 1
@@ -155,12 +157,19 @@ classdef GUI2D_exported < matlab.apps.AppBase
             % robot
             app.Robot_size = evalin('base', 'Robot_Size');
             Robot_pos = evalin('base', 'Robot_Current_Position');
+            pathL = evalin('base', 'Robot_PathL');
+            paths = evalin('base', 'Robot_Path');
             [app.Num_robot, ~] = size(Robot_pos);
             for i = 1:app.Num_robot
                 app.Robot(i).position = Robot_pos(i, :);
                 app.Robot(i).nextPos = app.Robot(i).position;
+                p_idx = sum(pathL(1:i-1));
+                app.Robot(i).path = paths(p_idx+1:p_idx+pathL(i), :);
+                disp("p_idx: "+string(p_idx));
+                disp("app robbot path: ");
+                disp(app.Robot(i).path);
             end
-            disp('Robot position(s) has/have been loaded.');
+            disp('Robot position(s) and path(s) have been loaded.');
 
             % object
             Obj_pos = evalin('base', 'Object_Current_Position');
@@ -200,9 +209,9 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 app.CTarget_created = false;
             end
             if isempty(obj_target)
-%                 for i = 1:app.Num_obj_target
-%                     app.Object_targets(i).position = app.Obj_final_target(i, :);
-%                 end
+                for i = 1:app.Num_obj_target
+                    app.Object_targets(i).position = app.Obj_final_target(i, :);
+                end
                 app.CTarget_created = false;
             else
                 app.CTarget_created = true;
@@ -237,12 +246,16 @@ classdef GUI2D_exported < matlab.apps.AppBase
         function updateData(app)
             % next position
             Robot_pos_next = evalin('base', 'Robot_Current_Position');
+            pathL = evalin('base', 'Robot_PathL');
+            paths = evalin('base', 'Robot_Path');
             Robot_target_next = evalin('base', 'Robot_Current_Target');
             Obj_pos_next = evalin('base', 'Object_Current_Position');
             Obj_target_next = evalin('base', 'Object_Current_Target');
             
             for i = 1:app.Num_robot
                 app.Robot(i).nextPos = Robot_pos_next(i, :);
+                p_idx = sum(pathL(1:i-1));
+                app.Robot(i).path = paths(p_idx+1:p_idx+pathL(i), :);
             end
             for i=1:app.Num_robot_target
                 app.Robot_targets(i).nextPos = Robot_target_next(i, :);
@@ -254,6 +267,10 @@ classdef GUI2D_exported < matlab.apps.AppBase
             if ~isempty(Obj_target_next)
                 for i=1:app.Num_obj_target
                     app.Object_targets(i).nextPos = Obj_target_next(i, :);
+                    app.CTarget_created = true;
+%                     if isempty(app.Object_targets(i).position)
+%                         app.Object_targets(i).position = app.Obj_final_target(i, :);
+%                     end
                 end
 %             else
 %                 app.Object_targets(i).nextPos = app.Object_targets(i).position;
@@ -271,19 +288,21 @@ classdef GUI2D_exported < matlab.apps.AppBase
         
         % display all items
         function displayItems(app)
-            
-            % Display current object
-            for i=1:app.Num_obj
-                % draw object with labelled id.
-                obj_pos = [app.Object(i).position(1), app.Object(i).position(2)];
-                app.Object(i).handlers = app.drawItem(app.UIAxes, "Object", obj_pos, i);
+                        
+            % Display obstacles
+            for i=1:app.Num_obstacle
+                app.Obstacle_h = [app.Obstacle_h, app.drawItem(app.UIAxes, "Obstacle", ...
+                    app.Obstacle(i, :))];
             end
+            
             for i=1:app.Num_obj_target
                 % Display current object target
-                if app.CTarget_created
-                    obj_target_pos = [app.Object_targets(i).position(1), app.Object_targets(i).position(2)];
-                    app.Object_targets(i).handlers = app.drawItem(app.UIAxes, "Object_target", ...
-                        obj_target_pos, i);
+                obj_target_pos = [app.Object_targets(i).position(1), app.Object_targets(i).position(2)];
+                app.Object_targets(i).handlers = app.drawItem(app.UIAxes, "Object_target", ...
+                    obj_target_pos, i);
+                if ~app.CTarget_created
+                    set(app.Object_targets(i).handlers, 'visible', 'off');
+                
                 end
                 % Display final object target
                 obj_h = app.drawItem(app.UIAxes, "Object_final_target", ...
@@ -292,11 +311,19 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 
             end
             
+            % Display current object
+            for i=1:app.Num_obj
+                % draw object with labelled id.
+                obj_pos = [app.Object(i).position(1), app.Object(i).position(2)];
+                app.Object(i).handlers = app.drawItem(app.UIAxes, "Object", obj_pos, i);
+            end
+            
             % Display current robot
             for i=1:app.Num_robot
                 % draw robot with labeled id.
                 robot_pos = [app.Robot(i).position(1), app.Robot(i).position(2)];
                 app.Robot(i).handlers = app.drawItem(app.UIAxes, "Robot", robot_pos, i);
+                app.Robot(i).pathHandler = app.drawItem(app.UIAxes, "Path", robot_pos, i);
             end
             for i=1:app.Num_robot_target
                 % Display current robot target
@@ -309,25 +336,15 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 robot_h = app.drawItem(app.UIAxes, "Robot_final_target", ...
                     app.Robot_final_target(i, :));
                 app.Robot_final_target_h = [app.Robot_final_target_h; robot_h];
-                
-                %%%% !!!TODO!!! 20210511 Edit from HERE %%%%
-                % Display path
-                %% TODO
-                
+
             end
             
-            
-            % Display obstacles
-            for i=1:app.Num_obstacle
-                app.Obstacle_h = [app.Obstacle_h, app.drawItem(app.UIAxes, "Obstacle", ...
-                    app.Obstacle(i, :))];
-            end
                 
 %             uistack(app.Robot.handlers, "top");
             % coordinate system
-            axis(app.UIAxes, [0, app.Map_x, 0, app.Map_y]);
-            set(app.UIAxes, 'XTick', 0:app.Map_x, ...
-                'YTick', 0:app.Map_y, ...
+            axis(app.UIAxes, [1, app.Map_x+1, 1, app.Map_y+1]);
+            set(app.UIAxes, 'XTick', 1:app.Map_x, ...
+                'YTick', 1:app.Map_y, ...
                 'XTickMode', 'manual', 'YTickMode', 'manual');
         end
         
@@ -335,6 +352,16 @@ classdef GUI2D_exported < matlab.apps.AppBase
         function success = moveItems(app)
             accuracy = 0.001;
             isMoveFinished = false;
+            % Draw the new path
+            for i=1:app.Num_robot
+                if ~isempty(app.Robot(i).path)
+                    app.Robot(i).pathHandler.XData = ...
+                        [app.Robot(i).position(1); app.Robot(i).path(:, 1)]+0.5;
+                    app.Robot(i).pathHandler.YData = ...
+                        [app.Robot(i).position(2); app.Robot(i).path(:, 2)]+0.5;
+                end
+            end
+            
             while ~(app.Stop_event || isMoveFinished)
 %                 disp('in loop')
 
@@ -358,11 +385,15 @@ classdef GUI2D_exported < matlab.apps.AppBase
                             sign = app.isASmallerThanB(app.Robot(i).position(j), ...
                                 app.Robot(i).nextPos(j));
                             if j == 1
-                            app.Robot(i).handlers(1).XData = ...
-                                app.Robot(i).handlers(1).XData + sign * 0.1;
+                                app.Robot(i).handlers(1).XData = ...
+                                    app.Robot(i).handlers(1).XData + sign * 0.1;
+                                app.Robot(i).pathHandler.XData(1) = ...
+                                    app.Robot(i).pathHandler.XData(1) + sign * 0.1;
                             else
                                 app.Robot(i).handlers(1).YData = ...
                                     app.Robot(i).handlers(1).YData + sign * 0.1;
+                                app.Robot(i).pathHandler.YData(1) = ...
+                                    app.Robot(i).pathHandler.YData(1) + sign * 0.1;
                             end
                             app.Robot(i).handlers(2).Position(j) = ...
                                 app.Robot(i).handlers(2).Position(j) + sign * 0.1;
@@ -378,24 +409,27 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 % Move robot target
                 for i=1:app.Num_robot_target
                     if app.CTarget_created
-                        if ~(norm(app.Robot_targets(i).position - app.Robot_targets(i).nextPos) < accuracy)
-                            isMoveFinished = false;
-    %                         disp('Robot target move: from');
-    %                         disp(app.Robot_targets(i).position);
-                            for j=1:2
-                                sign = app.isASmallerThanB(app.Robot_targets(i).position(j), ...
-                                    app.Robot_targets(i).nextPos(j));
-                                
-                                app.Robot_targets(i).handlers(1).Position(j) = ...
-                                    app.Robot_targets(i).handlers(1).Position(j) + sign * 0.1;
-                                app.Robot_targets(i).handlers(2).Position(j) = ...
-                                    app.Robot_targets(i).handlers(2).Position(j) + sign * 0.1;
-                                % Update position
-                                app.Robot_targets(i).position(j) = app.Robot_targets(i).handlers(1).Position(j);
-                            end
-    %                         disp('to');
-    %                         disp(app.Robot_targets(i).nextPos);
-                        end
+%                         if ~(norm(app.Robot_targets(i).position - app.Robot_targets(i).nextPos) < accuracy)
+%                             isMoveFinished = false;
+%     %                         disp('Robot target move: from');
+%     %                         disp(app.Robot_targets(i).position);
+%                             for j=1:2
+%                                 sign = app.isASmallerThanB(app.Robot_targets(i).position(j), ...
+%                                     app.Robot_targets(i).nextPos(j));
+%                                 
+%                                 app.Robot_targets(i).handlers(1).Position(j) = ...
+%                                     app.Robot_targets(i).handlers(1).Position(j) + sign * 0.1;
+%                                 app.Robot_targets(i).handlers(2).Position(j) = ...
+%                                     app.Robot_targets(i).handlers(2).Position(j) + sign * 0.1;
+%                                 % Update position
+%                                 app.Robot_targets(i).position(j) = app.Robot_targets(i).handlers(1).Position(j);
+%                             end
+%     %                         disp('to');
+%     %                         disp(app.Robot_targets(i).nextPos);
+%                         end
+                        app.Robot_targets(i).handlers(1).Position = app.Robot_targets(i).nextPos;
+                        app.Robot_targets(i).handlers(2).Position = app.Robot_targets(i).nextPos;
+                        app.Robot_targets(i).position = app.Robot_targets(i).nextPos;
                     end 
                 end
                 
@@ -424,25 +458,35 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 % move object target
                 for i=1:app.Num_obj_target
                     if app.CTarget_created
+                        set(app.Object_targets(i).handlers, 'visible', 'on');
                         if ~isempty([app.Object_targets(i).nextPos])
-                            if ~(norm(app.Object_targets(i).position - app.Object_targets(i).nextPos) < accuracy)
-                                isMoveFinished = false;
-    %                             disp('Object target move: from');
-    %                             disp(app.Object_targets(i).position);
-                                for j=1:2
-                                    sign = app.isASmallerThanB(app.Object_targets(i).position(j), ...
-                                        app.Object_targets(i).nextPos(j));
-                                    
-                                    app.Object_targets(i).handlers(1).Position(j) = ...
-                                        app.Object_targets(i).handlers(1).Position(j) + sign * 0.1;
-                                    app.Object_targets(i).handlers(2).Position(j) = ...
-                                        app.Object_targets(i).handlers(2).Position(j) + sign * 0.1;
-                                    % Update position
-                                    app.Object_targets(i).position(j) = app.Object_targets(i).handlers(1).Position(j);
-                                end
-    %                             disp('to');
-    %                             disp(app.Object_targets(i).nextPos);
+%                             if ~(norm(app.Object_targets(i).position - app.Object_targets(i).nextPos) < accuracy)
+%                                 isMoveFinished = false;
+%     %                             disp('Object target move: from');
+%     %                             disp(app.Object_targets(i).position);
+%                                 for j=1:2
+%                                     sign = app.isASmallerThanB(app.Object_targets(i).position(j), ...
+%                                         app.Object_targets(i).nextPos(j));
+%                                     
+%                                     app.Object_targets(i).handlers(1).Position(j) = ...
+%                                         app.Object_targets(i).handlers(1).Position(j) + sign * 0.1;
+%                                     app.Object_targets(i).handlers(2).Position(j) = ...
+%                                         app.Object_targets(i).handlers(2).Position(j) + sign * 0.1;
+%                                     % Update position
+%                                     app.Object_targets(i).position(j) = app.Object_targets(i).handlers(1).Position(j);
+%                                 end
+%     %                             disp('to');
+%     %                             disp(app.Object_targets(i).nextPos);
+%                             end
+                            pos_delta = app.Object_targets(i).nextPos - app.Object_targets(i).position;
+                            for j=1:2
+                                app.Object_targets(i).handlers(1).Position(j) = ...
+                                    app.Object_targets(i).handlers(1).Position(j) + pos_delta(j);
+%                                 app.Object_targets(i).handlers(2).Position = app.Object_targets(i).nextPos;
+                                app.Object_targets(i).handlers(2).Position(j) = ...
+                                    app.Object_targets(i).handlers(2).Position(j) + pos_delta(j);                                
                             end
+                            app.Object_targets(i).position = app.Object_targets(i).nextPos;
                         end
                     end
 %                         pause(1/app.V_move);
@@ -459,6 +503,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
 %             else
 %                 success = false;
 %             end
+            
             success = true;
         end
 
@@ -609,11 +654,11 @@ classdef GUI2D_exported < matlab.apps.AppBase
 %                         "EdgeColor","none",...
 %                         'FaceAlpha', app.Target_alpha);
                     
-                    item_h = rectangle(axis, "FaceColor", app.Color_list(2), ...
+                    item_h = rectangle(axis, "FaceColor", app.Color_list(6), ...
                         "EdgeColor", "none", ...
                         "Position", [pos, 1, 1]);
                     % item_h.FaceColor = [app.Color_list(2), app.Target_alpha];
-                    item_h.FaceColor = app.Color_list(2);
+                    item_h.FaceColor = app.Color_list(6);
                     % Display target ID
                     delta_pos_text = [0.5 0.5];
                     
@@ -626,7 +671,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
                     
                 case "Object_final_target"
                     item_h = rectangle(axis, "FaceColor", "none", ...
-                        "EdgeColor", app.Color_list(2), ...
+                        "EdgeColor", app.Color_list(6), ...
                         "LineWidth", 1, ...
                         "Position", [pos, 1, 1]);
                     delta_pos_text = [0.5 0.5];
@@ -639,7 +684,13 @@ classdef GUI2D_exported < matlab.apps.AppBase
                     
                 case "Path"
                     if axis == app.UIAxes
-                       % draw path according to the algorithm 
+                        % draw path according to the algorithm 
+                        if ~isempty(app.Robot(id).path)
+                            item_h = plot(axis, app.Robot(id).path(:, 1),...
+                                app.Robot(id).path(:, 2), "Color", app.Color_list(4));
+                        else
+                            item_h = plot(axis, pos(1)+0.5, pos(2)+0.5, "Color", app.Color_list(4));
+                        end
                     elseif axis == app.UIAxesLegend
                         % draw a representive line
                     else
@@ -651,12 +702,12 @@ classdef GUI2D_exported < matlab.apps.AppBase
             
             % display text if there is a input of text and return the
             % handler
-            if nargin == 5
+            if nargin == 5 && type ~= "Path"
                 text_h = text(axis, pos(1)+delta_pos_text(1), pos(2)+delta_pos_text(2), int2str(id), ...
                     "HorizontalAlignment","center", ...
                     "Color", text_c);
                 h = [item_h, text_h];
-            elseif nargin == 4
+            elseif nargin == 4 || type == "Path"
                 h = item_h;
             else
                 disp("Wrong number of input parameters.");
