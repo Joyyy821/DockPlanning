@@ -53,8 +53,8 @@ gmap.setDist("robot", 3, "module", 3);
 robots(1) = robot(1, [15, 15, 0], gmap);
 % robots(1) = robot(1, [125, 65, 0]);
 robots(1).CognMap = MAP;
+% robots(1).Goal = [15, 16, 0];
 robots(1).Goal = [80, 110, 0];
-% robots(1).Goal = [110, 80, 0];
 p = robots(1).Astar();
 
 % imagesc(flip(MAP))

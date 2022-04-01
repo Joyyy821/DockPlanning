@@ -1,9 +1,28 @@
 % File: construction with modules
 clc; clear all; close all;
-addpath('display');
+addpath('display'); addpath('alg');
 Map_Size = [15, 15]; % length*width
 % Rect
 N = 4; a = 2; b = 2;  % Num of blocks; width; length;
+
+%% Float test
+% Map
+g_map = map(15, 15);
+g_map.setDist("robot", 3, "module", 3);
+
+mod1 = module(1, [3, 3, 0], g_map);
+mod2 = module(2, [3, 4, 0], g_map);
+mod3 = module(3, [3, 5, 0], g_map);
+mods = [mod1, mod2, mod3];
+display = display2D(g_map.mapSize, "Module", mods);
+
+while true
+    mod1.walk();
+    mod2.walk();
+    mod3.walk();
+    display.updateMap("Module", mods);
+end
+
 %% Initialization
 % Map
 g_map = map(15, 15);
@@ -27,6 +46,7 @@ robot_locs = [1, 1; 1, 3; 15, 1; 15, 3];
 % robot_locs = [1, 14; 4, 14; 9, 14; 12, 14];
 for i = 1:N
     robots(i) = robot(i, [robot_locs(i, :), 0], g_map);
+    group(i) = AssembleGroup(i, robots(i), g_map);
 end
 
 % Modules
@@ -52,7 +72,7 @@ display = display2D(g_map.mapSize, "FinalTarget", all_tar, ...
 % pause(10);
 % Extension
 ext.showExtension(display);
-pause(10);
+% pause(10);
 %% Main loop
 fetch_arrive = zeros(1, N);
 target_arrive = zeros(1, N);
@@ -66,9 +86,9 @@ while true
     for i = 1:N
         % Fetch modules
         if ~fetch_arrive(i)
-            isSuccess = robots(i).fetchModule(modules(i), rob_dirs(i, :));
+            isSuccess = group(i).LeadRobot.fetchModule(modules(i), rob_dirs(i, :));
             if isSuccess == 2
-                fetch_arrive(i) = robots(i).move();
+                fetch_arrive(i) = group(i).LeadRobot.move();
     %             if arrive(i)
     %                 disp("arrive "+string(i)+":");
     %                 disp(arrive);
@@ -76,14 +96,14 @@ while true
     %                 modules(i).dock("robot", robots(i));
     %             end
             elseif isSuccess == 1
-                modules(i).dock("robot", robots(i));
+                group(i).updateGroup("add");
                 fetch_arrive(i) = 1;
-                robots(i).Goal = [Object_Current_Target(i, :)+rob_dirs(i, :), 0];
+                group(i).LeadRobot.Goal = [Object_Current_Target(i, :)+rob_dirs(i, :), 0];
             end
         elseif ~target_arrive(i)
             % disp("Robot "+string(i)+" move to target location.");
-            rslt = robots(i).nearGoalCheck();
-            d_id = robots(i).carriedModule.DockGpIDs;
+            rslt = group(i).LeadRobot.nearGoalCheck();
+            d_id = group(i).DockGpIDs;
             [d, ~] = checkDockingGp(ext, d_id, cl(i), g_map);
             if ~isempty(d_id)
                 if rslt == 2
@@ -95,7 +115,7 @@ while true
 %                         locs = [locs; x, y];
 %                         robots(i).setIngorePos(locs);
                     else
-                        continue;
+                        continue
                     end
                 elseif rslt == 1
 %                     d_id = robots(i).carriedModule.DockGpIDs;
@@ -105,14 +125,14 @@ while true
 %                         robots(i).ignoredPos = locs;
                         d_gp = modules(d_id(1)).LeadRobot.carriedModule;
                         target_arrive(modules(d_id(1)).LeadRobot.ID) = true;
-                        robots(i).carriedModule.dock("module", d_gp);
+                        group(i).modules.dock(d_gp);
                     else
                         target_arrive(i) = true;
                         structure_arrive(i) = true;
-                        robots(i).isCarrying = false;
-                        robots(i).back2startPlace();
+                        group(i).updateGroup("del");
+                        group(i).LeadRobot.back2startPlace();
                         
-                        continue;
+                        continue
                     end
                 end
             end
@@ -138,7 +158,7 @@ while true
                 [rx, ry] = find(g_map.robotMap==d_rob_id);
                 rob_tar = [rx, ry] + pos_delta;
 %                 locs = [locs; rob_tar];
-                robots(i).setIngorePos([locs; rob_tar]);
+                robots(i).setIgnorePos([locs; rob_tar]);
                 
                 % robot goal set to next target position
                 robots(i).Goal = [Object_Current_Target(i, :)+rob_dirs(i, :), 0];
@@ -167,6 +187,11 @@ while true
 end
 
 %% Functions
+function robotSearch(robs, mods)
+    
+end
+
+
 function [is_arrive, locs] = checkDockingGp(ext, ids, level, gmap)
 %     [dock_ids, dock_locs] = ext.getSilibing(ids, level);
 %     size = length(dock_ids);

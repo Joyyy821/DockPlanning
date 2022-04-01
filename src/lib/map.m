@@ -7,10 +7,11 @@ classdef map < handle
         obstacleMap           int32    % Obstacle map (1 means occupied)
         robotMap              int32    % Robot map
         moduleMap             int32    % Module map
+        groupMap              int32    % Group map
         targetMap             int32    % Target map
         structureMap          logical  % Final target map
-        robotDist             int32    % Cognition distance of robot
-        moduleDist            int32    % Cognition distance of module
+        robotDist = 3                  % Cognition distance of robot
+        moduleDist = 3                 % Cognition distance of module
         robotCogn             logical  % Robot cognition area (circle)
         moduleCogn            logical  % Module cognition area (circle)
     end
@@ -22,12 +23,19 @@ classdef map < handle
             if nargin == 0
                 Nx = 0; Ny = 0;
             end
+            if nargin == 1
+                Ny = Nx(2);
+                Nx = Nx(1);
+            end
             obj.mapSize = [Nx, Ny];
             obj.obstacleMap = zeros(Nx, Ny);
             obj.robotMap = zeros(Nx, Ny);
             obj.moduleMap = zeros(Nx, Ny);
             obj.targetMap = zeros(Nx, Ny);
             obj.structureMap = zeros(Nx, Ny);
+            obj.groupMap = zeros(Nx, Ny);
+            obj.robotCogn = obj.getCircle(obj.robotDist);
+            obj.moduleCogn = obj.getCircle(obj.moduleDist);
         end
         
         function setDist(obj, options)
@@ -67,10 +75,10 @@ classdef map < handle
             len = sqrt(sum((x - y).^2));
         end
         
-        function local_map = getMap(obj, loc, type)
+        function [local_map, m_loc] = getMap(obj, loc, type)
             % getMap
             %   此处显示详细说明
-            if type == "r"
+            if type == "r" || type == "search"
                 dist = obj.robotDist;
                 circle = obj.robotCogn;
             elseif type == "m"
@@ -117,6 +125,20 @@ classdef map < handle
                 ml = ml & circle(cd:cu, cl:cr);
             end
             local_map(d:u, l:r) = ml;
+            if type == "search"
+                [r, c] = find(local_map);
+                N = length(r);
+                m_loc = [];
+                for i=1:N
+                    if obj.moduleMap(r(i), c(i)) && ...
+                            (~obj.groupMap(r(i), c(i)))
+                        temp = [r(i), c(i)];
+                        temp(3) = obj.moduleMap(r(i), c(i));
+                        m_loc = [m_loc; temp];
+%                         return
+                    end
+                end
+            end
         end
         
         function showMap(obj, optional_map)

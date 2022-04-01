@@ -6,8 +6,8 @@ classdef moduleGroup < handle
         ModuleList  (:, 1)  module        % An array of module pointers
         Boundary    (2, 2)  double        % Rectangular bound [xmin, ymin; xmax, ymax]
         Size        (1, 1)  int32         % Number of modules
-        LeadRobot   (1, 1)  robot         % leading robot of the module
-        DockGpIDs           int32         % The module group to dock with
+%         LeadRobot   (1, 1)  robot         % leading robot of the module
+%         DockGpIDs           int32         % The module group to dock with
     end
     
     methods
@@ -43,6 +43,13 @@ classdef moduleGroup < handle
             ids = zeros(1, obj.Size);
             for i=1:obj.Size
                 ids(i) = obj.ModuleList(i).ID;
+            end
+        end
+        
+        function locs = getLocations(obj)
+            locs = zeros(obj.Size, 3);
+            for i=1:obj.Size
+                locs(i, :) = obj.ModuleList(i).Location;
             end
         end
         
@@ -105,46 +112,14 @@ classdef moduleGroup < handle
             obj.Boundary(2, :) = max(obj.Boundary(2, :), modGpB(2, :));
         end
         
-        function success = dock(obj, options)
-            % Active dock to other robot or moduleGroup.
-            arguments
-                obj
-                options.robot  robot
-                options.module moduleGroup
-            end
-%             if ~obj.checkNeighbour(options)
-%                 success = false; 
-%                 return
-%             end
-            if isfield(options, "robot")
-                if ~obj.checkNeighbour(options.robot)
-                    success = false; 
-                    return
-                end
-                obj.LeadRobot = options.robot;
-                % obj.PosShift = options.robot.Location - obj.Location;
-            elseif isfield(options, "module")
-                if ~obj.checkNeighbour("module", options.module)
-                    success = false; 
-                    return
-                end
-                % Change the allocation of modules in the 2 groups.
-                obj.AddModuleGp(options.module);
-                mlst = options.module.ModuleList;
-                for i=1:options.module.Size
-                    mlst(i).LeadRobot = obj.LeadRobot;
-                    mlst(i).PosShift = ...
-                        obj.LeadRobot.Location - mlst(i).Location;
-                end
-                % options.module.LeadRobot.carriedModule = moduleGroup();
-                % TODO: 上一行要不要改成把options.module设置为空？
-%                 options.module = moduleGroup();
-                options.module.LeadRobot.isCarrying = false;
-            else
-                success = false;
+        function success = dock(obj, modules)
+            % Active dock to other moduleGroup.
+            if ~obj.checkNeighbour("module", modules)
+                success = false; 
                 return
             end
-%             obj.Status = 1;
+            % Change the allocation of modules in the 2 groups.
+            obj.AddModuleGp(modules);
             success = true;
         end
         

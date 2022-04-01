@@ -13,7 +13,7 @@ classdef robot < handle
         Status             (1, 1) uint8 % (1) initial; (2) fixed; (3) unfixed; (4) free
         isCarrying         (1, 1) logical % Carrying (1) / Not carrying (0) module
         carriedModule      moduleGroup    % Module
-        moduleToFetch      module % TODO: replace this attribute
+%         moduleToFetch      module % TODO: replace this attribute
         ignoredPos         int32
         Location           (1, 3) double  % Current robot location [x, y, z]
         CognMap                      % Cognitive map of individual robot
@@ -24,6 +24,7 @@ classdef robot < handle
         Path = [] % Current planned path 
         stepCount = 1                % Number of total steps
         pauseCmd  % Robot will not move if true.
+%         searchDir = [1, 1]
     end
 	
     methods
@@ -47,30 +48,41 @@ classdef robot < handle
             obj.GlobalMap.robotMap(initLocation(1), initLocation(2)) = id;
         end
         
+%         function searchModule(obj)
+%             % todo: update map
+%             nextloc = obj.Location(1:2)+[obj.searchDir(1), 0];
+%             % if nextloc not in map: move to the location according to
+%             % search dir (2) and change the first dir accordingly.
+%             
+%         end
+        
+        
         function success = fetchModule(obj, m, rob_dir)
             if m.Status == 1
                 success = 0;
                 return
             end
-            if obj.checkNeighbour(m, rob_dir)
+            if obj.checkNeighbour(m)
                 obj.isCarrying = 1;
                 obj.carriedModule = moduleGroup(m);
-                obj.carriedModule.LeadRobot = obj;
+                m.dock(obj);
+%                 obj.carriedModule.LeadRobot = obj;
                 success = 1;
             else
-                obj.moduleToFetch = m;
+%                 obj.moduleToFetch = m;
+                obj.ignoredPos = m.Location(1:2);
                 obj.Goal = m.Location + [rob_dir, 0];    % TODO
                 success = 2;
             end
         end
         
-        function setIngorePos(obj, locs)
-            if obj.isCarrying
-                mlst = obj.carriedModule.ModuleList;
-                for i=1:obj.carriedModule.Size
-                    mlst(i).ignoredPos = locs;
-                end
-            end
+        function setIgnorePos(obj, locs)
+%             if obj.isCarrying
+%                 mlst = obj.carriedModule.ModuleList;
+%                 for i=1:obj.carriedModule.Size
+%                     mlst(i).ignoredPos = locs;
+%                 end
+%             end
             obj.ignoredPos = locs;
         end
         
@@ -110,12 +122,12 @@ classdef robot < handle
                 mlst = obj.carriedModule.ModuleList;
                 for i=1:obj.carriedModule.Size
                     m = mlst(i);
-                    disp("carried module: ");
-                    disp(m);
+%                     disp("carried module: ");
+%                     disp(m);
                     loc = m.Location(1:2);
-                    cognmap = m.updateMap();
-                    disp("Module "+string(m.ID)+"'s cognMap:");
-                    disp(flip(cognmap.'));
+                    cognmap = obj.updateMap(m);
+%                     disp("Module "+string(m.ID)+"'s cognMap:");
+%                     disp(flip(cognmap.'));
                     if ~obj.checkNextStep(move_dir, loc, cognmap)
                         decision = -1;
                         return
@@ -202,7 +214,7 @@ classdef robot < handle
             % Combine the cogn map of robot and modules
             mlst = obj.carriedModule.ModuleList;
             for i=1:obj.carriedModule.Size
-                mod_map = mlst(i).updateMap();
+                mod_map = obj.updateMap(mlst(i));
                 obj.CognMap = obj.CognMap | mod_map;
             end
             % expand the obstacle accordingly
@@ -224,24 +236,24 @@ classdef robot < handle
         function moveModule(obj)
             mlst = obj.carriedModule.ModuleList;
             for i=1:obj.carriedModule.Size
-                mlst(i).move();
+                mlst(i).move(obj.Location);
             end
         end
         
         function isArrive = move(obj)
             e = 10e-3;
-            if isempty(obj.Path)
-                if norm(obj.Location(1:2) - obj.Goal(1:2)) < e
-                    disp("Robot "+string(obj.ID)+" already at the goal position "+...
-                        "["+string(obj.Goal(1))+", "+string(obj.Goal(2))+"].");
-                    isArrive = true;
-                    return
+%             if isempty(obj.Path)
+            if norm(obj.Location(1:2) - obj.Goal(1:2)) < e
+                disp("Robot "+string(obj.ID)+" already at the goal position "+...
+                    "["+string(obj.Goal(1))+", "+string(obj.Goal(2))+"].");
+                isArrive = true;
+                return
 %                 else
 %                     p = obj.Astar();
 %                     disp("path:");
 %                     disp(p);
-                end
             end
+%             end
             if obj.priorPlanningID == 0 || ~obj.isCarrying
                 obj.Astar();
             else
@@ -255,7 +267,7 @@ classdef robot < handle
             end
             disp("Robot "+string(obj.ID)+" at step No. "...
                 +string(obj.stepCount)+". Path: ");
-            disp(obj.Path);
+%             disp(obj.Path);
             
             while norm(obj.Path(1, 1:2) - obj.Location(1:2)) < e
 %                 disp("delete:");
@@ -291,7 +303,7 @@ classdef robot < handle
                 elseif decision == 1
                     disp("Replan success from object No. "+...
                         string(obj.priorPlanningID));
-                    disp(obj.Path);
+%                     disp(obj.Path);
                     break
                 else
                     % No path can work, consider obstacle expansion
@@ -300,10 +312,11 @@ classdef robot < handle
                     
                     if obj.pauseCmd == true
                         disp("Group "+string(obj.ID)+" stuck.");
+                        isArrive = false;
                         return
                     else
                         disp("Replanned path by obstacle expansion:");
-                        disp(obj.Path);
+%                         disp(obj.Path);
                         next_loc = obj.Path(2, 1:2);
                         move_dir = next_loc - obj.Location(1:2);
 %                         break
@@ -385,33 +398,53 @@ classdef robot < handle
             isArrive = false;
         end
         
-        function updateMap(obj)
-            obj.CognMap = obj.GlobalMap.getMap(obj.Location, "r");
+        function localmap = updateMap(obj, m)
+            if nargin == 2
+                localmap = obj.GlobalMap.getMap(m.Location, "m");
+            else
+                localmap = obj.GlobalMap.getMap(obj.Location, "r");
+            end
+            % Assume static objects are known
+            localmap = localmap | obj.GlobalMap.obstacleMap;
             % Ignore the carried module group
             if obj.isCarrying
                 N = obj.carriedModule.Size;
                 module_loc = zeros(N, 3);
                 for i=1:N
                     module_loc(i, :) = obj.carriedModule.ModuleList(i).Location;
-                    obj.CognMap(module_loc(i, 1), module_loc(i, 2)) = 0;
+                    localmap(module_loc(i, 1), module_loc(i, 2)) = 0;
                 end
             end
-            if ~isempty(obj.moduleToFetch)
-                obj.CognMap(obj.moduleToFetch.Location(1), obj.moduleToFetch.Location(2)) = 0;
-            end
-            if ~isempty(obj.ignoredPos)
-                [n, ~] = size(obj.ignoredPos);
-                for i=1:n
-                    loc = obj.ignoredPos(i, :);
-                    obj.CognMap(loc(1), loc(2)) = 0;
-                end
-            end
-            obj.CognMap(obj.Location(1), obj.Location(2)) = 0;
+%             % Potential docking groups
+%             if ~isempty(obj.ignoredPos)
+%                 [n, ~] = size(obj.ignoredPos);
+%                 for i=1:n
+%                     loc = obj.ignoredPos(i, :);
+%                     localmap(loc(1), loc(2)) = 0;
+%                 end
+%             end
+            % The position of the robot itself
+            localmap(obj.Location(1), obj.Location(2)) = 0;
             
             % Obstacle expansion
-            [allx, ally] = find(obj.CognMap);
+            [allx, ally] = find(localmap);
             all_dir = [0 1; 1 0; 0 -1; -1 0; 1 1; 1 -1; -1 1; -1 -1];
             for i=1:length(allx)
+                % Do NOT expand for ignore pos
+                toignore = false;
+                if ~isempty(obj.ignoredPos)
+                    k = find(obj.ignoredPos(:,1)==allx(i));
+                    for pos=k
+                        if obj.ignoredPos(k, 2)==ally(i)
+                            toignore = true;
+                            break
+                        end
+                    end
+                    if toignore
+                        continue
+                    end
+                end
+                % Expansion for others
                 for j = 1:8
                     x = allx(i)+all_dir(j, 1);
                     y = ally(i)+all_dir(j, 2);
@@ -419,16 +452,11 @@ classdef robot < handle
                             || y > obj.GlobalMap.mapSize(2)
                         continue
                     end
-                    obj.CognMap(x, y) = 1;
+                    localmap(x, y) = 1;
                 end
-%                 obj.CognMap(x(i)+1, y(i)) = 1;
-%                 obj.CognMap(x(i)-1, y(i)) = 1;
-%                 obj.CognMap(x(i), y(i)+1) = 1;
-%                 obj.CognMap(x(i), y(i)-1) = 1;
-%                 obj.CognMap(x(i)+1, y(i)+1) = 1;
-%                 obj.CognMap(x(i)+1, y(i)-1) = 1;
-%                 obj.CognMap(x(i)-1, y(i)+1) = 1;
-%                 obj.CognMap(x(i)-1, y(i)-1) = 1;
+            end
+            if nargin == 1
+                obj.CognMap = localmap;
             end
         end
         
@@ -438,7 +466,7 @@ classdef robot < handle
                 obj.updateMap();
             else
                 loc = m.Location;
-                obj.CognMap = m.updateMap();
+                obj.CognMap = obj.updateMap(m);
             end
 %             obj.CognMap = obj.GlobalMap.getMap(obj.Location, "r");
             pos_shift = obj.Location - loc;
