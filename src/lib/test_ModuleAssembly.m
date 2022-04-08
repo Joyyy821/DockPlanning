@@ -1,27 +1,27 @@
 % File: construction with modules
 clc; clear all; close all;
-addpath('display'); addpath('alg');
+% addpath('display'); addpath('alg');
 Map_Size = [15, 15]; % length*width
 % Rect
 N = 4; a = 2; b = 2;  % Num of blocks; width; length;
 
-%% Float test
-% Map
-g_map = map(15, 15);
-g_map.setDist("robot", 3, "module", 3);
-
-mod1 = module(1, [3, 3, 0], g_map);
-mod2 = module(2, [3, 4, 0], g_map);
-mod3 = module(3, [3, 5, 0], g_map);
-mods = [mod1, mod2, mod3];
-display = display2D(g_map.mapSize, "Module", mods);
-
-while true
-    mod1.walk();
-    mod2.walk();
-    mod3.walk();
-    display.updateMap("Module", mods);
-end
+% %% Float test
+% % Map
+% g_map = map(15, 15);
+% g_map.setDist("robot", 3, "module", 3);
+% 
+% mod1 = module(1, [3, 3, 0], g_map);
+% mod2 = module(2, [3, 4, 0], g_map);
+% mod3 = module(3, [3, 5, 0], g_map);
+% mods = [mod1, mod2, mod3];
+% display = display2D(g_map.mapSize, "Module", mods);
+% 
+% while true
+%     mod1.walk();
+%     mod2.walk();
+%     mod3.walk();
+%     display.updateMap("Module", mods);
+% end
 
 %% Initialization
 % Map
@@ -72,13 +72,13 @@ display = display2D(g_map.mapSize, "FinalTarget", all_tar, ...
 % pause(10);
 % Extension
 ext.showExtension(display);
-% pause(10);
+pause(10);
 %% Main loop
 fetch_arrive = zeros(1, N);
 target_arrive = zeros(1, N);
 structure_arrive = zeros(1, N);
 finish = zeros(1, N);
-rob_dirs = [-1, 0; -1, 0; 1, 0; 1, 0];
+rob_dirs = [0, -1; -1, 0; 1, 0; 1, 0];
 cl = ones(1, 4)*length(ext.GroupLayers);   % current layer in the extension tree
 
 while true
@@ -103,7 +103,7 @@ while true
         elseif ~target_arrive(i)
             % disp("Robot "+string(i)+" move to target location.");
             rslt = group(i).LeadRobot.nearGoalCheck();
-            d_id = group(i).DockGpIDs;
+            d_id = group(i).dockGpID;
             [d, ~] = checkDockingGp(ext, d_id, cl(i), g_map);
             if ~isempty(d_id)
                 if rslt == 2
@@ -123,9 +123,14 @@ while true
                     if d
 %                         % Set the docking positions to be ignored
 %                         robots(i).ignoredPos = locs;
-                        d_gp = modules(d_id(1)).LeadRobot.carriedModule;
-                        target_arrive(modules(d_id(1)).LeadRobot.ID) = true;
-                        group(i).modules.dock(d_gp);
+                        for c_did = d_id
+                            if any(any(group(c_did).LeadRobot.carriedModule.Boundary))
+                                d_gp = group(c_did).LeadRobot.carriedModule;
+                                target_arrive(group(d_id(1)).LeadRobot.ID) = true;
+                                group(i).modules.dock(d_gp);
+                                break
+                            end
+                        end
                     else
                         target_arrive(i) = true;
                         structure_arrive(i) = true;
@@ -146,12 +151,12 @@ while true
 %             modules(i).move();
             if target_arrive(i)
                 % update target to the next target location
-                robots(i).carriedModule.DockGpIDs = ...
+                group(i).dockGpID = ...
                     ext.extractOnce(robots(i).carriedModule, cl(i), display);
                 % Update the docking positions to be ignored
                 cl(i) = cl(i) - 1;
-                d_id = robots(i).carriedModule.DockGpIDs;
-                d_rob_id = modules(d_id(1)).LeadRobot.ID;
+                d_id = group(i).dockGpID;
+                d_rob_id = group(d_id(1)).LeadRobot.ID;
                 [x, y] = find(g_map.moduleMap==d_id(1));
                 [~, locs] = checkDockingGp(ext, d_id, cl(i), g_map);
                 pos_delta = locs(1, :) - [x, y];

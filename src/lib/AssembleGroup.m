@@ -14,6 +14,7 @@ classdef AssembleGroup < handle
         cl                 int32     % current layer in the extension tree
         searchPath         int32
         search_var         int32  % [cur search idx, pause counts, start place idxs]
+        ext                Extension
     end
     
     methods
@@ -31,7 +32,6 @@ classdef AssembleGroup < handle
                 loc = obj.LeadRobot.Location;
                 obj.GlobalMap.groupMap(loc(1), loc(2)) = obj.groupID;
             end
-%             obj.d_search = [1, 1, 2];
         end
         
         function initSearch(obj)
@@ -52,17 +52,18 @@ classdef AssembleGroup < handle
         
         function [ld, sd] = setSearchDir(obj, loc)
             % random a direction
-            long_dirs = [1, 0; -1, 0; 0, 1; 0, -1];
-            del_i = [];
-            for i=1:4
-                if ~obj.isLocInMap(loc+long_dirs(i,:))
-                    del_i = [del_i, i];
-                end
-            end
-            long_dirs(del_i, :) = [];
-            [l_n, ~] = size(long_dirs);
-            ld_idx = randi(l_n);
-            ld = long_dirs(ld_idx, :);
+%             long_dirs = [1, 0; -1, 0; 0, 1; 0, -1];
+%             del_i = [];
+%             for i=1:4
+%                 if ~obj.isLocInMap(loc+long_dirs(i,:))
+%                     del_i = [del_i, i];
+%                 end
+%             end
+%             long_dirs(del_i, :) = [];
+%             [l_n, ~] = size(long_dirs);
+%             ld_idx = randi(l_n);
+%             ld = long_dirs(ld_idx, :);
+            ld = [0, 1];
             if ld(1)
                 short_dirs = [0, 1; 0, -1];
             elseif ld(2)
@@ -87,22 +88,57 @@ classdef AssembleGroup < handle
             end
         end
         
+        function expan_map = getExpandedMap(obj)
+            % return a map with obstacle expaned.
+            expan_map = obj.GlobalMap.obstacleMap;
+            [allx, ally] = find(expan_map);
+            all_dir = [0 1; 1 0; 0 -1; -1 0; 1 1; 1 -1; -1 1; -1 -1];
+            for i=1:length(allx)
+                for j = 1:8
+                    x = allx(i)+all_dir(j, 1);
+                    y = ally(i)+all_dir(j, 2);
+                    if x <= 0 || y <= 0 || x > obj.GlobalMap.mapSize(1) ...
+                            || y > obj.GlobalMap.mapSize(2)
+                        continue
+                    end
+                    expan_map(x, y) = 1;
+                end
+            end
+        end
+        
         function p = genPath(obj, ld, sd, loc)
             cur_loc = loc; cur_d = ld;
             p = [];
             mapsize = obj.GlobalMap.mapSize;
+            nstep = 2;
             while true
                 for i=1:2
                     if cur_d(i) == 1
-                        len = mapsize(i) - cur_loc(i);
-                        temp_p = ones(len, 2) * cur_loc(3-i);
-                        temp_p(:, i) = (cur_loc(i)+1):mapsize(i);
+%                         len = mapsize(i) - cur_loc(i);
+                        temp_lst = (cur_loc(i)+1):nstep:mapsize(i);
+%                         len = length(temp_lst);
+%                         temp_p = ones(len, 2) * cur_loc(3-i);
+%                         temp_p(:, i) = temp_lst;
                     elseif cur_d(i) == -1
-                        len = cur_loc(i)-1;
-                        temp_p = ones(len, 2) * cur_loc(3-i);
-                        temp_p(:, i) = flip(1:(cur_loc(i)-1));
+%                         len = cur_loc(i)-1;
+                        temp_lst = flip(1:nstep:(cur_loc(i)-1));
                     end
                 end
+                len = length(temp_lst);
+                temp_p = ones(len, 2) * cur_loc(3-i);
+                temp_p(:, i) = temp_lst;
+                % Delete the positions with static obstacles (or surround).
+                del_i = [];
+                exp_map = obj.getExpandedMap();
+                for i=1:length(temp_p)
+                    cur_p = temp_p(i, :);
+                    if exp_map(cur_p(1), cur_p(2))
+                        del_i = [del_i, i];
+                    end
+                end
+                temp_p(del_i, :) = [];
+                % TODO: have NOT handle the situation when a certain
+                % row/col is all occupied by obstacles.
                 if ~isempty(temp_p)
                     p = [p; temp_p; temp_p(end, :)+sd];
                 else
@@ -123,18 +159,31 @@ classdef AssembleGroup < handle
             % Step 1: update map to see if float module has been found
             [~, m_loc] = obj.GlobalMap.getMap(loc, "search");
             if ~isempty(m_loc)
-                robdir = [1, 0];
+                [mn, ~] = size(m_loc);
+                robgoals = zeros(1, 3);
+                cnt = 1;
+                for i=1:mn
+                    temp = obj.getAttachDirs(m_loc(i, 1:2), m_loc(i,3));
+                    [temp_n, ~] = size(temp);
+                    for j=1:temp_n
+%                         robgoals((i-1)*temp_n+j, 1:3) = ...
+%                             [m_loc(i, 1:2)+temp(j, :), 0];
+                    robgoals(cnt, 1:3) = ...
+                            [m_loc(i, 1:2)+temp(j, :), 0];
+                    cnt = cnt + 1;
+                    end
+%                     robgoals = [robgoals; temp];
+                end
                 % Set goal according to the attach dir and module location
-                obj.LeadRobot.Goal = [m_loc(1, 1:2)+robdir, 0];
-                obj.attachdir = robdir;
+                obj.LeadRobot.Goal = robgoals;
                 % Set the ignore pos
                 obj.LeadRobot.setIgnorePos(m_loc(1, 1:2));
             else
                 obj.LeadRobot.setIgnorePos([]);
                 % Step 2: set searching goal
                 c_idx = obj.search_var(1);
-                if all(obj.LeadRobot.Location(1:2) ==...
-                        obj.LeadRobot.Goal(1:2)) || ~c_idx ||...
+                if ~c_idx || all(obj.LeadRobot.Location(1:2) ==...
+                        obj.LeadRobot.Goal(1:2)) || ...
                         (obj.search_var(2) > 2 && ...
                         isempty(find(obj.search_var(3:4)==c_idx, 1)))
                     [n, ~] = size(obj.searchPath);
@@ -144,8 +193,8 @@ classdef AssembleGroup < handle
                         obj.search_var(1) = 1;
                     end
                     obj.search_var(2) = 0;
-                    obj.LeadRobot.Goal(1:2) = obj.searchPath(...
-                        obj.search_var(1), :);
+                    obj.LeadRobot.Goal = [obj.searchPath(...
+                        obj.search_var(1), :), 0];
                 end
             end
             % Step 3: move the robot and check goal
@@ -153,8 +202,17 @@ classdef AssembleGroup < handle
             if obj.LeadRobot.pauseCmd
                 obj.search_var(2) = obj.search_var(2) + 1;
             end
-            if (~is_arrive) && all(obj.LeadRobot.Location == obj.LeadRobot.Goal)
-                is_arrive = true;
+            [goal_n, ~] = size(obj.LeadRobot.Goal);
+            e = 10e-3;
+            if ~is_arrive
+                for i=1:goal_n
+                    if norm(obj.LeadRobot.Location(1:2) - ...
+                            obj.LeadRobot.Goal(i, 1:2)) < e
+                        is_arrive = true;
+                        obj.LeadRobot.Goal = obj.LeadRobot.Goal(i,:);
+                        break
+                    end
+                end
             end
             if is_arrive && (~isempty(m_loc))
                 id_m = m_loc(1, 3);
@@ -162,78 +220,28 @@ classdef AssembleGroup < handle
             end
         end
         
-%         function id_m = search(obj)
-%             id_m = [];
-%             loc = obj.LeadRobot.Location;
-%             % Step 1: update map to see if float module has been found
-%             [~, m_loc] = obj.GlobalMap.getMap(loc, "search");
-%             if ~isempty(m_loc)
-%                 % TODO
-%                 % From id find possible attach dir
-% %                 if m_loc(1, 3) == 1 || m_loc(1, 3) == 3
-% %                     robdir = [0, -1];
-% %                 elseif m_loc(1, 3) == 2
-% %                     robdir = [-1, 0];
-% %                 else
-% %                     robdir = [1, 0];
-% %                 end
-%                 robdir = [1, 0];
-%                 % Set goal according to the attach dir and module location
-%                 obj.LeadRobot.Goal = [m_loc(1, 1:2)+robdir, 0];
-%                 obj.attachdir = robdir;
-%                 % Set the ignore pos
-%                 obj.LeadRobot.setIgnorePos(m_loc(1, 1:2));
-%             else
-%                 obj.LeadRobot.setIgnorePos([]);
-%                 % Step 2: set searching goal
-%                 if obj.d_search(3) == 2 && obj.d_search(2) == 1
-%                     d_max = obj.GlobalMap.mapSize(2);
-%                     if loc(2) < d_max
-%                         obj.LeadRobot.Goal(1:2) = [loc(1), d_max];
-%                     else
-%                         obj.d_search(2:3) = [-1, 1];
-%                     end
-%                 end
-%                 if obj.d_search(3) == 2 && obj.d_search(2) == -1
-%                     if loc(2) > 1
-%                         obj.LeadRobot.Goal(1:2) = [loc(1), 1];
-%                     else
-%                         obj.d_search(2:3) = [1, 1];
-%                     end
-%                 end
-%                 if obj.d_search(3) == 1 && obj.d_search(1) == 1
-%                     d_max = obj.GlobalMap.mapSize(1);
-%                     if loc(1) < d_max
-%                         obj.LeadRobot.Goal(1:2) = ...
-%                             [loc(1)+obj.d_search(1), loc(2)];
-%                     else
-%                         obj.d_search(1) = -1;
-%                     end
-%                 end
-%                 if obj.d_search(3) == 1 && obj.d_search(1) == -1
-%                     if loc(1) > 1
-%                         obj.LeadRobot.Goal(1:2) = ...
-%                             [loc(1)+obj.d_search(1), loc(2)];
-%                     else
-%                         obj.d_search(1) = 1;
-%                         obj.LeadRobot.Goal(1:2) = ...
-%                             [loc(1)+obj.d_search(1), loc(2)];
-%                     end
-%                 end
-%             end
-%             % Step 3: move the robot and check goal
-%             is_arrive = obj.move();
-%             if (~is_arrive) && all(obj.LeadRobot.Location == obj.LeadRobot.Goal)
-%                 is_arrive = true;
-%             end
-%             if is_arrive && (~isempty(m_loc))
-%                 id_m = m_loc(1, 3);
-%                 return
-%             end
-%             if is_arrive && obj.d_search(3) == 1
-%                 obj.d_search(3) = 2;
-%             end
-%         end
+        function dirs = getAttachDirs(obj, m_loc, m_id)
+            tar_loc = obj.ext.getLocations(m_id, obj.cl);
+            [~, tar_attach_loc] = obj.ext.getSilibing(m_id, obj.cl);
+            dirs = [0, 1; 0, -1; 1, 0; -1, 0];
+            tar_dir = tar_attach_loc - tar_loc;
+            if tar_dir(2) > 0
+                dirs(1, :) = [];
+            elseif tar_dir(2) < 0
+                dirs(2, :) = [];
+            elseif tar_dir(1) > 0
+                dirs(3, :) = [];
+            elseif tar_dir(1) < 0
+                dirs(4, :) = [];
+            end
+            del_i = [];
+            for i=1:3
+                if ~obj.isLocInMap(m_loc+dirs(i, :))
+                    del_i = [del_i, i];
+                end
+            end
+            dirs(del_i, :) = [];
+        end
         
         function is_arrive = move(obj)
             obj.updateMap("del");
@@ -282,6 +290,7 @@ classdef AssembleGroup < handle
                             loc(2)+dirs(i,2));
                     if m_id
                         obj.attachModuleID = [obj.attachModuleID, m_id];
+                        obj.attachdir = [obj.attachdir; -dirs(i, :)];
                     end
                 end
             elseif options == "del"

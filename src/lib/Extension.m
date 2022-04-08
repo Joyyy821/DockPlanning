@@ -169,7 +169,8 @@ classdef Extension < handle
         
         function showExtension(obj, display, pause_t)
             if nargin == 1
-                display = display2D([15, 15], "FinalTarget", obj.finTar);
+                mapsize = obj.GlobalMap.mapSize;
+                display = display2D(mapsize, "FinalTarget", obj.finTar);
                 pause_t = 0;
             elseif nargin == 2
                 pause_t = 0;
@@ -207,7 +208,7 @@ classdef Extension < handle
         end
         
         function example(obj)
-            addpath('display');
+%             addpath('display');
             % Example of the target expansion procedure
             % Initialization of a square of targets
             % Rect

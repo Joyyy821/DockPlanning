@@ -512,9 +512,11 @@ classdef GUI2D_exported < matlab.apps.AppBase
 %             imagesc(app.UIAxesLegend, app.Robot_fig, "XData", [0.5, 2.5], "YData", [19.5, 17.5]);
 %             app.UIAxesLegend.YDir = "normal";
             % Show text
-            legend_text = ["Robot", "Object", "Robot/Object final target", ...
-                "Robot/Object current target",  "(before assignment)", ...
-                "Robot/Object current target", "(after assignment)", "Path"];
+%             legend_text = ["Robot", "Object", "Robot/Object final target", ...
+%                 "Robot/Object current target",  "(before assignment)", ...
+%                 "Robot/Object current target", "(after assignment)", "Path"];
+            legend_text = ["Robot", "Object", "Final target", ...
+                "Current target", "Obstacle", "Path"];
             l = length(legend_text);
             for i = 1:l
                 text(app.UIAxesLegend, 3.5, 20.5-2*i, legend_text(i), ...
@@ -539,8 +541,8 @@ classdef GUI2D_exported < matlab.apps.AppBase
 %                 "FaceColor",app.Color_list(2), "Position", [1, 16, 1, 1]);
             
             % Final target
-            app.drawItem(app.UIAxesLegend, "Robot_final_target", [0.5, 14]);
-            app.drawItem(app.UIAxesLegend, "Object_final_target", [2, 14]);
+%             app.drawItem(app.UIAxesLegend, "Robot_final_target", [0.5, 14]);
+            app.drawItem(app.UIAxesLegend, "Object_final_target", [1, 14]);
 %             rectangle(app.UIAxesLegend, "FaceColor", "none", "EdgeColor", app.Color_list(1), ...
 %                 "Position", [0.5, 14, 1, 1], "LineWidth", 1);
 %             rectangle(app.UIAxesLegend, "FaceColor", "none", "EdgeColor", app.Color_list(2), ...
@@ -555,18 +557,23 @@ classdef GUI2D_exported < matlab.apps.AppBase
 %                     [14, 15, 15, 14], 30, app.Color_list(i), "-", 4, 1);
 %             end
 
-            app.drawItem(app.UIAxesLegend, "Robot_target", [0.5, 11]);
-            app.drawItem(app.UIAxesLegend, "Object_target", [2, 11]);
+%             app.drawItem(app.UIAxesLegend, "Robot_target", [0.5, 11]);
+            app.drawItem(app.UIAxesLegend, "Object_target", [1, 12]);
             
             % Current target after assignment
-            for i = 0:1
-               rectangle(app.UIAxesLegend,"FaceColor", app.Color_list(i+1), ...
-                   "EdgeColor",app.Color_list(i+1),"Curvature",1,...
-                   "Position",[0.5+1.5*i, 7, 1, 1]);
-            end
+%             for i = 0:1
+%                rectangle(app.UIAxesLegend,"FaceColor", app.Color_list(i+1), ...
+%                    "EdgeColor",app.Color_list(i+1),"Curvature",1,...
+%                    "Position",[0.5+1.5*i, 7, 1, 1]);
+%             end
+            
+            % Obstacle
+            app.drawItem(app.UIAxesLegend, "Obstacle", [1, 10]);
+            
             
             % Path
-            line(app.UIAxesLegend, [0.5, 3], [4.5, 4.5], "LineWidth", 1, "Color", app.Color_list(4));
+%             line(app.UIAxesLegend, [0.5, 3], [4.5, 4.5], "LineWidth", 1, "Color", app.Color_list(4));
+            line(app.UIAxesLegend, [0.5, 3], [8.5, 8.5], "LineWidth", 1, "Color", app.Color_list(4));
 
             % coordinate system
             axis(app.UIAxesLegend, [0, 20, 0, 20]);
@@ -879,13 +886,18 @@ classdef GUI2D_exported < matlab.apps.AppBase
         function PathSwitchValueChanged(app, event)
             value = app.PathSwitch.Value;
             if value == "On"
-                % path(s) set to visible
-%                 set(app.GridSwitch, 'BackgroundColor', 'g');
+                % path(s) set to visible pathHandler
+                for i=1:app.Num_robot
+                    set(app.Robot(i).pathHandler, 'visible', 'on');
+                end
                 disp("Path on");
                 
             else
                 % value == "Off", path(s) set to invisible
-                
+                for i=1:app.Num_robot
+                    set(app.Robot(i).pathHandler, 'visible', 'off');
+                end
+                disp("Path off");
             end
         end
 
@@ -914,6 +926,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
         function AdjustthemovingvelocityoftheitemsSliderValueChanging(app, event)
             changingValue = event.Value;
             app.V_move = int32(changingValue * 10);
+            disp("changing value: "+string(app.V_move));
         end
 
         % Value changed function: assigntargetSwitch
@@ -1165,13 +1178,14 @@ classdef GUI2D_exported < matlab.apps.AppBase
             app.AdjustthemovingvelocityoftheitemsSlider.Limits = [1 10];
             app.AdjustthemovingvelocityoftheitemsSlider.MajorTicks = [1 2 3 4 5 6 7 8 9 10];
             app.AdjustthemovingvelocityoftheitemsSlider.ValueChangingFcn = createCallbackFcn(app, @AdjustthemovingvelocityoftheitemsSliderValueChanging, true);
+            app.AdjustthemovingvelocityoftheitemsSlider.BusyAction = 'cancel';
             app.AdjustthemovingvelocityoftheitemsSlider.Position = [126 87 256 3];
             app.AdjustthemovingvelocityoftheitemsSlider.Value = 1;
 
             % Create assigntargetSwitchLabel
             app.assigntargetSwitchLabel = uilabel(app.RightPanel);
             app.assigntargetSwitchLabel.HorizontalAlignment = 'center';
-            app.assigntargetSwitchLabel.Position = [613.5 266 74 22];
+            app.assigntargetSwitchLabel.Position = [614 266 74 22];
             app.assigntargetSwitchLabel.Text = 'assign target';
 
             % Create assigntargetSwitch

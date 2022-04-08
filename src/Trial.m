@@ -11,7 +11,7 @@ classdef Trial < handle
         floatGp            moduleGroup
         mods               module      % Only save the floating modules
         obstacles          obstacle
-        display            display2D
+        display         %   display2D
         % Flags
         fetch_arrive       logical
         target_arrive      logical
@@ -21,18 +21,29 @@ classdef Trial < handle
         N_rob              int32
         N_mod              int32
         rob_dirs           int32
+        % Setting params
+        enable3D           logical   % true if 3D construction is required.
         % TODO: 不应该存robdir 应该在extension
         % class导入之后就把哪个编号的模块可以对接哪些面告诉所有机器人group
         ci
     end
     
     methods
-        function obj = Trial()
+        function obj = Trial(dim)
             %TRIAL 构造此类的实例
             %   此处显示详细说明
+            if nargin == 0
+                dim = 2;
+            end
+            if dim == 2
+                obj.enable3D = false;
+            elseif dim == 3
+                obj.enable3D = true;
+            else
+                error("Wrong input of dimension for a trial object.");
+            end
             addpath('lib');
             addpath('lib/display'); addpath('lib/alg');
-            
         end
         
         function execute(obj)
@@ -106,15 +117,16 @@ classdef Trial < handle
                 rob = robot(i, [locs(i, :), 0], obj.gmap);
                 obj.robotGp(i) = AssembleGroup(i, rob, obj.gmap);
                 if ~isempty(obj.ext)
-                    cl = length(obj.ext.GroupLayers);
-                    obj.robotGp(i).cl = cl;
+%                     cl = length(obj.ext.GroupLayers);
+%                     obj.robotGp(i).cl = cl;
+                    obj.robotGp(i).ext = obj.ext;
                 end
                 obj.robotGp(i).initSearch();
             end
-            obj.fetch_arrive = false(l);
-            obj.target_arrive = false(l);
-            obj.structure_arrive = false(l);
-            obj.finish = false(l);
+            obj.fetch_arrive = false(1, l);
+            obj.target_arrive = false(1, l);
+            obj.structure_arrive = false(1, l);
+            obj.finish = false(1, l);
             obj.rob_dirs = zeros(l, 2);
             obj.N_rob = l;
         end
@@ -183,14 +195,22 @@ classdef Trial < handle
         
         function setDisplay(obj)
             % Display
-            robs = obj.getRobots();
-            obj.display = display2D(obj.gmap.mapSize, ...
-                                    "FinalTarget", obj.tars, ...
-                                    "Robot", robs, ...
-                                    "Module", obj.mods, ...
-                                    "Obstacle", obj.obstacles.Locations);
+%             robs = obj.getRobots();
+            if ~obj.enable3D
+                obj.display = display2D(obj.gmap.mapSize, ...
+                                        "FinalTarget", obj.tars, ...
+                                        "Robot", obj.getRobots(), ...
+                                        "Module", obj.mods, ...
+                                        "Obstacle", obj.obstacles.Locations);
+            else
+                % TODO: 3D display
+            end
             % Extension
             obj.ext.showExtension(obj.display);
+            cl = length(obj.ext.GroupLayers);
+            for i=1:obj.N_rob
+                obj.robotGp(i).cl = cl;
+            end
         end
     end
 end

@@ -7,9 +7,13 @@ a = 2; b = 2;
 %% Initialization
 % Notice: must initialize targets first before initialize robot group,
 % otherwise the robot group cannot be located on the extension tree.
-trial = Trial();
+trial = Trial(2);
 % Map
 trial.gmap = map(Map_Size);
+% Obstacle
+obstacle_locs = 10*ones(7, 2);
+obstacle_locs(1:end, 1) = 4:10;
+trial.obstacles = obstacle(obstacle_locs, trial.gmap);
 % Targets
 trial.setTargets(a, b, [5, 5], [5, 6], 3);
 % Robots
@@ -18,12 +22,9 @@ trial.setRobotGp(robot_locs);
 % Modules
 module_locs = [2, 14; 5, 14; 8, 14; 11, 14];
 trial.setModules(module_locs);
-% Obstacle
-obstacle_locs = 10*ones(7, 2);
-obstacle_locs(1:end, 1) = 4:10;
-trial.obstacles = obstacle(obstacle_locs, trial.gmap);
+
 trial.setDisplay();
-pause(2);
+% pause(30);
 
 %% Main loop
 while ~all(trial.target_arrive)
