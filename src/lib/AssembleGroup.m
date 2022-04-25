@@ -7,14 +7,24 @@ classdef AssembleGroup < handle
         LeadRobot          robot
         modules            moduleGroup
         attachModuleID     int32
-        attachdir          int32
+        attachdir          int32     % robot location - attached module location
         GlobalMap          map       % "pointer" to a global map object
+        status             logical   % 0 = fetch; 1 = construct.
+        meetingList        int32     % record all the robots that have met
+        % dock
         dockFlag           logical
         dockGpID           int32
+        changingSite       logical
+        % extension
         cl                 int32     % current layer in the extension tree
+        ext                Extension
+        c_tar_i            int32
+        c_tar_idx          int32
+        c_tar_root         int32   % current root of the subtree
+        % search
         searchPath         int32
         search_var         int32  % [cur search idx, pause counts, start place idxs]
-        ext                Extension
+        
     end
     
     methods
@@ -32,6 +42,8 @@ classdef AssembleGroup < handle
                 loc = obj.LeadRobot.Location;
                 obj.GlobalMap.groupMap(loc(1), loc(2)) = obj.groupID;
             end
+            obj.status = false;
+            obj.changingSite = false;
         end
         
         function initSearch(obj)
@@ -163,7 +175,9 @@ classdef AssembleGroup < handle
                 robgoals = zeros(1, 3);
                 cnt = 1;
                 for i=1:mn
-                    temp = obj.getAttachDirs(m_loc(i, 1:2), m_loc(i,3));
+%                     temp = obj.getAttachDirs(m_loc(i, 1:2), m_loc(i,3));
+% TODO: m_loc目前只支持单个浮动模块抓取，改成兼容抓取group
+                    temp = obj.getAttachDirs(m_loc(i, 1:2));
                     [temp_n, ~] = size(temp);
                     for j=1:temp_n
 %                         robgoals((i-1)*temp_n+j, 1:3) = ...
@@ -220,18 +234,79 @@ classdef AssembleGroup < handle
             end
         end
         
-        function dirs = getAttachDirs(obj, m_loc, m_id)
-            tar_loc = obj.ext.getLocations(m_id, obj.cl);
-            [~, tar_attach_loc] = obj.ext.getSilibing(m_id, obj.cl);
-            dirs = [0, 1; 0, -1; 1, 0; -1, 0];
-            tar_dir = tar_attach_loc - tar_loc;
-            if tar_dir(2) > 0
+        function locs = getDockSites(obj)
+            % find avaliable dock sites from current target and module
+            % locations.
+            tar = obj.ext.getTargetByIdx(obj.c_tar_i);
+            locs = obj.getAllSites();
+            [n, ~] = size(locs);
+            del_i = [];
+            for i = 1:n
+                if tar.isLocInTar(locs(i,:))
+                    del_i = [del_i, i];
+                end
+            end
+            locs(del_i, :) = [];
+%             tar_ch = obj.ext.tarTree.getchildren(obj.c_tar_i);
+%             if length(tar_ch) == 1
+%                 locs = obj.getAllSites();
+%             else
+%                 for i=1:2
+%                     t = tar_ch(i);
+%                     for j = 1:t.Size
+%                         id = t.TargetList(j).displayID;
+%                         if id
+%                             m_id = obj.modules.getIDs();
+%                             if ~isempty(find(m_id==id, 1))
+%                                 break
+%                             end
+%                         else
+%                             break
+%                         end
+%                     end
+%                 end
+%                 
+%             end
+        end
+        
+        function locs = getAllSites(obj)
+            mod_bound = obj.modules.Boundary;
+            [locs, ~] = obj.ext.nearLocs(mod_bound);
+        end
+        
+%         function dirs = getAttachDirs(obj, m_loc, m_id)
+        function dirs = getAttachDirs(obj, m_loc)
+            % TODO: m_loc -> m_bound
+%             tar_ch = obj.ext.tarTree.getchildren(obj.c_tar_i);
+            targp = obj.ext.tarTree.get(obj.c_tar_i);
+            tar_bound = targp.Boundary;
+            dock_idx = obj.ext.tarTree.getsiblings(obj.c_tar_i);
+            while true
+                if dock_idx(1) == obj.c_tar_i && length(dock_idx) == 2
+                    dock_idx = dock_idx(2);
+                    break;
+                elseif length(dock_idx) == 1
+                    % TODO: if reach the root?
+                    p = obj.ext.tarTree.getparent(dock_idx);
+                    dock_idx = obj.ext.tarTree.getsiblings(p);
+                end
+            end
+            targp_dock = obj.ext.tarTree.get(dock_idx);
+            tar_dock_bound = targp_dock.Boundary;
+            
+%             tar_loc = obj.ext.getLocations(m_id, obj.cl);
+%             [~, tar_attach_loc] = obj.ext.getSilibing(m_id, obj.cl);
+            dirs = [1, 0; -1, 0; 0, 1; 0, -1];
+%             tar_dir = tar_attach_loc - tar_loc;
+            % [delta_xmin, delta_ymin; delta_xmax, delta_ymax];
+            tar_dir = tar_dock_bound - tar_bound;
+            if all(tar_dir(1, :) > 0)
                 dirs(1, :) = [];
-            elseif tar_dir(2) < 0
+            elseif all(tar_dir(1, :) < 0)
                 dirs(2, :) = [];
-            elseif tar_dir(1) > 0
+            elseif all(tar_dir(2, :) > 0)
                 dirs(3, :) = [];
-            elseif tar_dir(1) < 0
+            elseif all(tar_dir(2, :) < 0)
                 dirs(4, :) = [];
             end
             del_i = [];
@@ -256,11 +331,18 @@ classdef AssembleGroup < handle
                 val = 0;
             end
             rob_loc = obj.LeadRobot.Location;
+            if obj.status
+                obj.GlobalMap.workerRobotMap(rob_loc(1), rob_loc(2)) = val;
+            end
             obj.GlobalMap.groupMap(rob_loc(1), rob_loc(2)) = val;
             if obj.LeadRobot.isCarrying
                 for i=1:obj.modules.Size
                     mod_loc = obj.modules.ModuleList(i).Location;
                     obj.GlobalMap.groupMap(mod_loc(1), mod_loc(2)) = val;
+                    if obj.status
+                        obj.GlobalMap.workerRobotMap(mod_loc(1), ...
+                            mod_loc(2)) = val;
+                    end
                 end
             end
         end
@@ -278,21 +360,7 @@ classdef AssembleGroup < handle
                     obj.LeadRobot.fetchModule(m);
                 end
                 val = obj.groupID;
-                % find attach pos
-                loc = obj.LeadRobot.Location;
-                dirs = [1, 0; -1, 0; 0, 1; 0, -1];
-                for i=1:4
-                    m_pos = loc(1:2) + dirs(i, :);
-                    if ~obj.isLocInMap(m_pos)
-                        continue
-                    end
-                    m_id = obj.GlobalMap.moduleMap(loc(1)+dirs(i,1), ...
-                            loc(2)+dirs(i,2));
-                    if m_id
-                        obj.attachModuleID = [obj.attachModuleID, m_id];
-                        obj.attachdir = [obj.attachdir; -dirs(i, :)];
-                    end
-                end
+                
             elseif options == "del"
                 val = 0;
                 obj.attachModuleID = [];
@@ -308,6 +376,28 @@ classdef AssembleGroup < handle
                 obj.LeadRobot.carriedModule = moduleGroup();
             end
             obj.modules = obj.LeadRobot.carriedModule;
+            if options == "add"
+                obj.findAttachment();
+            end
+        end
+        
+        function findAttachment(obj)
+            % find attach pos
+            loc = obj.LeadRobot.Location;
+            dirs = [1, 0; -1, 0; 0, 1; 0, -1];
+            for i=1:4
+                m_pos = loc(1:2) + dirs(i, :);
+                if ~obj.isLocInMap(m_pos)
+                    continue
+                end
+                m_id = obj.GlobalMap.moduleMap(loc(1)+dirs(i,1), ...
+                        loc(2)+dirs(i,2));
+                all_mod_ids = obj.modules.getIDs();
+                if m_id && ~isempty(find(all_mod_ids==m_id, 1))
+                    obj.attachModuleID = [obj.attachModuleID, m_id];
+                    obj.attachdir = [obj.attachdir; -dirs(i, :)];
+                end
+            end
         end
     end
 end

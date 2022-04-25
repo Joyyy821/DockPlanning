@@ -13,9 +13,9 @@ trial.gmap = map(Map_Size);
 % Obstacle
 obstacle_locs = 10*ones(7, 2);
 obstacle_locs(1:end, 1) = 4:10;
-trial.obstacles = obstacle(obstacle_locs, trial.gmap);
+trial.obstacles = obstacle(obstacle_locs, trial.gmap, true);
 % Targets
-trial.setTargets(a, b, [5, 5], [5, 6], 3);
+trial.setTargets(a, b, [5, 8], [5, 9], 4);
 % Robots
 robot_locs = [1, 1; 5, 1; 9, 1; 13, 1];
 trial.setRobotGp(robot_locs);
@@ -27,7 +27,8 @@ trial.setDisplay();
 % pause(30);
 
 %% Main loop
-while ~all(trial.target_arrive)
+max_steps = 1e6;
+while ~all(trial.finish) || trial.step_cnt <= max_steps
     trial.execute();
 end
 

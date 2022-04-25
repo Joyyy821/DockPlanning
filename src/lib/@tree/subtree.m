@@ -51,6 +51,6 @@ function [st, index] = subtree(obj, node, condition)
     % Return the link new node index -> old node index
     index = tree; %iterator;
     index.Parent = newParents;
-    index.Node = num2cell(iterator);
+    index.Node = num2cell(iterator.');
 
 end

@@ -14,6 +14,7 @@ classdef display2D < handle
         Object_Current_Target = []
         Robot_Final_Target = []
         Object_Final_Target = []
+        Target_ID = []
         GUI2D % = GUI2D_exported() % GUI object
     end
     
@@ -32,11 +33,13 @@ classdef display2D < handle
             obj.Map_Size = mapSize;
             if isfield(options, "FinalTarget")
                 loc =  obj.objToLoc(options.FinalTarget);
+                obj.getTargetID(options.FinalTarget);
                 obj.Object_Final_Target = loc;
             end
             if isfield(options, "CurrentTarget")
                 loc =  obj.objToLoc(options.CurrentTarget);
                 obj.Object_Current_Target = loc;
+                obj.getTargetID(options.CurrentTarget);
             end
             if isfield(options, "Robot")
                 loc =  obj.objToLoc(options.Robot);
@@ -79,6 +82,7 @@ classdef display2D < handle
             assignin('base', 'Object_Current_Target', obj.Object_Current_Target);
             assignin('base', 'Robot_Final_Target', obj.Robot_Final_Target);
             assignin('base', 'Object_Final_Target', obj.Object_Final_Target);
+            assignin('base', 'Target_ID', obj.Target_ID);
         end
         
 %         function updateMap(obj, objTar)
@@ -103,6 +107,7 @@ classdef display2D < handle
 %             disp(obj.GUI2D.Num_robot);
             if isfield(options, "CurrentTarget")
                 obj.Object_Current_Target = obj.objToLoc(options.CurrentTarget);
+                obj.getTargetID(options.CurrentTarget);
                 assignin('base', 'Object_Current_Target', obj.Object_Current_Target);
             end
             if isfield(options, "Robot")
@@ -114,6 +119,7 @@ classdef display2D < handle
             if isfield(options, "Module")
                 obj.Object_Current_Position = obj.objToLoc(options.Module);
                 assignin('base', 'Object_Current_Position', obj.Object_Current_Position);
+                assignin('base', 'Target_ID', obj.Target_ID);
             end
             if isfield(options, "PartialTargets")
 %                 idxs = options.PartialTargetIDs;
@@ -130,6 +136,16 @@ classdef display2D < handle
 %                 obj.Obstacle
 %             disp(obj.GUI2D.Num_robot);
             obj.GUI2D.show();
+        end
+        
+        function getTargetID(obj, t)
+            N = t.Size;
+            obj.Target_ID = zeros(1, N);
+            for i=1:N
+                idx = t.TargetList(i).ID;
+                id = t.TargetList(i).displayID;
+                obj.Target_ID(idx) = id;
+            end
         end
         
         function loc = objToLoc(obj, e)

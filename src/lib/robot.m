@@ -10,11 +10,12 @@ classdef robot < handle
     properties (Access = public)
         % Can be directly modified by the user.
         ID                 (1, 1) int32 {mustBeNonnegative} % ID of the robot
-        Status             (1, 1) uint8 % (1) initial; (2) fixed; (3) unfixed; (4) free
+%         Status             (1, 1) uint8 % (1) initial; (2) fixed; (3) unfixed; (4) free
         isCarrying         (1, 1) logical % Carrying (1) / Not carrying (0) module
         carriedModule      moduleGroup    % Module
 %         moduleToFetch      module % TODO: replace this attribute
         ignoredPos         int32
+        isDockerIgnored    logical
         Location           (1, 3) double  % Current robot location [x, y, z]
         CognMap                      % Cognitive map of individual robot
         GlobalMap          map       % "pointer" to a global map object
@@ -46,6 +47,7 @@ classdef robot < handle
             obj.startPlace = initLocation;
             obj.GlobalMap = gmap;
             obj.GlobalMap.robotMap(initLocation(1), initLocation(2)) = id;
+            obj.isDockerIgnored = false;
         end
         
 %         function searchModule(obj)
@@ -370,6 +372,9 @@ classdef robot < handle
             end
             % Assume static objects are known
             localmap = localmap | obj.GlobalMap.obstacleMap;
+            if ~obj.isDockerIgnored
+                localmap = localmap | obj.GlobalMap.dockerMap;
+            end
             % Ignore the carried module group
             if obj.isCarrying
                 N = obj.carriedModule.Size;
@@ -425,6 +430,10 @@ classdef robot < handle
                     end
                     localmap(x, y) = 1;
                 end
+            end
+            
+            if obj.isDockerIgnored
+                localmap = localmap | obj.GlobalMap.dockerMap;
             end
             if nargin == 1
                 obj.CognMap = localmap;

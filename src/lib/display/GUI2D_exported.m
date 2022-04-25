@@ -191,6 +191,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             % current target
             robot_target = evalin('base', 'Robot_Current_Target');
             obj_target = evalin('base', 'Object_Current_Target');
+            target_id = evalin('base', 'Target_ID');
             %%% TODO: ÿÿÿÿÿÿcurrent target ÿÿ %%%
             
             for i = 1:length(robot_target)
@@ -201,6 +202,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             for i = 1:length(obj_target)
                 app.Object_targets(i).position = obj_target(i, :);
                 app.Object_targets(i).nextPos = app.Object_targets(i).position;
+                app.Object_targets(i).assignedLabel = target_id(i);
             end
             if isempty(robot_target)
 %                 for i = 1:app.Num_robot_target
@@ -251,6 +253,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             Robot_target_next = evalin('base', 'Robot_Current_Target');
             Obj_pos_next = evalin('base', 'Object_Current_Position');
             Obj_target_next = evalin('base', 'Object_Current_Target');
+            target_id_next = evalin('base', 'Target_ID');
             
             for i = 1:app.Num_robot
                 app.Robot(i).nextPos = Robot_pos_next(i, :);
@@ -267,6 +270,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             if ~isempty(Obj_target_next)
                 for i=1:app.Num_obj_target
                     app.Object_targets(i).nextPos = Obj_target_next(i, :);
+                    app.Object_targets(i).assignedLabel = target_id_next(i);
                     app.CTarget_created = true;
 %                     if isempty(app.Object_targets(i).position)
 %                         app.Object_targets(i).position = app.Obj_final_target(i, :);
@@ -458,7 +462,12 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 % move object target
                 for i=1:app.Num_obj_target
                     if app.CTarget_created
-                        set(app.Object_targets(i).handlers, 'visible', 'on');
+                        set(app.Object_targets(i).handlers(1), 'visible', 'on');
+                        id = app.Object_targets(i).assignedLabel;
+                        if id ~= 0
+                            set(app.Object_targets(i).handlers(2), 'string', int2str(id));
+                            set(app.Object_targets(i).handlers(2), 'visible', 'on');
+                        end
                         if ~isempty([app.Object_targets(i).nextPos])
 %                             if ~(norm(app.Object_targets(i).position - app.Object_targets(i).nextPos) < accuracy)
 %                                 isMoveFinished = false;
@@ -516,7 +525,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
 %                 "Robot/Object current target",  "(before assignment)", ...
 %                 "Robot/Object current target", "(after assignment)", "Path"];
             legend_text = ["Robot", "Object", "Final target", ...
-                "Current target", "Obstacle", "Path"];
+                "Current target", "Obstacle/Docker", "Path"];
             l = length(legend_text);
             for i = 1:l
                 text(app.UIAxesLegend, 3.5, 20.5-2*i, legend_text(i), ...
@@ -668,7 +677,9 @@ classdef GUI2D_exported < matlab.apps.AppBase
                     item_h.FaceColor = app.Color_list(6);
                     % Display target ID
                     delta_pos_text = [0.5 0.5];
-                    
+                    if nargin == 5
+                        id = app.Object_targets(id).assignedLabel;
+                    end
                 case "Robot_final_target"
                     item_h = rectangle(axis, "FaceColor", "none", ...
                         "EdgeColor", app.Color_list(1), ...
@@ -714,6 +725,9 @@ classdef GUI2D_exported < matlab.apps.AppBase
                     "HorizontalAlignment","center", ...
                     "Color", text_c);
                 h = [item_h, text_h];
+                if id == 0
+                    set(text_h, 'Visible', 'off'); % 
+                end
             elseif nargin == 4 || type == "Path"
                 h = item_h;
             else

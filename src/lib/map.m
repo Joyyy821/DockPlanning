@@ -4,7 +4,8 @@ classdef map < handle
     
     properties
         mapSize        (1, 2) int32    % Map Size: (x, y)
-        obstacleMap           int32    % Obstacle map (1 means occupied)
+        obstacleMap           logical  % Obstacle map (1 means occupied)
+        dockerMap             logical  % Docker map
         robotMap              int32    % Robot map
         workerRobotMap        int32    % Robot which current status is working
         moduleMap             int32    % Module map
@@ -30,6 +31,7 @@ classdef map < handle
             end
             obj.mapSize = [Nx, Ny];
             obj.obstacleMap = zeros(Nx, Ny);
+            obj.dockerMap = zeros(Nx, Ny);
             obj.robotMap = zeros(Nx, Ny);
             obj.workerRobotMap = zeros(Nx, Ny);
             obj.moduleMap = zeros(Nx, Ny);
@@ -101,11 +103,12 @@ classdef map < handle
 %             disp("d: "+string(d));
 %             disp("u: "+string(u));
             mo = obj.obstacleMap(d:u, l:r);        % map obstacle (local)
+            md = obj.dockerMap(d:u, l:r);          % map docker
             mr = obj.robotMap(d:u, l:r);           % map robot
             mw = obj.workerRobotMap(d:u, l:r);     % map worker
             mg = obj.groupMap(d:u, l:r);           % map group
             mm = obj.moduleMap(d:u, l:r);          % map module
-            ml = mo | mr | mm;                     % combined local map (to a logical map)
+            ml = mo | mr | mm | md;                % combined local map (to a logical map)
             % Combine local map with cognition circle
             cl = 1; cr = 2*dist+1; cu = 2*dist+1; cd = 1;
             if r-l == 2*dist && u-d == 2*dist

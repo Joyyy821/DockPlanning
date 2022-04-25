@@ -144,7 +144,15 @@ classdef tree
         
         function content = get(obj, ID)
             %% GET  Return the content of the given node ID.
-            content = obj.Node{ID};
+            content = {[]};
+            N = length(ID);
+            if N == 1
+                content = obj.Node{ID};
+                return
+            end
+            for i=1:N
+                content{i} = obj.Node{ID(i)};
+            end
         end
 
         function obj = set(obj, ID, content)

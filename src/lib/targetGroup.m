@@ -4,6 +4,9 @@ classdef targetGroup < matlab.mixin.Copyable
         TargetList  (:, 1)  targetPoint   % An array of target pointers
         Boundary    (2, 2)  double        % Rectangular bound [xmin, ymin; xmax, ymax]
         Size        (1, 1)  int32         % Number of targets
+        % whether module at this target is going to dock to a static 
+        % structure (bank or structure already attach to bank).
+        is2static           logical
     end
     
     methods (Access = public)
@@ -31,6 +34,7 @@ classdef targetGroup < matlab.mixin.Copyable
                 obj.Size = 0;
                 obj.Boundary = [0, 0; 0, 0];
             end
+            obj.is2static = false;
         end
         
         function ids = getIDs(obj)
@@ -40,10 +44,60 @@ classdef targetGroup < matlab.mixin.Copyable
             end
         end
         
+        function display_ids = getDisplayIDs(obj)
+            display_ids = zeros(1, obj.Size);
+            for i=1:obj.Size
+                display_ids(i) = obj.TargetList(i).displayID;
+            end
+        end
+        
         function locs = getLocs(obj)
             locs = zeros(obj.Size, 2);
             for i=1:obj.Size
                 locs(i, :) = obj.TargetList(i).Location;
+            end
+        end
+        
+        function loc = getTarLoc(obj, id, type)
+            % TODO: if id not in the group, return []
+            % otherwise, return the loc of the provided id.
+            if nargin == 2
+                type = "target";
+            end
+            for i=1:obj.Size
+                if type == "target"
+                    if obj.TargetList(i).ID == id
+                        loc = obj.TargetList(i).Location;
+                        break
+                    end
+                elseif type == "display"
+                    if obj.TargetList(i).displayID == id
+                        loc = obj.TargetList(i).Location;
+                        break
+                    end
+                end
+            end
+        end
+        
+        function decision = isLocInTar(obj, loc)
+            % check boundary
+            x = loc(1); y = loc(2);
+            if x >= obj.Boundary(1,1) && x <= obj.Boundary(2,1)
+                if y >= obj.Boundary(1,2) && y <= obj.Boundary(2,2)
+                    decision = true;
+                    return
+                end
+            end
+            decision = false;
+        end
+        
+        function setDisplayID(obj, t_id, m_id)
+            for i=1:obj.Size
+                if obj.TargetList(i).ID == t_id
+                    if ~obj.TargetList(i).displayID
+                        obj.TargetList(i).displayID = m_id;
+                    end
+                end
             end
         end
         
