@@ -59,6 +59,13 @@ classdef map < handle
             
         end
         
+        function setStructureMap(obj, mlocs)
+            [n, ~] = size(mlocs);
+            for i=1:n
+                obj.structureMap(mlocs(i,1), mlocs(i,2)) = 1;
+            end
+        end
+        
         function cir = getCircle(obj, dist)
             % generate cogn area
             N = 2*dist+1;
@@ -163,14 +170,14 @@ classdef map < handle
                 pr = [rr, rc, rv];
                 [~, ~, wks] = find(mw);
                 for i=1:length(wks)
-                    ri = find(rv==wks(i), 1);
+                    ri = find(rv==wks(i));
                     pr(ri, 3) = 0;
                 end
                 
-                if ~isempty(pr)
-                    disp("find groups:");
-                    disp(pr);
-                end
+%                 if ~isempty(pr)
+%                     disp("find groups:");
+%                     disp(pr);
+%                 end
             end
         end
         

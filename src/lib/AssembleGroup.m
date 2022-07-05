@@ -10,6 +10,7 @@ classdef AssembleGroup < handle
         attachdir          int32     % robot location - attached module location
         GlobalMap          map       % "pointer" to a global map object
         status             logical   % 0 = fetch; 1 = construct.
+        waiting            logical
         meetingList        int32     % record all the robots that have met
         % dock
         dockFlag           logical
@@ -43,6 +44,7 @@ classdef AssembleGroup < handle
                 obj.GlobalMap.groupMap(loc(1), loc(2)) = obj.groupID;
             end
             obj.status = false;
+            obj.waiting = false;
             obj.changingSite = false;
         end
         
@@ -102,7 +104,7 @@ classdef AssembleGroup < handle
         
         function expan_map = getExpandedMap(obj)
             % return a map with obstacle expaned.
-            expan_map = obj.GlobalMap.obstacleMap;
+            expan_map = obj.GlobalMap.obstacleMap | obj.GlobalMap.dockerMap;
             [allx, ally] = find(expan_map);
             all_dir = [0 1; 1 0; 0 -1; -1 0; 1 1; 1 -1; -1 1; -1 -1];
             for i=1:length(allx)
@@ -170,11 +172,16 @@ classdef AssembleGroup < handle
             loc = obj.LeadRobot.Location;
             % Step 1: update map to see if float module has been found
             [~, m_loc] = obj.GlobalMap.getMap(loc, "search");
+            del_m = [];
             if ~isempty(m_loc)
                 [mn, ~] = size(m_loc);
                 robgoals = zeros(1, 3);
                 cnt = 1;
                 for i=1:mn
+                    if obj.GlobalMap.structureMap(m_loc(i,1), m_loc(i,2))
+                        del_m = [del_m, i];
+                        continue
+                    end
 %                     temp = obj.getAttachDirs(m_loc(i, 1:2), m_loc(i,3));
 % TODO: m_loc目前只支持单个浮动模块抓取，改成兼容抓取group
                     temp = obj.getAttachDirs(m_loc(i, 1:2));
@@ -189,10 +196,14 @@ classdef AssembleGroup < handle
 %                     robgoals = [robgoals; temp];
                 end
                 % Set goal according to the attach dir and module location
-                obj.LeadRobot.Goal = robgoals;
+                if ~isempty(find(robgoals,1))
+                    obj.LeadRobot.Goal = robgoals;
+                end
                 % Set the ignore pos
                 obj.LeadRobot.setIgnorePos(m_loc(1, 1:2));
-            else
+            end
+            m_loc(del_m, :) = [];
+            if isempty(m_loc)
                 obj.LeadRobot.setIgnorePos([]);
                 % Step 2: set searching goal
                 c_idx = obj.search_var(1);
@@ -237,13 +248,42 @@ classdef AssembleGroup < handle
         function locs = getDockSites(obj)
             % find avaliable dock sites from current target and module
             % locations.
+            if obj.groupID == 4
+                dirs = [1, 0];
+                m = obj.modules.getModule(obj.attachModuleID);
+                mloc = m.Location(1:2);
+                locs = mloc+dirs;
+                return
+            elseif obj.groupID == 2
+                dirs = [-1, 0];
+                m = obj.modules.getModule(obj.attachModuleID);
+                mloc = m.Location(1:2);
+                locs = mloc+dirs;
+                return
+            end
             tar = obj.ext.getTargetByIdx(obj.c_tar_i);
             locs = obj.getAllSites();
             [n, ~] = size(locs);
+            pos_shift = obj.LeadRobot.Goal - obj.LeadRobot.Location;
+            pos_shift = pos_shift(1:2);
             del_i = [];
+            om = obj.GlobalMap.groupMap | obj.GlobalMap.structureMap | ...
+                    obj.GlobalMap.dockerMap | obj.GlobalMap.obstacleMap;
+            [r, c] = find(obj.GlobalMap.groupMap==obj.groupID);
+            for i=1:length(r)
+                om(r(i),c(i)) = 0;
+            end
             for i = 1:n
-                if tar.isLocInTar(locs(i,:))
+                if tar.isLocInTar(locs(i,:), pos_shift)
                     del_i = [del_i, i];
+                    continue
+                end
+                loc = locs(i,:)+pos_shift;
+                
+                if om(loc(1), loc(2))
+%                     if any(int32(obj.LeadRobot.Location(1:2)) ~= loc)
+                    del_i = [del_i, i];
+%                     end
                 end
             end
             locs(del_i, :) = [];
@@ -284,7 +324,10 @@ classdef AssembleGroup < handle
             while true
                 if dock_idx(1) == obj.c_tar_i && length(dock_idx) == 2
                     dock_idx = dock_idx(2);
-                    break;
+                    break
+                elseif length(dock_idx) == 2 && dock_idx(2) == obj.c_tar_i
+                    dock_idx = dock_idx(1);
+                    break
                 elseif length(dock_idx) == 1
                     % TODO: if reach the root?
                     p = obj.ext.tarTree.getparent(dock_idx);
@@ -312,6 +355,11 @@ classdef AssembleGroup < handle
             del_i = [];
             for i=1:3
                 if ~obj.isLocInMap(m_loc+dirs(i, :))
+                    del_i = [del_i, i];
+                end
+                att_loc = dirs(i,:)+targp.TargetList(1).Location;
+                omap = obj.GlobalMap.obstacleMap | obj.GlobalMap.dockerMap;
+                if omap(att_loc(1), att_loc(2))
                     del_i = [del_i, i];
                 end
             end
@@ -383,6 +431,8 @@ classdef AssembleGroup < handle
         
         function findAttachment(obj)
             % find attach pos
+            obj.attachdir = [];
+            obj.attachModuleID = [];
             loc = obj.LeadRobot.Location;
             dirs = [1, 0; -1, 0; 0, 1; 0, -1];
             for i=1:4
@@ -396,6 +446,7 @@ classdef AssembleGroup < handle
                 if m_id && ~isempty(find(all_mod_ids==m_id, 1))
                     obj.attachModuleID = [obj.attachModuleID, m_id];
                     obj.attachdir = [obj.attachdir; -dirs(i, :)];
+                    obj.modules.ModuleList(1).PosShift = [obj.attachdir, 0];
                 end
             end
         end

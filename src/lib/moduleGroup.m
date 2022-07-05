@@ -29,6 +29,16 @@ classdef moduleGroup < handle
             end
         end
         
+        function moveModuleGp(obj, robot_loc)
+            mlst = obj.ModuleList;
+            for i=1:obj.Size
+                mlst(i).move(robot_loc);
+            end
+            all_loc = obj.getLocations();
+            obj.Boundary(1, :) = [min(all_loc(:, 1)), min(all_loc(:, 2))];
+            obj.Boundary(2, :) = [max(all_loc(:, 1)), max(all_loc(:, 2))];
+        end
+        
         function bound = getBoundary(obj)
             all_loc = zeros(obj.Size, 2);
             for i=1:obj.Size

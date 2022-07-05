@@ -7,6 +7,7 @@ classdef targetGroup < matlab.mixin.Copyable
         % whether module at this target is going to dock to a static 
         % structure (bank or structure already attach to bank).
         is2static           logical
+        dockerPoints        int32
     end
     
     methods (Access = public)
@@ -79,7 +80,14 @@ classdef targetGroup < matlab.mixin.Copyable
             end
         end
         
-        function decision = isLocInTar(obj, loc)
+        function decision = isLocInTar(obj, loc, pos_shift)
+%             loc = int32(loc);
+            if nargin == 3
+                [n, ~] = size(loc);
+                for i=1:n
+                    loc(i,:) = loc(i,:)+pos_shift;
+                end
+            end
             % check boundary
             x = loc(1); y = loc(2);
             if x >= obj.Boundary(1,1) && x <= obj.Boundary(2,1)
@@ -91,15 +99,28 @@ classdef targetGroup < matlab.mixin.Copyable
             decision = false;
         end
         
-        function setDisplayID(obj, t_id, m_id)
+        function success = setDisplayID(obj, t_id, m_id)
+            success = false;
             for i=1:obj.Size
                 if obj.TargetList(i).ID == t_id
                     if ~obj.TargetList(i).displayID
                         obj.TargetList(i).displayID = m_id;
+                        success = true;
                     end
                 end
             end
         end
+        
+%         function decision = isTarStatic(obj, options)
+%             arguments
+%                 obj              targetGroup
+%                 options.index    int32
+%                 options.location int32
+%             end
+%             if isfield(options, "location")
+%                 
+%             end
+%         end
         
         function AddTarget(obj, target)
             % Add to the target list.

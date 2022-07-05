@@ -13,6 +13,10 @@ classdef obstacle
         function obj = obstacle(locs, gmap, isdocker)
             %OBSTACLE 构造此类的实例
             %   此处显示详细说明
+            if nargin == 0
+                obj.Locations = [];
+                return
+            end
             if nargin == 2
                 isdocker = false;
             end

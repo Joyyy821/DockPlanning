@@ -91,7 +91,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
         Obj_final_target_h = []  % Handler of object final target (2D, w label)
         
         % Representation of items
-        Robot_fig = imread("robot.jpg")
+        Robot_fig = imread("robot.png")
         Color_list = ["r", "#0072BD", "[0.5 0.5 0.5]", "#D95319", 'w', '#4DBEEE'] % Color used for display
         % (1) Robot (2) Object (3) Obstacle (4) Path (5) white (for text)
         % (6) Current target
@@ -192,7 +192,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             robot_target = evalin('base', 'Robot_Current_Target');
             obj_target = evalin('base', 'Object_Current_Target');
             target_id = evalin('base', 'Target_ID');
-            %%% TODO: ÿÿÿÿÿÿcurrent target ÿÿ %%%
+            %%% TODO: ??????current target ?? %%%
             
             for i = 1:length(robot_target)
                 app.Robot_targets(i).position = robot_target(i, :);
@@ -462,12 +462,12 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 % move object target
                 for i=1:app.Num_obj_target
                     if app.CTarget_created
-                        set(app.Object_targets(i).handlers(1), 'visible', 'on');
-                        id = app.Object_targets(i).assignedLabel;
-                        if id ~= 0
-                            set(app.Object_targets(i).handlers(2), 'string', int2str(id));
-                            set(app.Object_targets(i).handlers(2), 'visible', 'on');
-                        end
+                        set(app.Object_targets(i).handlers, 'visible', 'on');
+%                         id = app.Object_targets(i).assignedLabel;
+%                         if id ~= 0
+%                             set(app.Object_targets(i).handlers(2), 'string', int2str(id));
+%                             set(app.Object_targets(i).handlers(2), 'visible', 'on');
+%                         end
                         if ~isempty([app.Object_targets(i).nextPos])
 %                             if ~(norm(app.Object_targets(i).position - app.Object_targets(i).nextPos) < accuracy)
 %                                 isMoveFinished = false;
@@ -503,7 +503,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 
                     %% TODO: Move path(?) %%
                     
-                    
+%                 drawnow;
                 pause(1/app.V_move);
 %                 end
             end
@@ -604,8 +604,8 @@ classdef GUI2D_exported < matlab.apps.AppBase
         end
         
         function h = drawItem(app, axis, type, pos, id)
-            % ÿÿÿÿÿÿÿÿÿÿÿÿaxisÿÿÿÿÿÿÿÿÿÿRobot/Object/Targetÿ
-            % ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿhandler
+            % ????????????axis??????????Robot/Object/Target?
+            % ?????????????????????????handler
             text_c = 'k';
             if axis == app.UIAxes
                 rob_x = app.Robot_size(1);
@@ -623,7 +623,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
 %                             "FaceColor",app.Color_list(1), ...
 %                             "Position",[pos, rob_x, rob_y]);
                     if axis == app.UIAxes                    
-                        d = 0.1;
+                        d = 0;
                     else
                         d = -0.5;
                     end
@@ -632,7 +632,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
                         
                     % Display robot ID
                     delta_pos_text = app.Robot_size / 2;
-                    text_c = 'w';
+                    text_c = '#7E2F8E';
                     
                 case "Object"
                     item_h = rectangle(axis, "EdgeColor","none",...
@@ -677,9 +677,9 @@ classdef GUI2D_exported < matlab.apps.AppBase
                     item_h.FaceColor = app.Color_list(6);
                     % Display target ID
                     delta_pos_text = [0.5 0.5];
-                    if nargin == 5
-                        id = app.Object_targets(id).assignedLabel;
-                    end
+%                     if nargin == 5
+%                         id = app.Object_targets(id).assignedLabel;
+%                     end
                 case "Robot_final_target"
                     item_h = rectangle(axis, "FaceColor", "none", ...
                         "EdgeColor", app.Color_list(1), ...
@@ -723,11 +723,13 @@ classdef GUI2D_exported < matlab.apps.AppBase
             if nargin == 5 && type ~= "Path"
                 text_h = text(axis, pos(1)+delta_pos_text(1), pos(2)+delta_pos_text(2), int2str(id), ...
                     "HorizontalAlignment","center", ...
-                    "Color", text_c);
+                    "Color", text_c, ...
+                    "FontSize", 18, ...
+                    "FontWeight", "bold");
                 h = [item_h, text_h];
-                if id == 0
-                    set(text_h, 'Visible', 'off'); % 
-                end
+%                 if id == 0
+%                     set(text_h, 'Visible', 'off'); % 
+%                 end
             elseif nargin == 4 || type == "Path"
                 h = item_h;
             else
@@ -1152,6 +1154,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             xlabel(app.UIAxes, '')
             ylabel(app.UIAxes, '')
             app.UIAxes.PlotBoxAspectRatio = [1.01748251748252 1 1];
+            app.UIAxes.FontSize = 18;
             app.UIAxes.TickLength = [0 0];
             app.UIAxes.GridColor = [0.902 0.902 0.902];
             app.UIAxes.GridAlpha = 1;

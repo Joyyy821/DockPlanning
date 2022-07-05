@@ -33,7 +33,7 @@ classdef Extension < handle
                 obj.finTar = tars;
                 obj.Size = tars.Size;
                 obj.GlobalMap = gmap;
-                obj.setStructureMap();
+%                 obj.setStructureMap();
             end
             obj.extL = 1;
             
@@ -48,13 +48,40 @@ classdef Extension < handle
             t_id = tar.TargetList(1).ID;
             c_i = idx;
             while true
-                tar.setDisplayID(t_id, id);
+                success = tar.setDisplayID(t_id, id);
+                % set docker point index
+                if success && tar.is2static
+                    loc = tar.getTarLoc(t_id);
+                    if obj.isTarStatic("location", loc)
+                        tar.dockerPoints = [tar.dockerPoints, id];
+                    end
+                end
                 obj.tarTree.set(c_i, tar);
                 if c_i == 1
                     break
                 end
                 c_i = obj.tarTree.getparent(c_i);
                 tar = obj.getTargetByIdx(c_i);
+            end
+        end
+        
+        function decision = isTarStatic(obj, options)
+            arguments
+                obj              Extension
+                options.index    int32
+                options.location int32
+            end
+            decision = false;
+            if isfield(options, "location")
+                loc = options.location;
+                bound = [loc; loc];
+                [locs, n] = obj.nearLocs(bound);
+                for i=1:n
+                    if obj.GlobalMap.dockerMap(locs(i,1), locs(i,2))
+                        decision = true;
+                        break;
+                    end
+                end
             end
         end
         
@@ -66,13 +93,13 @@ classdef Extension < handle
             t = obj.tarTree.get(id);
         end
         
-        function setStructureMap(obj)
-            tlst = obj.finTar.TargetList;
-            for i=1:obj.Size
-                loc = tlst(i).Location;
-                obj.GlobalMap.structureMap(loc(1), loc(2)) = 1;
-            end
-        end
+%         function setStructureMap(obj)
+%             tlst = obj.finTar.TargetList;
+%             for i=1:obj.Size
+%                 loc = tlst(i).Location;
+%                 obj.GlobalMap.structureMap(loc(1), loc(2)) = 1;
+%             end
+%         end
         
         function setTargetMap(obj)
             tlst = obj.GroupLayers(end).TargetList;
@@ -569,14 +596,14 @@ classdef Extension < handle
                 obj.Nnode(c_layer) = i;
                 i = i+1;
                 c_layer = c_layer + 1;
-%                 display.updateMap("CurrentTarget", new_node);
+                display.updateMap("CurrentTarget", new_node);
                 pause(pause_t);
             %     if i >= Size
             %         is_fin = true;
             %     end
             end
             obj.setTargetMap();
-            display.updateMap("CurrentTarget", new_node);
+%             display.updateMap("CurrentTarget", new_node);
         end
         
         function example(obj)

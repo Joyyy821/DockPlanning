@@ -14,7 +14,7 @@ classdef robot < handle
         isCarrying         (1, 1) logical % Carrying (1) / Not carrying (0) module
         carriedModule      moduleGroup    % Module
 %         moduleToFetch      module % TODO: replace this attribute
-        ignoredPos         int32
+        ignoredPos         (:, 2) int32
         isDockerIgnored    logical
         Location           (1, 3) double  % Current robot location [x, y, z]
         CognMap                      % Cognitive map of individual robot
@@ -25,6 +25,7 @@ classdef robot < handle
         Path = [] % Current planned path 
         stepCount = 1                % Number of total steps
         pauseCmd  % Robot will not move if true.
+        stuckSteps    int32
 %         searchDir = [1, 1]
     end
 	
@@ -48,6 +49,7 @@ classdef robot < handle
             obj.GlobalMap = gmap;
             obj.GlobalMap.robotMap(initLocation(1), initLocation(2)) = id;
             obj.isDockerIgnored = false;
+            obj.stuckSteps = 0;
         end
         
 %         function searchModule(obj)
@@ -88,6 +90,10 @@ classdef robot < handle
             obj.ignoredPos = locs;
         end
         
+        function addIgnorePos(obj, locs)
+            obj.ignoredPos = [obj.ignoredPos; locs(:, 1:2)];
+        end
+        
         function success = back2startPlace(obj)
             % Set the goal for robot (but robot will not actually move).
             if obj.isCarrying
@@ -113,7 +119,7 @@ classdef robot < handle
         end
         
         function decision = canMove(obj, move_dir)
-            obj.updateMap();
+            obj.updateMap(false);
             % check robot
             if ~obj.checkNextStep(move_dir)
                 decision = 0;
@@ -127,7 +133,7 @@ classdef robot < handle
 %                     disp("carried module: ");
 %                     disp(m);
                     loc = m.Location(1:2);
-                    cognmap = obj.updateMap(m);
+                    cognmap = obj.updateMap(false, m);
 %                     disp("Module "+string(m.ID)+"'s cognMap:");
 %                     disp(flip(cognmap.'));
                     if ~obj.checkNextStep(move_dir, loc, cognmap)
@@ -216,7 +222,7 @@ classdef robot < handle
             % Combine the cogn map of robot and modules
             mlst = obj.carriedModule.ModuleList;
             for i=1:obj.carriedModule.Size
-                mod_map = obj.updateMap(mlst(i));
+                mod_map = obj.updateMap(true, mlst(i));
                 obj.CognMap = obj.CognMap | mod_map;
             end
             % expand the obstacle accordingly
@@ -242,10 +248,7 @@ classdef robot < handle
         end
         
         function moveModule(obj)
-            mlst = obj.carriedModule.ModuleList;
-            for i=1:obj.carriedModule.Size
-                mlst(i).move(obj.Location);
-            end
+            obj.carriedModule.moveModuleGp(obj.Location);
         end
         
         function isArrive = move(obj)
@@ -272,6 +275,7 @@ classdef robot < handle
             if obj.pauseCmd
                 disp("Robot "+string(obj.ID)+" stuck.");
                 isArrive = false;
+                obj.stuckSteps = obj.stuckSteps + 1;
                 return
             end
             disp("Robot "+string(obj.ID)+" at step No. "...
@@ -289,20 +293,22 @@ classdef robot < handle
             while true
                 % Find a feasible path for the group
                 decision = obj.canMove(move_dir);
-                if decision ~= 1 && cnt < obj.carriedModule.Size
+                if decision ~= 1 && ...
+                        (obj.isCarrying && cnt < obj.carriedModule.Size)
                     % Rotate to the next one
                     obj.priorPlanningID = ...
                         obj.carriedModule.getNextModuleID(obj.priorPlanningID);
-                    disp("Group "+string(obj.ID)+" is block. Replanning path...");
-                    if obj.priorPlanningID == 0 && cnt == 0
+                    disp("Group "+string(obj.ID)+" is blocked. Replanning path...");
+                    if obj.priorPlanningID == 0 % && cnt == 0
                         path = obj.Astar();
                     else
                         cur_m = obj.carriedModule.getModule(obj.priorPlanningID);
                         path = obj.Astar(cur_m);
                     end
                     if obj.pauseCmd
-                        disp("Robot "+string(obj.ID)+" stuck.");
+                        disp("Robot "+string(obj.ID)+" blocked.");
                         isArrive = false;
+                        obj.stuckSteps = obj.stuckSteps + 1;
                         return
                     end
                     % Update the move direction and count
@@ -314,15 +320,16 @@ classdef robot < handle
                         string(obj.priorPlanningID));
 %                     disp(obj.Path);
                     break
-                elseif cnt == obj.carriedModule.Size
+                elseif (obj.isCarrying && cnt == obj.carriedModule.Size)
                     % No path can work, consider obstacle expansion
                     obj.obstacleExpansion();
                     obj.AstarAlg(obj.Location(1:2), obj.Goal(1:2));
                     
                     if obj.pauseCmd == true
-                        disp("Group "+string(obj.ID)+" stuck.");
+                        disp("Group "+string(obj.ID)+" blocked.");
                         obj.Path = [];
                         isArrive = false;
+                        obj.stuckSteps = obj.stuckSteps + 1;
                         return
                     else
                         disp("Replanned path by obstacle expansion.");
@@ -337,6 +344,7 @@ classdef robot < handle
                     disp("Group "+string(obj.ID)+" stuck.");
                     obj.Path = [];
                     isArrive = false;
+                    obj.stuckSteps = obj.stuckSteps + 1;
                     return
                 end
             end
@@ -356,6 +364,7 @@ classdef robot < handle
                 obj.moveModule();
             end
             obj.stepCount = obj.stepCount + 1;
+            obj.stuckSteps = 0;
 %             if obj.Location == obj.Goal
 %                 isArrive = true;
 %             else
@@ -364,16 +373,28 @@ classdef robot < handle
             isArrive = false;
         end
         
-        function localmap = updateMap(obj, m)
-            if nargin == 2
+        function localmap = updateMap(obj, checkRobot, m)
+            if nargin == 3
                 [localmap, ~, pr] = obj.GlobalMap.getMap(m.Location, "m");
             else
                 [localmap, ~, pr] = obj.GlobalMap.getMap(obj.Location, "r");
             end
+            if nargin == 1
+                checkRobot = true;
+            end
+            if obj.stuckSteps > 5
+                checkRobot = false;
+            end
             % Assume static objects are known
-            localmap = localmap | obj.GlobalMap.obstacleMap;
-            if ~obj.isDockerIgnored
-                localmap = localmap | obj.GlobalMap.dockerMap;
+            localmap = localmap | obj.GlobalMap.obstacleMap | ...
+                obj.GlobalMap.dockerMap;
+            if obj.isDockerIgnored
+                ignore_temp = obj.ignoredPos;
+                [r, c] = find(obj.GlobalMap.dockerMap);
+                obj.ignoredPos = [ignore_temp; r, c];
+%                 for i=1:length(r)
+%                     obj.ignoredPos = [obj.ignoredPos; r(i), c(i)];
+%                 end
             end
             % Ignore the carried module group
             if obj.isCarrying
@@ -396,10 +417,12 @@ classdef robot < handle
             localmap(obj.Location(1), obj.Location(2)) = 0;
             
             % Check the robot priority
-            [Nr, ~] = size(pr);
-            for i=1:Nr
-                if pr(i,3) > obj.ID
-                    localmap(pr(i,1), pr(i,2)) = 0;
+            if checkRobot
+                [Nr, ~] = size(pr);
+                for i=1:Nr
+                    if pr(i,3) > obj.ID
+                        localmap(pr(i,1), pr(i,2)) = 0;
+                    end
                 end
             end
             % Obstacle expansion
@@ -410,8 +433,8 @@ classdef robot < handle
                 toignore = false;
                 if ~isempty(obj.ignoredPos)
                     k = find(obj.ignoredPos(:,1)==allx(i));
-                    for pos=k
-                        if obj.ignoredPos(k, 2)==ally(i)
+                    for pos=k.'
+                        if obj.ignoredPos(pos, 2)==ally(i)
                             toignore = true;
                             break
                         end
@@ -432,11 +455,14 @@ classdef robot < handle
                 end
             end
             
-            if obj.isDockerIgnored
-                localmap = localmap | obj.GlobalMap.dockerMap;
-            end
-            if nargin == 1
+%             if obj.isDockerIgnored
+%                 localmap = localmap | obj.GlobalMap.dockerMap;
+%             end
+            if nargin <= 2
                 obj.CognMap = localmap;
+            end
+            if obj.isDockerIgnored
+                obj.ignoredPos = ignore_temp;
             end
         end
         
@@ -446,7 +472,7 @@ classdef robot < handle
                 obj.updateMap();
             else
                 loc = m.Location;
-                obj.CognMap = obj.updateMap(m);
+                obj.CognMap = obj.updateMap(true, m);
             end
             pos_shift = obj.Location - loc;
             start = loc(1:2);

@@ -11,9 +11,9 @@ trial = Trial(2);
 % Map
 trial.gmap = map(Map_Size);
 % Obstacle
-obstacle_locs = 10*ones(7, 2);
-obstacle_locs(1:end, 1) = 4:10;
-trial.obstacles = obstacle(obstacle_locs, trial.gmap, true);
+% obstacle_locs = 10*ones(5, 2);
+% obstacle_locs(1:end, 1) = 4:8;
+% trial.obstacles = obstacle(obstacle_locs, trial.gmap, true);
 % Targets
 trial.setTargets(a, b, [5, 8], [5, 9], 4);
 % Robots
@@ -24,11 +24,11 @@ module_locs = [2, 14; 5, 14; 8, 14; 11, 14];
 trial.setModules(module_locs);
 
 trial.setDisplay();
-% pause(30);
+pause(10);
 
 %% Main loop
 max_steps = 1e6;
-while ~all(trial.finish) || trial.step_cnt <= max_steps
+while ~all(trial.finish) && trial.step_cnt <= max_steps
     trial.execute();
 end
 
