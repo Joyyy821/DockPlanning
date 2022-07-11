@@ -5,6 +5,8 @@ classdef Extension < handle
     properties
         finTar targetGroup   % Object of final targets
         tarTree tree         % Object of extension tree
+        depthTree tree       % 查询节点深度（用于检查一个节点是否在倒数第二层）
+        depth                % tarTree depth
         curTree tree         % target tree modified during construction ordering
         cur_dt  tree         % depth tree
         curBFSit int32
@@ -39,31 +41,7 @@ classdef Extension < handle
             
         end
         
-        function assignID(obj, idx, id)
-            tar = obj.getTargetByIdx(idx);
-            if tar.Size > 1
-                error("Invoke assignID failed because the assigned target"+ ...
-                    " is not located at a leaf node.");
-            end
-            t_id = tar.TargetList(1).ID;
-            c_i = idx;
-            while true
-                success = tar.setDisplayID(t_id, id);
-                % set docker point index
-                if success && tar.is2static
-                    loc = tar.getTarLoc(t_id);
-                    if obj.isTarStatic("location", loc)
-                        tar.dockerPoints = [tar.dockerPoints, id];
-                    end
-                end
-                obj.tarTree.set(c_i, tar);
-                if c_i == 1
-                    break
-                end
-                c_i = obj.tarTree.getparent(c_i);
-                tar = obj.getTargetByIdx(c_i);
-            end
-        end
+        %% Class attributes enquiry
         
         function decision = isTarStatic(obj, options)
             arguments
@@ -85,47 +63,20 @@ classdef Extension < handle
             end
         end
         
-%         function suborder = getSubOrder(obj, l_id)
-%             
-%         end
-        
+        function flag = isTargetPair(obj, ID)
+            % 根据target在assembly tree中的index判断是否为倒数第二层的节点
+            d = obj.depthTree.get(ID);
+            if obj.depth - d == 1
+                flag = true;
+            else
+                flag = false;
+            end
+        end
+
         function t = getTargetByIdx(obj, id)
             t = obj.tarTree.get(id);
         end
-        
-%         function setStructureMap(obj)
-%             tlst = obj.finTar.TargetList;
-%             for i=1:obj.Size
-%                 loc = tlst(i).Location;
-%                 obj.GlobalMap.structureMap(loc(1), loc(2)) = 1;
-%             end
-%         end
-        
-        function setTargetMap(obj)
-            tlst = obj.GroupLayers(end).TargetList;
-            for i=1:obj.Size
-                loc = tlst(i).Location;
-                obj.GlobalMap.targetMap(loc(1), loc(2)) = tlst(i).ID;
-            end
-        end
-        
-        function markBankTargets(obj)
-            % TODO: read the obstacle map and tranverse through the
-            % extension tree, mark all target group that are near the bank.
-            for i=obj.BFSit
-                node = obj.tarTree.get(i);
-                bound = node.Boundary;
-                [locs, n] = obj.nearLocs(bound);
-%                 [n, ~] = size(locs);
-                for j=1:n
-                    if obj.GlobalMap.dockerMap(locs(j,1), locs(j,2))
-                        node.is2static = true;
-                        break;
-                    end
-                end
-            end
-        end
-        
+
         function [locs, n] = nearLocs(obj, bound)
             % Rectangular bound [xmin, ymin; xmax, ymax].
             locs = zeros(1, 2);
@@ -162,6 +113,244 @@ classdef Extension < handle
 %             end
         end
         
+        function locs = getLocations(obj, ids, layer)
+            if isempty(ids)
+                locs = [];
+                return
+            end
+            tree_idx = obj.getTreeIdx(ids, layer);
+            tar = obj.tarTree.get(tree_idx);
+            node_locs = tar.getLocs();
+            node_ids = tar.getIDs();
+            n = 0;
+            locs = zeros(length(ids), 2);
+            for i=1:tar.Size
+                if ~isempty(find(ids==node_ids(i), 1))
+                    n = n + 1;
+                    locs(n, :) = node_locs(i, :);
+                end
+            end
+        end
+        
+        function tree_id = getTreeIdx(obj, ids, layer)
+            if layer == 1
+                % TODO: verify this relation
+                tree_id = 1;
+                return
+            end
+            for i=obj.Nnode(layer-1)+1:obj.Nnode(layer)
+                temp_id = obj.BFSit(i);
+                targets = obj.tarTree.get(temp_id);
+                disp("ids: "); disp(ids);
+                disp("target ids: "); disp(targets.getIDs);
+                if all(ismember(ids, targets.getIDs))
+                    tree_id = temp_id;
+                end
+            end
+        end
+        
+        function [s_ids, s_locs] = getSilibing(obj, ids, layer)
+            s_ids = [];
+            if layer == 1
+                return
+            end
+%             N_before = sum(obj.Nnode(layer-1:1));
+            tree_id = obj.getTreeIdx(ids, layer);
+            siblings = obj.tarTree.getsiblings(tree_id);
+            for s=siblings
+                if s ~= tree_id
+                    s_tar = obj.tarTree.get(s);
+                    s_ids = s_tar.getIDs();
+                    s_locs = s_tar.getLocs();
+                end
+            end
+        end
+        
+        %% Setters
+        
+        function setTargetMap(obj)
+            tlst = obj.GroupLayers(end).TargetList;
+            for i=1:obj.Size
+                loc = tlst(i).Location;
+                obj.GlobalMap.targetMap(loc(1), loc(2)) = tlst(i).ID;
+            end
+        end
+        
+        function markBankTargets(obj)
+            % TODO: read the obstacle map and tranverse through the
+            % extension tree, mark all target group that are near the bank.
+            for i=obj.BFSit
+                node = obj.tarTree.get(i);
+                bound = node.Boundary;
+                [locs, n] = obj.nearLocs(bound);
+%                 [n, ~] = size(locs);
+                for j=1:n
+                    if obj.GlobalMap.dockerMap(locs(j,1), locs(j,2))
+                        node.is2static = true;
+                        break;
+                    end
+                end
+            end
+        end
+        
+        %% Display & Example
+        
+        function showTree(obj, options)
+            % options: target (final extension tree); current (current
+            % extension tree during the construction order generation.
+            if nargin == 1
+                options = "target";
+            end
+            if options == "target"
+                t = obj.tarTree;
+            elseif options == "current"
+                t = obj.curTree;
+            else
+                error("Wrong input of show tree options!");
+            end
+            figure("Name", "Extension Tree"); plot(t);
+            figure("Name", "Index Tree"); 
+            if options == "target"
+                [~, index] = t.subtree(1);
+                plot(index);
+            elseif options == "current"
+                plot(obj.curIdxT);
+            end
+        end
+        
+        function showExtension(obj, display, pause_t)
+            if nargin == 1
+                mapsize = obj.GlobalMap.mapSize;
+                display = display2D(mapsize, "FinalTarget", obj.finTar);
+                pause_t = 0;
+            elseif nargin == 2
+                pause_t = 0;
+            end
+            
+            % is_fin = false;
+            i = 1;
+            c_layer = 1;
+            L = length(obj.BFSit) - obj.finTar.Size;
+            while i < L
+                cur_node = obj.tarTree.get(obj.BFSit(i));
+                new_node = copy(cur_node);
+                while new_node.Size < obj.Size
+                    i = i+1;
+                    cur_node = obj.tarTree.get(obj.BFSit(i));
+                    new_node = new_node.AddTargetGp(cur_node);
+                end
+                obj.GroupLayers = [obj.GroupLayers, new_node];
+%                 if i == 1
+%                     obj.Nnode(c_layer) = i;
+%                 else
+%                     obj.Nnode(c_layer) = i - sum(obj.Nnode(c_layer-1:1));
+%                 end
+                obj.Nnode(c_layer) = i;
+                i = i+1;
+                c_layer = c_layer + 1;
+                display.updateMap("CurrentTarget", new_node);
+                pause(pause_t);
+            %     if i >= Size
+            %         is_fin = true;
+            %     end
+            end
+            obj.setTargetMap();
+%             display.updateMap("CurrentTarget", new_node);
+        end
+        
+        function example(obj)
+%             addpath('display');
+            % Example of the target expansion procedure
+            % Initialization of a square of targets
+            % Rect
+            obj.Size = 9; a = 3; b = 3;  % Num of blocks; width; length;
+
+            Tars = [];
+            for i = 1:obj.Size
+                m = ceil(i/a);
+                n = i - (m-1) * b;
+                Tars = [Tars; targetPoint(i, [m, n])];
+            end
+
+            obj.finTar = targetGroup(Tars);
+            
+            % Fit tree
+            obj.TargetToTree([1, 1]);
+            
+            % plot
+            obj.showTree();
+            obj.showExtension();
+        end
+        
+        %% Construction procedure
+        
+        function assignID(obj, idx, id, tar_opt)
+            tar = obj.getTargetByIdx(idx);
+            if tar.Size > 2
+                error("Invoke assignID failed because the assigned target"+ ...
+                    " is not located at a leaf node.");
+            end
+            childs = obj.tarTree.getchildren(idx);
+            child = childs(tar_opt);
+%             for i=1:tar.Size
+%                 t_id = tar.TargetList(i).ID;
+%                 if all(tar.TargetList(i).Location == loc)
+%                     break
+%                 end
+%             end
+            tar = obj.getTargetByIdx(child);
+            t_id = tar.TargetList(1).ID;
+            
+            c_i = child;
+            while true
+                success = tar.setDisplayID(t_id, id);
+                % set docker point index
+                if success && tar.is2static
+                    loc = tar.getTarLoc(t_id);
+                    if obj.isTarStatic("location", loc)
+                        tar.dockerPoints = [tar.dockerPoints, id];
+                    end
+                end
+                obj.tarTree.set(c_i, tar);
+                if c_i == 1
+                    break
+                end
+                c_i = obj.tarTree.getparent(c_i);
+                tar = obj.getTargetByIdx(c_i);
+            end
+        end
+        
+        function dock_ids = extractOnce(obj, modules, layer, display)
+            % Input: module group object, the group's current layer, the UI
+            % to display
+            % Output: the module ids which the input group will dock with
+            % at the parent tree layer
+            
+            % Step 1: find the parent node and update current target
+            % accordingly
+            N = modules.Size;
+            ids = zeros(1, N);
+            for i=1:N
+                ids(i) = modules.ModuleList(i).ID;
+            end
+            next_targets = obj.GroupLayers(layer-1).TargetList;
+            locs = zeros(obj.Size, 2);
+            for i=1:obj.Size
+                t = next_targets(i);
+                if ~isempty(find(ids==t.ID, 1))
+                    locs(t.ID, :) = t.Location;
+                    % Any problem if there are switching targets?
+                    [row, col] = find(obj.GlobalMap.targetMap==t.ID);
+                    obj.GlobalMap.targetMap(row, col) = 0;
+                    obj.GlobalMap.targetMap(t.Location(1), t.Location(2)) = t.ID;
+                end
+            end
+            display.updateMap("PartialTargets", locs);
+            % Step 2: find the modules to dock with at the next step.
+            [dock_ids, ~] = obj.getSilibing(ids, layer);
+        end
+        
+        %% Construction order
         function [order, sub_root] = genConstructOrder(obj, N_rob)
             % TODO: tranverse the second last layer of the extension tree,
             % determine each subtree size, and update the near-static-
@@ -221,8 +410,8 @@ classdef Extension < handle
         
         function pair_idx = updateCurTree(obj, parents)
             if nargin == 1
-%                 pair_idx = obj.chopLeave();
-                pair_idx = obj.findPTidx();
+                pair_idx = obj.chopLeave();
+%                 pair_idx = obj.findPTidx();
                 return
             end
             % curTree, curIdxT, curBFSit, cur_st
@@ -271,10 +460,10 @@ classdef Extension < handle
             obj.curTree = obj.getBalanceTree(temp);
             obj.curIdxT = obj.getBalanceTree(obj.curIdxT);
 %             obj.showTree("current");
-%             pair_idx = obj.chopLeave();
+            pair_idx = obj.chopLeave();
             obj.cur_dt = obj.curTree.depthtree();
             obj.curBFSit = obj.curTree.breadthfirstiterator(false);
-            pair_idx = obj.findPTidx();
+%             pair_idx = obj.findPTidx();
         end
         
         function [sub_ord, parents] = genOrderOnce(obj, pair_idx, N_rob)
@@ -293,20 +482,20 @@ classdef Extension < handle
                         while len < sub_i - 1
                             [cp, l] = obj.findSubtree(i, sub_i, pair_idx);
                             parents = [parents, cp];
-                            col = 1;
+%                             col = 1;
                             for j=1:l
                                 cpi = pair_idx(i-sub_i+j);
-%                                 tp = obj.curIdxT.get(cpi);
-                                child_idx = obj.curIdxT.getchildren(cpi);
-                                cl = length(child_idx);
-                                if cl == 1
-                                    sub_ord(row, col) = obj.curIdxT.get(child_idx);
-                                elseif cl == 2
-                                    child = cell2mat(obj.curIdxT.get(child_idx));
-                                    sub_ord(row, col:col+1) = child;
-                                end
-                                col = col + cl;
-%                                 sub_ord(row, j) = obj.curIdxT.get(cpi);
+% %                                 tp = obj.curIdxT.get(cpi);
+%                                 child_idx = obj.curIdxT.getchildren(cpi);
+%                                 cl = length(child_idx);
+%                                 if cl == 1
+%                                     sub_ord(row, col) = obj.curIdxT.get(child_idx);
+%                                 elseif cl == 2
+%                                     child = cell2mat(obj.curIdxT.get(child_idx));
+%                                     sub_ord(row, col:col+1) = child;
+%                                 end
+%                                 col = col + cl;
+                                sub_ord(row, j) = obj.curIdxT.get(cpi);
                             end
 %                             sub_ord(row, 1:l) = pair_idx(i-sub_i+1:(i-sub_i+l));
                             len = len + l;
@@ -325,19 +514,20 @@ classdef Extension < handle
 %                     ien = obj.curTree.get(pair_idx(i-1));
                     [cp, len] = obj.findSubtree(i, sub_i, pair_idx);
                     parents = [parents, cp];
-                    col = 1;
+%                     col = 1;
                     for j=1:len
                         cpi = pair_idx(i-sub_i+j);
-%                         tp = obj.curIdxT.get(cpi);
-                        child_idx = obj.curIdxT.getchildren(cpi);
-                        l = length(child_idx);
-                        if l == 1
-                            sub_ord(row, col) = obj.curIdxT.get(child_idx);
-                        elseif l == 2
-                            child = cell2mat(obj.curIdxT.get(child_idx));
-                            sub_ord(row, col:col+1) = child;
-                        end
-                        col = col + l;
+                        sub_ord(row, j) = obj.curIdxT.get(cpi);
+% %                         tp = obj.curIdxT.get(cpi);
+%                         child_idx = obj.curIdxT.getchildren(cpi);
+%                         l = length(child_idx);
+%                         if l == 1
+%                             sub_ord(row, col) = obj.curIdxT.get(child_idx);
+%                         elseif l == 2
+%                             child = cell2mat(obj.curIdxT.get(child_idx));
+%                             sub_ord(row, col:col+1) = child;
+%                         end
+%                         col = col + l;
                     end
 %                     sub_ord(row, 1:len) = pair_idx(i-sub_i+1:(i-sub_i+len));
                     i = i-sub_i+len+1;
@@ -363,7 +553,8 @@ classdef Extension < handle
             cp = p(icp);
             while true
                 [st, st_idx] = obj.curTree.subtree(cp);
-                sl = obj.findPTidx(st);
+%                 sl = obj.findPTidx(st);
+                sl = st.findleaves();
                 sls = st_idx.get(sl(1)); sle = st_idx.get(sl(end));
                 len = length(sl);
                 i_sls = find(pair_idx == sls);
@@ -413,6 +604,8 @@ classdef Extension < handle
             obj.curBFSit = obj.curTree.breadthfirstiterator(false);
         end
         
+        %% Tree generation
+        
         function t = TargetToTree(obj, c, exl)
             %METHOD TargetToTree
             %   Extension procedure
@@ -437,7 +630,8 @@ classdef Extension < handle
             obj.tarTree = t;
             % Extension BFS
             obj.BFSit = obj.tarTree.breadthfirstiterator(false);
-            
+            obj.depthTree = obj.tarTree.depthtree;
+            obj.depth = obj.tarTree.depth;
         end
         
         function t = getBalanceTree(~, prev_t)
@@ -454,181 +648,7 @@ classdef Extension < handle
             end
             t = prev_t;
         end
-        
-%         function dock_ids = getDockPair(obj, level, ids)
-%             all_ctars = obj.GroupLayers(level).TargetList;
-%             
-%         end
-        
-        function dock_ids = extractOnce(obj, modules, layer, display)
-            % Input: module group object, the group's current layer, the UI
-            % to display
-            % Output: the module ids which the input group will dock with
-            % at the parent tree layer
-            
-            % Step 1: find the parent node and update current target
-            % accordingly
-            N = modules.Size;
-            ids = zeros(1, N);
-            for i=1:N
-                ids(i) = modules.ModuleList(i).ID;
-            end
-            next_targets = obj.GroupLayers(layer-1).TargetList;
-            locs = zeros(obj.Size, 2);
-            for i=1:obj.Size
-                t = next_targets(i);
-                if ~isempty(find(ids==t.ID, 1))
-                    locs(t.ID, :) = t.Location;
-                    % Any problem if there are switching targets?
-                    [row, col] = find(obj.GlobalMap.targetMap==t.ID);
-                    obj.GlobalMap.targetMap(row, col) = 0;
-                    obj.GlobalMap.targetMap(t.Location(1), t.Location(2)) = t.ID;
-                end
-            end
-            display.updateMap("PartialTargets", locs);
-            % Step 2: find the modules to dock with at the next step.
-            [dock_ids, ~] = obj.getSilibing(ids, layer);
-        end
-        
-        function locs = getLocations(obj, ids, layer)
-            if isempty(ids)
-                locs = [];
-                return
-            end
-            tree_idx = obj.getTreeIdx(ids, layer);
-            tar = obj.tarTree.get(tree_idx);
-            node_locs = tar.getLocs();
-            node_ids = tar.getIDs();
-            n = 0;
-            locs = zeros(length(ids), 2);
-            for i=1:tar.Size
-                if ~isempty(find(ids==node_ids(i), 1))
-                    n = n + 1;
-                    locs(n, :) = node_locs(i, :);
-                end
-            end
-        end
-        
-        function tree_id = getTreeIdx(obj, ids, layer)
-            if layer == 1
-                % TODO: verify this relation
-                tree_id = 1;
-                return
-            end
-            for i=obj.Nnode(layer-1)+1:obj.Nnode(layer)
-                temp_id = obj.BFSit(i);
-                targets = obj.tarTree.get(temp_id);
-                disp("ids: "); disp(ids);
-                disp("target ids: "); disp(targets.getIDs);
-                if all(ismember(ids, targets.getIDs))
-                    tree_id = temp_id;
-                end
-            end
-        end
-        
-        function [s_ids, s_locs] = getSilibing(obj, ids, layer)
-            s_ids = [];
-            if layer == 1
-                return
-            end
-%             N_before = sum(obj.Nnode(layer-1:1));
-            tree_id = obj.getTreeIdx(ids, layer);
-            siblings = obj.tarTree.getsiblings(tree_id);
-            for s=siblings
-                if s ~= tree_id
-                    s_tar = obj.tarTree.get(s);
-                    s_ids = s_tar.getIDs();
-                    s_locs = s_tar.getLocs();
-                end
-            end
-        end
-        
-        function showTree(obj, options)
-            % options: target (final extension tree); current (current
-            % extension tree during the construction order generation.
-            if nargin == 1
-                options = "target";
-            end
-            if options == "target"
-                t = obj.tarTree;
-            elseif options == "current"
-                t = obj.curTree;
-            else
-                error("Wrong input of show tree options!");
-            end
-            figure("Name", "Extension Tree"); plot(t);
-            figure("Name", "Index Tree"); 
-            if options == "target"
-                [~, index] = t.subtree(1);
-                plot(index);
-            elseif options == "current"
-                plot(obj.curIdxT);
-            end
-        end
-        
-        function showExtension(obj, display, pause_t)
-            if nargin == 1
-                mapsize = obj.GlobalMap.mapSize;
-                display = display2D(mapsize, "FinalTarget", obj.finTar);
-                pause_t = 0;
-            elseif nargin == 2
-                pause_t = 0;
-            end
-            
-            % is_fin = false;
-            i = 1;
-            c_layer = 1;
-            L = length(obj.BFSit);
-            while i < L
-                cur_node = obj.tarTree.get(obj.BFSit(i));
-                new_node = copy(cur_node);
-                while new_node.Size < obj.Size
-                    i = i+1;
-                    cur_node = obj.tarTree.get(obj.BFSit(i));
-                    new_node = new_node.AddTargetGp(cur_node);
-                end
-                obj.GroupLayers = [obj.GroupLayers, new_node];
-%                 if i == 1
-%                     obj.Nnode(c_layer) = i;
-%                 else
-%                     obj.Nnode(c_layer) = i - sum(obj.Nnode(c_layer-1:1));
-%                 end
-                obj.Nnode(c_layer) = i;
-                i = i+1;
-                c_layer = c_layer + 1;
-                display.updateMap("CurrentTarget", new_node);
-                pause(pause_t);
-            %     if i >= Size
-            %         is_fin = true;
-            %     end
-            end
-            obj.setTargetMap();
-%             display.updateMap("CurrentTarget", new_node);
-        end
-        
-        function example(obj)
-%             addpath('display');
-            % Example of the target expansion procedure
-            % Initialization of a square of targets
-            % Rect
-            obj.Size = 9; a = 3; b = 3;  % Num of blocks; width; length;
 
-            Tars = [];
-            for i = 1:obj.Size
-                m = ceil(i/a);
-                n = i - (m-1) * b;
-                Tars = [Tars; targetPoint(i, [m, n])];
-            end
-
-            obj.finTar = targetGroup(Tars);
-            
-            % Fit tree
-            obj.TargetToTree([1, 1]);
-            
-            % plot
-            obj.showTree();
-            obj.showExtension();
-        end
     end
     
     methods (Access = private)

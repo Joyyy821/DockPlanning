@@ -36,6 +36,8 @@ classdef Trial < handle
     end
     
     methods
+        
+        %%  Trial methods
         function obj = Trial(dim)
             %TRIAL 构造此类的实例
             %   此处显示详细说明
@@ -54,600 +56,7 @@ classdef Trial < handle
             addpath('lib');
             addpath('lib/display'); addpath('lib/alg');
         end
-        
-        function execute(obj)
-            %METHOD1 此处显示有关此方法的摘要
-            %   此处显示详细说明
-
-            % Walk the modules
-            for i=1:length(obj.mods)
-                obj.mods(i).walk();
-            end
-            % TODO: move the floating module groups
-            for i=1:length(obj.floatGp)
-                % module group floating to other places.
-            end
-            
-            % Move the robot groups (search or construct)
-            for i=1:obj.N_rob
-                obj.ci = i;
-                if ~obj.structure_arrive(i)
-                    % TODO: check if the structure has finished
-                    if obj.robotGp(i).c_tar_root == 0
-                        obj.structure_arrive(i) = true;
-                        obj.robotGp(i).LeadRobot.back2startPlace();
-                    else
-                        obj.moveRobGp();
-                    end
-%                     obj.moveRobGpParallel();
-                    
-                elseif ~obj.finish(i)
-                    % move to the initial place
-                    obj.finish(i) = obj.robotGp(i).move();
-                end
-            end
-            % update the display
-            obj.display.updateMap("Robot", obj.getRobots(), ...
-                "Module", obj.getAllMods());
-            obj.step_cnt = obj.step_cnt + 1;
-        end
-        
-        function moveRobGpParallel(obj)
-            i = obj.ci;
-            if obj.robotGp(i).changingSite
-                [is_changed, is_moved] = obj.changeDockSite();
-                if is_changed
-                    obj.robotGp(i).changingSite = false;
-                end
-                if is_moved
-                    return
-                end
-            end
-        end
-        
-        function moveRobGp(obj)
-            i = obj.ci;
-            if obj.robotGp(i).changingSite
-                [is_changed, is_moved] = obj.changeDockSite();
-                if is_changed
-                    obj.robotGp(i).changingSite = false;
-                end
-                if is_moved
-                    return
-                end
-            end
-            if ~obj.robotGp(i).status
-                % search and fetch
-                if ~obj.robotGp(i).LeadRobot.isCarrying
-                    id_m = obj.robotGp(i).search();
-                    if ~isempty(id_m)
-                        [float_m, m_idx] = obj.getModule(id_m);
-                        obj.robotGp(i).updateGroup("add", float_m);
-                        obj.mods(m_idx) = [];
-%                         obj.fetch_arrive(i) = true;
-%                         target = int32(evalin('base', 'Object_Current_Target'));
-                        obj.robot2target();
-                    end
-                else
-                    if ~obj.robotGp(i).waiting
-                        is_arrive = obj.robotGp(i).move();
-                    else
-                        is_arrive = false;
-                    end
-                    if is_arrive
-                        % 如果是static target，attach module然后回去继续搜索
-                        % 如果是float target：
-                        % （1）切换到construct status
-                        % （2）检查是否需要更改对界面
-                        t = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
-                        if t.is2static
-                            obj.fixed_mods = [obj.fixed_mods, ...
-                                obj.robotGp(i).modules];
-                            mlocs = obj.robotGp(i).modules.getLocations();
-                            obj.gmap.setStructureMap(mlocs);
-                            obj.robotGp(i).LeadRobot.addIgnorePos(mlocs);
-                            obj.robotGp(i).updateGroup("del");
-                            obj.robotGp(i).c_tar_root = 0;
-                        else
-%                             obj.robotGp(i).changingSite = true;
-%                             if change_finish
-                            if obj.ext.tarTree.isleaf(obj.robotGp(i).c_tar_i)
-                                m_id = obj.robotGp(i).modules.ModuleList(1).ID;
-                                obj.ext.assignID(obj.robotGp(i).c_tar_i, m_id);
-                                obj.robotGp(i).c_tar_i = ...
-                                    obj.ext.tarTree.getparent(obj.robotGp(i).c_tar_i);
-                                obj.robot2target();
-                            else
-                                % if the other part does not arrive
-                                % switch to construct state and wait
-                                % else
-                                % dock, update target index, and leave
-                                if obj.isTargetCompleted()
-                                    obj.dockandRecord();
-                                    obj.changeTarget();
-                                else
-                                    obj.robotGp(i).status = true;
-                                    obj.robotGp(i).changingSite = true;
-                                end
-                            end
-%                             end
-                            % 检查对接的group有没有到 到了则对接并离开
-                            % 问题：如果有部分已经完成对接但是其他的机器人还没记完meeting？
-                        end
-%                         m_id = obj.robotGp(i).modules.getIDs();
-%                         if length(m_id) == 1
-%                             obj.markTargetID(m_id);
-%                         end
-                    else
-                        if length(obj.robotGp(i).meetingList) == obj.N_rob - 1
-                            % TODO: robot go to the next subtree and clear
-                            % meeting list
-                            obj.toNextSubtree();
-                        else
-                            % If the current target has already occupied
-                            % (1) record meeting if there is a robot
-                            % (2) change target position
-                            [occupied, observed] = obj.checkTargetStatus();
-                            t = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
-                            if isempty(find(obj.con_order==obj.robotGp(i).c_tar_i, 1))
-                                if observed && ~any(occupied)
-                                    if t.is2static
-                                        m_id = obj.robotGp(i).modules.getIDs();
-                                        if isempty(find(t.dockerPoints==m_id(1), 1))
-                                            obj.robotGp(i).waiting = true;
-                                            disp("Group "+string(i)+...
-                                                " waiting for docking.");
-                                            return
-%                                         else
-                                            
-                                        end
-                                    end
-                                end
-                            end
-                            if occupied(2)
-                                obj.robotGp(i).waiting = false;
-                                % ignore dock pair
-                                t_idx = obj.robotGp(i).c_tar_i;
-                                if obj.ext.tarTree.isleaf(t_idx)
-                                    t_idx = obj.ext.tarTree.getparent(t_idx);
-                                end
-                                t = obj.ext.getTargetByIdx(t_idx);
-                                obj.ignoreDockPair(t);
-                            end
-                            if occupied(1)
-                                % robot need to go to next target
-                                disp("Accident! Robot "+string(i)+" reports target occupied.");
-%                                 obj.changeTarget();
-%                                 obj.robot2target();
-%                             elseif occupied(2)
-                                
-                            elseif observed % target avaliable
-                                obj.robotGp(i).changingSite = true;
-                            end
-                        end
-                    end
-                end
-            else
-                % construct
-%                 if length(obj.robotGp(i).meetingList) == obj.N_rob - 1
-                if true
-                    % construct until leave for next subtree
-                    % if finish current node
-                    %     if current node is not the root of the current
-                    %     subtree
-                    %         go to the parent target;
-                    %     else
-                    %         detach and leave for next subtree;
-                    %         check whether the module group is floating or
-                    %         static and add to corresponding data struct;
-                    % else
-                    %     if the other part arrives
-                    %         dock and leave for next subtree;
-                    % TODO: implement docking?
-                    [silibing_arrive, s_id] = obj.checkSilibingTarget();
-                    if silibing_arrive
-                        if ~s_id
-                            obj.fixed_mods = [obj.fixed_mods, ...
-                                    obj.robotGp(i).modules];
-                            obj.robotGp(i).updateGroup("del");
-                            obj.toNextSubtree();
-                            return
-                        end
-                        obj.dockandRecord(i, s_id, false);
-                        if obj.robotGp(i).c_tar_i ~= obj.robotGp(i).c_tar_root
-                            obj.robotGp(i).c_tar_i = ...
-                                obj.ext.tarTree.getparent(obj.robotGp(i).c_tar_i);
-                            obj.robot2target();
-                            obj.robotGp(i).changingSite = true;
-                        else
-                            t = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
-                            if t.is2static
-                                obj.fixed_mods = [obj.fixed_mods, ...
-                                    obj.robotGp(i).modules];
-                            else
-                                obj.floatGp = [obj.floatGp, ...
-                                    obj.robotGp(i).modules];
-                            end
-                            obj.robotGp(i).updateGroup("del");
-                            obj.toNextSubtree();
-                        end
-                    end
-                    
-                end
-            end
-        end
-        
-        function ignoreDockPair(obj, target)
-            tlocs = target.getLocs();
-            i = obj.ci;
-            [n, ~] = size(tlocs);
-            ignore_pos = [];
-            for j=1:n
-                tloc = tlocs(j,:);
-                groupid = obj.gmap.groupMap(tloc(1),tloc(2));
-                if groupid
-                    [r, c] = find(obj.gmap.groupMap==groupid);
-                    ignore_pos = [ignore_pos; r, c];
-                end
-                if obj.gmap.structureMap(tloc(1),tloc(2))
-                    ignore_pos = [ignore_pos; tloc];
-                end
-            end
-            obj.robotGp(i).LeadRobot.setIgnorePos(ignore_pos);
-        end
-        
-        function dockandRecord(obj, id1, id2, record)
-            if nargin == 1
-                % dock at the current target
-                id2 = obj.ci;
-                locs = obj.getSilibingTargetLocs();
-                id1 = obj.gmap.groupMap(locs(1,1), locs(1,2));
-            end
-            if nargin <= 3
-                record = true;
-            end
-            gp1 = obj.robotGp(id1);
-            gp2 = obj.robotGp(id2);
-            % dock between assembly groups, gp2 will be free
-            rloc = gp1.LeadRobot.Location;
-            for i=1:gp2.modules.Size
-                m = gp2.modules.ModuleList(i);
-                mloc = m.Location;
-                pos_shift = rloc-mloc;
-                gp2.modules.ModuleList(i).PosShift = pos_shift;
-            end
-            gp1.modules.AddModuleGp(gp2.modules);
-            gp1.LeadRobot.carriedModule = gp1.modules;
-            
-            gp2.modules = moduleGroup();
-            gp2.LeadRobot.isCarrying = false;
-            gp2.LeadRobot.carriedModule = moduleGroup();
-            gp2.status = false;
-            id = gp2.groupID;
-            obj.toNextSubtree(id);
-            gp2.updateGroup("del");
-            gp1.updateGroup("add");
-            obj.robotGp(id1) = gp1;
-            obj.robotGp(id2) = gp2;
-            if record
-                obj.robotRecord(id1, id2);
-            end
-        end
-        
-        function robotRecord(obj, id1, id2)
-            l1 = obj.robotGp(id1).meetingList;
-            obj.robotGp(id1).meetingList = [l1, id2];
-            l2 = obj.robotGp(id2).meetingList;
-            obj.robotGp(id2).meetingList = [l2, id1];
-%             id1 = gp1.groupID;
-%             id2 = gp2.groupID;
-%             gp1.meetingList = [gp1.meetingList, id2];
-%             gp2.meetingList = [gp2.meetingList, id1];
-        end
-        
-        function changeTarget(obj, delta_i)
-            if nargin == 1
-                delta_i = 1;
-            end
-            i = obj.ci;
-            r = obj.robotGp(i).c_tar_idx(1);
-            c = obj.robotGp(i).c_tar_idx(2)+delta_i;
-            obj.robotGp(i).c_tar_i = obj.con_order(r, c);
-            obj.robotGp(i).c_tar_idx = [r, c];
-        end
-        
-        function robot2target(obj)
-            i = obj.ci;
-            target = obj.ext.tarTree.get(obj.robotGp(i).c_tar_i);
-            if target.Size == 1
-                t_loc = target.TargetList(1).Location;
-            else
-                t_loc = target.getTarLoc(obj.robotGp(i).attachModuleID, "display");
-            % TODO: assembleGroup的attachmoduleID属性改成记录
-            % attach module在group中的相对位置，同时查找target
-            % 中对应位置的target location，然后向robot发布goal。
-            % Alternative method: 这个时候相当于已经确定模块和target
-            % display id相对应，直接查找与attachmoduleID有相同display
-            % id的target位置，得到t_loc
-            end
-            if target.is2static
-                obj.robotGp(i).LeadRobot.isDockerIgnored = true;
-            end
-            obj.robotGp(i).LeadRobot.Goal = ...
-                [int32(t_loc)+obj.robotGp(i).attachdir, 0];
-        end
-        
-        function [is_finish, is_moved] = changeDockSite(obj)
-            % 根据当前target检查机器人对接方向是否在允许的方向中，如果不在则
-            % 发布可行的goal并更换对接面，每调用一次函数移动一步，直到完成对接
-            % 面更换返回true TODO
-            i = obj.ci;
-            if obj.robotGp(i).LeadRobot.isCarrying
-                locs = obj.robotGp(i).getDockSites();
-            else
-                locs = [];
-            end
-            [n,~] = size(locs);
-            if obj.robotInLocs(locs)
-                obj.robot2target();
-                obj.robotGp(i).LeadRobot.isCarrying = true;
-                is_finish = true;
-                is_moved = false;
-                return
-            else
-                if obj.robotGp(i).LeadRobot.isCarrying
-                    disp("Group "+string(i)+" starts changing dock site.");
-                    obj.robotGp(i).LeadRobot.isCarrying = false;
-                    obj.robotGp(i).LeadRobot.Goal(1:n,1:2) = locs;
-                    tlocs = obj.robotGp(i).modules.getLocations();
-                    ignore_temp = obj.robotGp(i).LeadRobot.ignoredPos;
-                    obj.robotGp(i).LeadRobot.setIgnorePos([ignore_temp; tlocs(:, 1:2)]);
-                end
-                is_finish = obj.robotGp(i).move();
-                is_moved = true;
-%                 obj.robotGp(i).LeadRobot.setIgnorePos(ignore_temp);
-            end
-            if is_finish
-                obj.robotGp(i).LeadRobot.isCarrying = true;
-                obj.robotGp(i).findAttachment();
-                obj.robot2target();
-            end
-        end
-        
-        function decision = robotInLocs(obj, locs)
-            r_loc = obj.robotGp(obj.ci).LeadRobot.Location;
-            [n,~] = size(locs);
-            for i=1:n
-                if all(r_loc(1:2) == locs(i, 1:2))
-                    decision = true;
-                    return
-                end
-            end
-            decision = false;
-        end
-        
-        function [silibing_arrive, s_id] = checkSilibingTarget(obj)
-            % 检查当前target位置有没有另外一边的target在
-            i = obj.ci;
-            is_arrive = obj.robotGp(i).move();
-            locs = obj.getSilibingTargetLocs();
-            if ~is_arrive
-                silibing_arrive = false;
-                s_id = 0;
-                obj.robotGp(i).LeadRobot.setIgnorePos(locs);
-            else
-                silibing_arrive = obj.isTargetCompleted(locs);
-                s_id = obj.gmap.groupMap(locs(1,1), locs(1,2));
-            end
-        end
-        
-        function locs = getSilibingTargetLocs(obj)
-            i = obj.ci;
-            m_id = sort(obj.robotGp(i).modules.getIDs());
-            c_tar_is = obj.ext.tarTree.getchildren(obj.robotGp(i).c_tar_i);
-            if length(c_tar_is) == 1
-                locs = [];
-            else
-                s_id = [];
-                for j=1:2
-                    t = obj.ext.getTargetByIdx(c_tar_is(j));
-                    t_id = sort(t.getDisplayIDs());
-                    if length(t_id) == length(m_id) && all(m_id == t_id)
-                        s = obj.ext.getTargetByIdx(c_tar_is(3-j));
-                        s_id = s.getIDs();
-                    end
-                end
-                locs = [];
-                tar = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
-                for j=1:length(s_id)
-                    loc = tar.getTarLoc(s_id(j));
-                    locs = [locs; loc];
-                end
-            end
-        end
-        
-        function toNextSubtree(obj, i)
-            % ci->robotGp->c_subtree, modify this attribute to next, and
-            % change gp.c_tar_i as well. Change robotGp status to 0. Clear
-            % the meeting list. if current root is 1 change to 0
-            if nargin == 1
-                i = obj.ci;
-            end
-            r = obj.robotGp(i).c_tar_idx(1)+1;
-            c = 1;
-            if r <= length(obj.sub_root)
-                obj.robotGp(i).c_tar_i = obj.con_order(r, c);
-                obj.robotGp(i).c_tar_idx = [r, c];
-                obj.robotGp(i).c_tar_root = obj.sub_root(r);
-            else
-                obj.robotGp(i).c_tar_root = 0;
-            end
-            obj.robotGp(i).status = false;
-            obj.robotGp(i).meetingList = [];
-        end
-        
-        function decision = isTargetCompleted(obj, locs)
-            if nargin == 1
-                locs = obj.getSilibingTargetLocs();
-            end
-            [n, ~] = size(locs);
-            for j = 1:n
-                loc = locs(j, 1:2);
-                if ~obj.gmap.structureMap(loc(1), loc(2)) && ...
-                        ~obj.gmap.groupMap(loc(1), loc(2))
-                    decision = false;
-                    return
-                end
-            end
-            decision = true;
-        end
-        
-        function [is_occupied, observed] = checkTargetStatus(obj)
-            % ci->robotGp->c_tar_i->loc
-            % if loc in robot's sight and loc is occupied
-            % find the occupied group and record each other
-            % remark: the target is regarded as occupied only if all 
-            % modules arrive at the target, if only half of the modules are
-            % presented, then change the target (to index 2) and set
-            % ignored places for the robot.
-            % check the assembly group id to find the corresponding assembly
-            % group and compare the size with the target size (or
-            % alternative: set a flag)
-            observed = false;
-            is_occupied = [false, false];
-            i = obj.ci;
-            tar = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
-            is_leaf = obj.ext.tarTree.isleaf(obj.robotGp(i).c_tar_i);
-            if is_leaf
-                dock_tar = obj.ext.tarTree.getparent(obj.robotGp(i).c_tar_i);
-                dock_tar = obj.ext.getTargetByIdx(dock_tar);
-                dockt_locs = dock_tar.getLocs();
-            else
                 
-%                 dock_tar = obj.ext.tarTree.getsiblings(obj.robotGp(i).c_tar_i);
-%                 if  length(dock_tar) == 2
-%                     if dock_tar(1) == obj.robotGp(i).c_tar_i
-%                         dock_tar = dock_tar(2);
-%                     else
-%                         dock_tar = dock_tar(1);
-%                     end
-%                 end
-            end
-            
-            r_loc = obj.robotGp(i).LeadRobot.Location;
-            if is_leaf
-                tar = dock_tar;
-            end
-            t_locs = tar.getLocs();
-            for j=1:tar.Size
-                if sqrt(sum((t_locs(j,1:2)-r_loc(1:2)).^2)) <= obj.gmap.robotDist
-                    % target in robot's sight
-                    if ~observed && is_leaf
-                        % ignore waiting robots ，- t_locs
-                        obj.ignoreWaitingGroup(dockt_locs);
-                    end
-                    observed = true;
-                end
-            end
-            for j = 1:tar.Size
-                if observed
-                    groupid = obj.gmap.groupMap(t_locs(j,1), t_locs(j,2));
-                    if (groupid && obj.robotGp(groupid).status)
-                        g_size = obj.robotGp(groupid).modules.Size;
-                        if g_size == tar.Size
-                            is_occupied = [true, true];
-                            obj.robotRecord(i, groupid);
-                            return
-                        else
-                            % set ignore place, update target location 
-                            [r, c] = find(obj.gmap.groupMap==groupid);
-                            locs = [r, c];
-                            obj.robotGp(i).LeadRobot.setIgnorePos(locs);
-                            % check target position
-                            r_goal = obj.robotGp(i).LeadRobot.Goal;
-                            m_goal = int32(r_goal(1:2)) - obj.robotGp(i).attachdir;
-                            if obj.gmap.groupMap(m_goal(1), m_goal(2)) == groupid
-                                is_occupied = [true, false];
-                            else
-                                is_occupied = [false, true];
-                            end
-                        end
-                    end
-                    if  obj.gmap.structureMap(t_locs(j,1), t_locs(j,2))
-                        % check target position
-                        r_goal = obj.robotGp(i).LeadRobot.Goal;
-                        m_goal = int32(r_goal(1:2)) - obj.robotGp(i).attachdir;
-                        if obj.gmap.structureMap(m_goal(1), m_goal(2))
-                            is_occupied(1) = true;
-                        end
-                        if ~all(m_goal(1:2)==t_locs(j,:))
-                            is_occupied(2) = true;
-                        end
-                    end
-                end
-            end
-%             if tar.Size == 2
-%                 tl = tar.TargetList(1).Location;
-%                 if obj.gmap.moduleMap(tl(1), tl(2))
-%                     tl = tar.TargetList(2).Location;
-%                 end
-%                 obj.robotGp(i).LeadRobot.Goal = ...
-%                     [tl+obj.robotGp(i).attachdir, 0];
-%                 obj.changeDockSite();
-%             end
-        end
-        
-        function ignoreWaitingGroup(obj, t_locs)
-            g_id = [];
-            bound = zeros(2, 2);
-            bound(1, :) = [min(t_locs(:, 1)), min(t_locs(:, 2))];
-            bound(2, :) = [max(t_locs(:, 1)), max(t_locs(:, 2))];
-            near_locs = obj.ext.nearLocs(bound);
-            near_locs = [near_locs; t_locs];
-            [n, ~] = size(near_locs);
-            for i=1:n
-                groupid = obj.gmap.groupMap(near_locs(i,1), near_locs(i,2));
-                if groupid
-                    if obj.robotGp(groupid).waiting
-                        if isempty(find(g_id==groupid, 1))
-                            g_id = [g_id, groupid];
-                        end
-                    end
-                end
-            end
-            ignore_pos = [];
-            for id=g_id
-                [r, c] = find(obj.gmap.groupMap==id);
-                locs = [r, c];
-                ignore_pos = [ignore_pos; locs];
-            end
-            i = obj.ci;
-            obj.robotGp(i).LeadRobot.setIgnorePos(ignore_pos);
-        end
-        
-        function markTargetID(obj, m_id)
-            i = obj.ci;
-            t_idx = obj.robotGp(i).c_tar_i;
-            m_loc = obj.robotGp(i).modules.ModuleList(1).Location;
-            tar = obj.ext.getTargetByIdx(t_idx);
-            for i=1:2
-                t = tar.targetList;
-                if t(i).Location(1:2) == m_loc(1:2)
-                    t(i).displayID = m_id;
-                    t_id = t(i).ID;
-                    tar.targetList(i) = t(i);
-                    break
-                end
-            end
-            c_idx = t_idx;
-            while c_idx ~= 1
-                c_idx = obj.ext.tarTree.getparent(c_idx);
-                tar = obj.ext.getTargetByIdx(c_idx);
-                tar.setDisplayID(t_id, m_id);
-                obj.ext.tarTree.set(c_idx, tar);
-            end
-        end
-        
         function robs = getRobots(obj)
             robs = robot();
             for i=1:obj.N_rob
@@ -657,36 +66,42 @@ classdef Trial < handle
         
         function setRobotGp(obj, locs)
             [l, ~] = size(locs);
-            
             for i = 1:l
                 rob = robot(i, [locs(i, :), 0], obj.gmap);
                 obj.robotGp(i) = AssembleGroup(i, rob, obj.gmap);
                 if ~isempty(obj.ext)
-%                     cl = length(obj.ext.GroupLayers);
-%                     obj.robotGp(i).cl = cl;
                     obj.robotGp(i).ext = obj.ext;
+                else
+                    warning("Initialize robot groups before targets."+...
+                        " The extension object cannot be linked to the robots.")
                 end
                 obj.robotGp(i).initSearch();
             end
-%             obj.fetch_arrive = false(1, l);
-%             obj.target_arrive = false(1, l);
             obj.structure_arrive = false(1, l);
-%             obj.structure_arrive = false;
             obj.finish = false(1, l);
-%             obj.rob_dirs = zeros(l, 2);
             obj.N_rob = l;
+        end
+        
+        function setConOrder(obj)
             if ~isempty(obj.ext)
                 [obj.con_order, obj.sub_root] = ...
                     obj.ext.genConstructOrder(obj.N_rob);
                 for i=1:obj.N_rob
-                    obj.robotGp(i).c_tar_idx = [1, i];
-                    obj.robotGp(i).c_tar_i = obj.con_order(1, i);
+                    obj.robotGp(i).c_tar_idx = [1, 1];
+                    obj.robotGp(i).c_tar_i = obj.con_order(1, 1);
                     obj.robotGp(i).c_tar_root = obj.sub_root(1);
                 end
+                disp("Construction order generated.")
+                disp("Principle targets indexes:")
+                disp(obj.con_order)
+                disp("Indexes of the subtree roots:")
+                disp(obj.sub_root);
             end
         end
         
         function [m, idx] = getModule(obj, id, l, r)
+            % 如果只有1个id -> 返回对应的module/找不到模块报错
+            % 如果有多个id -> 返回对应的module group/找不到group报错
             if nargin == 2
                 l = 1; r = length(obj.mods);
             end
@@ -698,25 +113,6 @@ classdef Trial < handle
                 end
             end
             error("Required float module ID does not exist.");
-%             mid = int32((r-l)/2+l);
-%             if obj.mods(mid).ID == id
-%                 m = obj.mods(mid);
-%                 idx = mid;
-%                 return
-%             elseif r-l == 1
-%                 if obj.mods(r).ID == id
-%                     idx = r;
-%                 elseif obj.mods(l).ID == id
-%                     idx = l;
-%                 end
-%                 m = obj.mods(idx);
-%                 return
-%             elseif obj.mods(mid).ID > id
-%                 r = mid;
-%             else
-%                 l = mid;
-%             end
-%             [m, idx] = obj.getModule(id, l, r);
         end
         
         function ms = getAllMods(obj)
@@ -779,6 +175,515 @@ classdef Trial < handle
                 obj.robotGp(i).cl = cl;
             end
         end
+        
+        function execute(obj)
+            %METHOD1 此处显示有关此方法的摘要
+            %   此处显示详细说明
+
+            % Walk the modules
+            for i=1:length(obj.mods)
+                obj.mods(i).walk();
+            end
+            % TODO: move the floating module groups
+            for i=1:length(obj.floatGp)
+                % module group floating to other places.
+                obj.floatGp(i).walk();
+            end
+            
+            % Move the robot groups (search or construct)
+            for i=1:obj.N_rob
+                obj.ci = i;
+                if ~obj.structure_arrive(i)
+                    % TODO: check if the structure has finished
+                    if obj.robotGp(i).c_tar_root == 0
+                        obj.structure_arrive(i) = true;
+                        obj.robotGp(i).LeadRobot.back2startPlace();
+                    else
+                        obj.moveRobGp();
+                    end
+                elseif ~obj.finish(i)
+                    % move to the initial place
+                    obj.finish(i) = obj.robotGp(i).move();
+                end
+            end
+            % update the display
+            obj.display.updateMap("Robot", obj.getRobots(), ...
+                "Module", obj.getAllMods());
+            obj.step_cnt = obj.step_cnt + 1;
+        end
+        
+        %%  Assembly group methods
+        % Some methods of assembly group methods require access to other
+        % classes, which are implemented in the trial class.
+        
+        function moveRobGp(obj)
+            i = obj.ci;
+            % If an assembly group is changing its dock site, then this
+            % function will use the changeDockSite method to move.
+            if obj.robotGp(i).changingSite
+                % 只要调用了move函数就算move了一次
+                [is_changed, is_moved] = obj.robotGp(i).changeDockSite();
+                if is_changed
+                    obj.robotGp(i).changingSite = false;
+                end
+                if is_moved
+                    return
+                end
+            end
+            if ~obj.robotGp(i).status
+                % search and fetch
+                if ~obj.robotGp(i).LeadRobot.isCarrying
+                    % Search
+                    id_m = obj.robotGp(i).search();
+                    if ~isempty(id_m)
+                        [float_m, m_idx] = obj.getModule(id_m);
+                        obj.robotGp(i).updateGroup("add", float_m);
+                        if class(float_m) == "module"
+                            obj.mods(m_idx) = [];
+                            obj.robotGp(i).robot2target(1);
+                        elseif class(float_m) == "moduleGroup"
+                            obj.floatGp(m_idx) = [];
+                            % 需要根据获得的模块形状判断target位置
+                        end
+                    end
+                else
+                    % Navigate to the target
+                    if ~obj.robotGp(i).waiting
+                        is_arrive = obj.robotGp(i).move();
+                    else
+                        is_arrive = false;
+                    end
+                    if is_arrive
+                        % 如果是static target，attach module然后回去继续搜索
+                        % 如果是float target：
+                        % （1）切换到construct status
+                        % （2）检查是否需要更改对界面
+                        obj.robotGp(i).markGroupObstacle(0);
+                        t = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
+                        if t.is2static
+                            obj.fixed_mods = [obj.fixed_mods, ...
+                                obj.robotGp(i).modules];
+                            mlocs = obj.robotGp(i).modules.getLocations();
+                            obj.gmap.setStructureMap(mlocs);
+                            obj.robotGp(i).LeadRobot.addIgnorePos(mlocs);
+                            obj.robotGp(i).updateGroup("del");
+                            obj.robotGp(i).c_tar_root = 0;
+                        else
+%                             obj.robotGp(i).changingSite = true;
+%                             if change_finish
+                            if obj.ext.isTargetPair(obj.robotGp(i).c_tar_i)
+                                m_id = obj.robotGp(i).modules.ModuleList(1).ID;
+                                tar_opt = obj.robotGp(i).target_option;
+%                                 m_loc = obj.robotGp(i).modules.ModuleList(1).Location(1:2);
+                                obj.ext.assignID(obj.robotGp(i).c_tar_i, m_id, tar_opt);
+                            end
+%                                 obj.robotGp(i).c_tar_i = ...
+%                                     obj.ext.tarTree.getparent(obj.robotGp(i).c_tar_i);
+%                                 obj.robotGp(i).robot2target();
+%                             else
+                            % if the other part does not arrive
+                            % switch to construct state and wait
+                            % else
+                            % dock, update target index, and leave
+                            if obj.isTargetCompleted()
+                                obj.dockandRecord();
+                                obj.toNextPT();
+                            else
+                                obj.robotGp(i).changeStatus(true);
+                                obj.robotGp(i).changingSite = true;
+                                obj.robotGp(i).toParentTarget();
+                            end
+%                             end
+%                             end
+                            % 检查对接的group有没有到 到了则对接并离开
+                            % 问题：如果有部分已经完成对接但是其他的机器人还没记完meeting？
+                        end
+%                         m_id = obj.robotGp(i).modules.getIDs();
+%                         if length(m_id) == 1
+%                             obj.markTargetID(m_id);
+%                         end
+                    else  % have not arrived yet
+                        if length(obj.robotGp(i).meetingList) == obj.N_rob - 1
+                            % TODO: robot go to the next subtree and clear
+                            % meeting list
+                            obj.toNextSubtree();
+                        else
+                            % If the current target has already occupied
+                            % (1) record meeting if there is a robot
+                            % (2) change target position
+                            [occupied, observed] = obj.checkTargetStatus();
+                            t = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
+                            
+%                             if isempty(find(obj.con_order==obj.robotGp(i).c_tar_i, 1))
+%                                 % Not PT
+                            if observed && ~any(occupied)
+                                if t.is2static
+                                    m_id = obj.robotGp(i).modules.getIDs();
+                                    if isempty(find(t.dockerPoints==m_id(1), 1))
+                                        obj.robotGp(i).waiting = true;
+                                        disp("Group "+string(i)+...
+                                            " waiting for docking.");
+                                        return
+%                                         else
+
+                                    end
+                                end
+                            end
+%                             end
+                            tonext_flag = false;
+                            if occupied(2)
+                                obj.robotGp(i).waiting = false;
+                                % ignore dock pair
+                                obj.robotGp(i).ignoreDockPair(t);
+                            end
+                            if occupied(1) && ~occupied(2)
+                                % robot need to go to next target
+                                disp("Robot "+string(i)+" reports target occupied.");
+%                                 obj.toNextPT();
+                                obj.robotGp(i).robot2target(2);
+%                             elseif occupied(2)
+                            elseif all(occupied)
+                                if occupied(1) == occupied(2) && occupied(1) > 0
+                                    
+                                elseif occupied(1) ~= occupied(2)
+                                    error("FIXME!!");
+                                end
+                                tonext_flag = true;
+                            elseif observed % target avaliable
+                                groups = obj.gmap.getGroupAroundTarget(t);
+                                for j=1:length(groups)
+                                    if occupied(2) && groups(j) ~= occupied(2) && ...
+                                            groups(j) < obj.robotGp(i).groupID
+                                        tonext_flag = true;
+                                    end
+                                end
+                                obj.robotGp(i).changingSite = true;
+                            end
+                            
+                            if tonext_flag
+                                obj.recordMeeting(occupied(2));
+                                obj.robotGp(i).LeadRobot.setIgnorePos([]);
+                                obj.robotGp(i).markGroupObstacle(occupied(1));
+                                obj.toNextPT();
+                                obj.robotGp(i).robot2target(1);
+                            end
+                        end
+                    end
+                end
+            else
+                % construct
+                if length(obj.robotGp(i).meetingList) == obj.N_rob - 1
+%                 if true
+                    % construct until leave for next subtree
+                    % if finish current node
+                    %     if current node is not the root of the current
+                    %     subtree
+                    %         go to the parent target;
+                    %     else
+                    %         detach and leave for next subtree;
+                    %         check whether the module group is floating or
+                    %         static and add to corresponding data struct;
+                    % else
+                    %     if the other part arrives
+                    %         dock and leave for next subtree;
+                    % TODO: implement docking?
+                    [silibing_arrive, s_id] = obj.checkSilibingTarget();
+                    if silibing_arrive
+                        if ~s_id
+                            obj.fixed_mods = [obj.fixed_mods, ...
+                                    obj.robotGp(i).modules];
+                            obj.robotGp(i).updateGroup("del");
+                            obj.toNextSubtree();
+                            return
+                        end
+                        obj.dockandRecord(i, s_id, false);
+                        extract_flag = obj.robotGp(i).toParentTarget();
+                        if ~extract_flag   % arrived the subtree root
+                            t = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
+                            if t.is2static
+                                obj.fixed_mods = [obj.fixed_mods, ...
+                                    obj.robotGp(i).modules];
+                            else
+                                obj.floatGp = [obj.floatGp, ...
+                                    obj.robotGp(i).modules];
+                            end
+                            obj.robotGp(i).updateGroup("del");
+                            obj.toNextSubtree();
+                        end
+                    end
+                    
+                end
+            end
+        end
+        
+        function dockandRecord(obj, id1, id2, recordflag)
+            % TODO 检查这个函数和相关的子函数
+            if nargin == 1
+                % dock at the current target
+                id2 = obj.ci;
+                locs = obj.getSilibingTargetLocs();
+                id1 = obj.gmap.groupMap(locs(1,1), locs(1,2));
+                recordflag = true;
+            elseif nargin == 2
+                id2 = obj.ci;
+                recordflag = true;
+            elseif nargin == 3
+                recordflag = true;
+            end
+            if recordflag
+                obj.recordMeeting(id1, id2);
+            end
+            gp1 = obj.robotGp(id1);
+            gp2 = obj.robotGp(id2);
+            % dock between assembly groups, gp2 will be free
+            rloc = gp1.LeadRobot.Location;
+            for i=1:gp2.modules.Size
+                m = gp2.modules.ModuleList(i);
+                mloc = m.Location;
+                pos_shift = rloc-mloc;
+                gp2.modules.ModuleList(i).PosShift = pos_shift;
+            end
+            gp1.modules.AddModuleGp(gp2.modules);
+            gp1.LeadRobot.carriedModule = gp1.modules;
+            
+            gp2.modules = moduleGroup();
+            gp2.LeadRobot.isCarrying = false;
+            gp2.LeadRobot.carriedModule = moduleGroup();
+            gp2.changeStatus(false);
+%             id2 = gp2.groupID;
+%             obj.toNextSubtree(id);
+            gp2.updateGroup("del");
+            gp1.updateGroup("add");
+            obj.robotGp(id1) = gp1;
+            obj.robotGp(id2) = gp2;
+        end
+        
+        function recordMeeting(obj, id2, id1)
+            if nargin == 2
+                id1=obj.ci;
+            end
+            l1 = obj.robotGp(id1).meetingList;
+            obj.robotGp(id1).meetingList = [l1, id2];
+            l2 = obj.robotGp(id2).meetingList;
+            obj.robotGp(id2).meetingList = [l2, id1];
+        end
+        
+        %% Extension/Target methods
+        
+        function toNextPT(obj, delta_i)
+            if nargin == 1
+                delta_i = 1;
+            end
+            i = obj.ci;
+            r = obj.robotGp(i).c_tar_idx(1);
+            c = obj.robotGp(i).c_tar_idx(2)+delta_i;
+            [~, Nc] = size(obj.con_order);
+            if c > Nc || obj.con_order(r, c) == 0
+                obj.toNextSubtree();
+            else
+                obj.robotGp(i).c_tar_i = obj.con_order(r, c);
+                obj.robotGp(i).c_tar_idx = [r, c];
+            end
+        end
+        
+        function [silibing_arrive, s_id] = checkSilibingTarget(obj)
+            % 检查当前target位置有没有另外一边的target在
+            i = obj.ci;
+            is_arrive = obj.robotGp(i).move();
+            locs = obj.getSilibingTargetLocs();
+            if ~is_arrive
+                silibing_arrive = false;
+                s_id = 0;
+                obj.robotGp(i).LeadRobot.setIgnorePos(locs);
+            else
+                silibing_arrive = obj.isTargetCompleted(locs);
+                s_id = obj.gmap.groupMap(locs(1,1), locs(1,2));
+            end
+        end
+        
+        function locs = getSilibingTargetLocs(obj)
+            i = obj.ci;
+            m_id = sort(obj.robotGp(i).modules.getIDs());
+            c_tar_is = obj.ext.tarTree.getchildren(obj.robotGp(i).c_tar_i);
+            if length(c_tar_is) == 1
+                locs = [];
+            else
+                s_id = [];
+                for j=1:2
+                    t = obj.ext.getTargetByIdx(c_tar_is(j));
+                    t_id = sort(t.getDisplayIDs());
+                    if length(t_id) == length(m_id) && all(m_id == t_id)
+                        s = obj.ext.getTargetByIdx(c_tar_is(3-j));
+                        s_id = s.getIDs();
+                    end
+                end
+                locs = [];
+                tar = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
+                for j=1:length(s_id)
+                    loc = tar.getTarLoc(s_id(j));
+                    locs = [locs; loc];
+                end
+            end
+        end
+        
+        function toNextSubtree(obj, i)
+            % ci->robotGp->c_subtree, modify this attribute to next, and
+            % change gp.c_tar_i as well. Change robotGp status to 0. Clear
+            % the meeting list. if current root is 1 change to 0
+            if nargin == 1
+                i = obj.ci;
+            end
+            r = obj.robotGp(i).c_tar_idx(1)+1;
+            c = 1;
+            if r <= length(obj.sub_root)
+                obj.robotGp(i).c_tar_i = obj.con_order(r, c);
+                obj.robotGp(i).c_tar_idx = [r, c];
+                obj.robotGp(i).c_tar_root = obj.sub_root(r);
+            else
+                obj.robotGp(i).c_tar_root = 0;
+            end
+            obj.robotGp(i).changeStatus(false);
+            obj.robotGp(i).meetingList = [];
+        end
+        
+        function decision = isTargetCompleted(obj, locs)
+            if nargin == 1
+                i = obj.ci;
+                tar = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
+                locs = tar.getLocs();
+%                 locs = obj.getSilibingTargetLocs();
+            end
+            [n, ~] = size(locs);
+            for j = 1:n
+                loc = locs(j, 1:2);
+                if ~obj.gmap.structureMap(loc(1), loc(2)) && ...
+                        ~obj.gmap.groupMap(loc(1), loc(2))
+                    decision = false;
+                    return
+                end
+            end
+            decision = true;
+        end
+        
+        function [is_occupied, observed] = checkTargetStatus(obj)
+            % ci->robotGp->c_tar_i->loc
+            % if loc in robot's sight and loc is occupied
+            % find the occupied group and record each other
+            % remark: the target is regarded as occupied only if all 
+            % modules arrive at the target, if only half of the modules are
+            % presented, then change the target (to index 2) and set
+            % ignored places for the robot.
+            % check the assembly group id to find the corresponding assembly
+            % group and compare the size with the target size (or
+            % alternative: set a flag)
+            observed = false;
+            is_occupied = [0, 0];
+            i = obj.ci;
+            tar = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
+            % TODO: define a function to check whether it is PT with depth
+            % -1
+%             is_leaf = obj.ext.isTargetPair(obj.robotGp(i).c_tar_i);
+%             if is_leaf
+%                 dock_tar = obj.ext.tarTree.getparent(obj.robotGp(i).c_tar_i);
+%                 dock_tar = obj.ext.getTargetByIdx(dock_tar);
+%                 dockt_locs = dock_tar.getLocs();
+%             else
+%                 
+%                 dock_tar = obj.ext.tarTree.getsiblings(obj.robotGp(i).c_tar_i);
+%                 if  length(dock_tar) == 2
+%                     if dock_tar(1) == obj.robotGp(i).c_tar_i
+%                         dock_tar = dock_tar(2);
+%                     else
+%                         dock_tar = dock_tar(1);
+%                     end
+%                 end
+%             end
+%             
+            r_loc = obj.robotGp(i).LeadRobot.Location;
+            m_locs = obj.robotGp(i).modules.getLocations();
+            group_locs = [r_loc; m_locs];
+            dist = ceil(sqrt(double(obj.gmap.mapSize(1)^2+obj.gmap.mapSize(2)^2)));
+            t_locs = tar.getLocs();
+            for j=1:obj.robotGp(i).modules.Size+1
+                for k = 1:tar.Size
+                    temp_dist = sqrt(sum((t_locs(k,1:2)-group_locs(j, 1:2)).^2));
+                    if temp_dist < dist
+                        dist = temp_dist; nearest_idx = j;
+                    end
+                end
+            end
+            if (nearest_idx == 1 && dist <= obj.gmap.robotDist) || ...
+                    (nearest_idx ~= 1 && dist <= obj.gmap.moduleDist)
+                observed = true;
+            end
+
+            for j = 1:tar.Size
+                if observed
+                    groupid = obj.gmap.groupMap(t_locs(j,1), t_locs(j,2));
+                    if (groupid && obj.robotGp(groupid).status)
+                        g_size = obj.robotGp(groupid).modules.Size;
+                        if g_size == tar.Size
+                            is_occupied = [groupid, groupid];
+                            return
+                        else
+                            % check target position
+                            r_goal = obj.robotGp(i).LeadRobot.Goal;
+                            m_goal = int32(r_goal(1:2)) - obj.robotGp(i).attachdir;
+                            if obj.gmap.groupMap(m_goal(1), m_goal(2)) == groupid
+                                is_occupied(1) = groupid;
+                            else
+                                is_occupied(2) = groupid;
+%                                 obj.robotGp(i).ignoreDockPair(tar);
+                            end
+                        end
+                    end
+                    if obj.gmap.structureMap(t_locs(j,1), t_locs(j,2))
+                        % check target position
+                        r_goal = obj.robotGp(i).LeadRobot.Goal;
+                        m_goal = int32(r_goal(1:2)) - obj.robotGp(i).attachdir;
+                        if obj.gmap.structureMap(m_goal(1), m_goal(2))
+                            is_occupied(1) = -1;
+                        end
+                        if ~all(m_goal(1:2)==t_locs(j,:))
+                            is_occupied(2) = -1;
+                        end
+                    end
+                end
+            end
+%             if tar.Size == 2
+%                 tl = tar.TargetList(1).Location;
+%                 if obj.gmap.moduleMap(tl(1), tl(2))
+%                     tl = tar.TargetList(2).Location;
+%                 end
+%                 obj.robotGp(i).LeadRobot.Goal = ...
+%                     [tl+obj.robotGp(i).attachdir, 0];
+%                 obj.changeDockSite();
+%             end
+        end
+        
+        function markTargetID(obj, m_id)
+            i = obj.ci;
+            t_idx = obj.robotGp(i).c_tar_i;
+            m_loc = obj.robotGp(i).modules.ModuleList(1).Location;
+            tar = obj.ext.getTargetByIdx(t_idx);
+            for i=1:2
+                t = tar.targetList;
+                if t(i).Location(1:2) == m_loc(1:2)
+                    t(i).displayID = m_id;
+                    t_id = t(i).ID;
+                    tar.targetList(i) = t(i);
+                    break
+                end
+            end
+            c_idx = t_idx;
+            while c_idx ~= 1
+                c_idx = obj.ext.tarTree.getparent(c_idx);
+                tar = obj.ext.getTargetByIdx(c_idx);
+                tar.setDisplayID(t_id, m_id);
+                obj.ext.tarTree.set(c_idx, tar);
+            end
+        end
+
     end
 end
 

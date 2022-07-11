@@ -19,6 +19,7 @@ classdef robot < handle
         Location           (1, 3) double  % Current robot location [x, y, z]
         CognMap                      % Cognitive map of individual robot
         GlobalMap          map       % "pointer" to a global map object
+        tempGroupMap       int32     % Waiting groups on PT
         Goal          (:, 3) double  % Current robot goal [x, y, z]
         priorPlanningID = 0 % The current planning position which has highest priority
         startPlace         (1, 3) double   % The location where the robot is initiated.
@@ -47,6 +48,7 @@ classdef robot < handle
             obj.Location = initLocation;
             obj.startPlace = initLocation;
             obj.GlobalMap = gmap;
+            obj.tempGroupMap = zeros(obj.GlobalMap.mapSize);
             obj.GlobalMap.robotMap(initLocation(1), initLocation(2)) = id;
             obj.isDockerIgnored = false;
             obj.stuckSteps = 0;
@@ -188,7 +190,11 @@ classdef robot < handle
 %                 element.robot  robot
 %                 element.module module
 %             end
-            loc = element.Location;
+            if class(element) == "module" || class(element) == "robot"
+                loc = element.Location;
+            elseif class(element) == "int32" || class(element) == "double"
+                loc = element;
+            end
             if nargin == 2
                 if all(abs(obj.Location - loc) == [0, 1, 0]) || ...
                         all(abs(obj.Location - loc) == [1, 0, 0])
@@ -373,21 +379,21 @@ classdef robot < handle
             isArrive = false;
         end
         
-        function localmap = updateMap(obj, checkRobot, m)
+        function localmap = updateMap(obj, is_planning, m)
             if nargin == 3
                 [localmap, ~, pr] = obj.GlobalMap.getMap(m.Location, "m");
             else
                 [localmap, ~, pr] = obj.GlobalMap.getMap(obj.Location, "r");
             end
             if nargin == 1
-                checkRobot = true;
+                is_planning = true;
             end
             if obj.stuckSteps > 5
-                checkRobot = false;
+                is_planning = false;
             end
             % Assume static objects are known
             localmap = localmap | obj.GlobalMap.obstacleMap | ...
-                obj.GlobalMap.dockerMap;
+                obj.GlobalMap.dockerMap | obj.tempGroupMap;
             if obj.isDockerIgnored
                 ignore_temp = obj.ignoredPos;
                 [r, c] = find(obj.GlobalMap.dockerMap);
@@ -417,7 +423,7 @@ classdef robot < handle
             localmap(obj.Location(1), obj.Location(2)) = 0;
             
             % Check the robot priority
-            if checkRobot
+            if is_planning
                 [Nr, ~] = size(pr);
                 for i=1:Nr
                     if pr(i,3) > obj.ID
@@ -463,6 +469,11 @@ classdef robot < handle
             end
             if obj.isDockerIgnored
                 obj.ignoredPos = ignore_temp;
+            end
+            
+            % Set the goal position as empty
+            if is_planning
+                obj.CognMap(obj.Goal(1), obj.Goal(2)) = 0;
             end
         end
         

@@ -6,6 +6,7 @@ classdef moduleGroup < handle
         ModuleList  (:, 1)  module        % An array of module pointers
         Boundary    (2, 2)  double        % Rectangular bound [xmin, ymin; xmax, ymax]
         Size        (1, 1)  int32         % Number of modules
+        walkCount = 0
 %         LeadRobot   (1, 1)  robot         % leading robot of the module
 %         DockGpIDs           int32         % The module group to dock with
     end
@@ -26,6 +27,26 @@ classdef moduleGroup < handle
             else
                 obj.Size = 0;
                 obj.Boundary = [0, 0; 0, 0];
+            end
+        end
+        
+        function walk(obj, wait_length)
+            % Wait length = 1: the module moves every other step
+            if nargin == 1
+                wait_length = 4;
+            end
+            if obj.walkCount >= wait_length
+                % walk
+                % TODO: find avaliable directions
+                % update the location for all modules
+                % refer to the walk method for a single module
+                
+                % update the map for each module
+                
+                % reset the walk count
+                obj.walkCount = 0;
+            else
+                obj.walkCount = obj.walkCount + 1;
             end
         end
         

@@ -7,7 +7,7 @@ classdef map < handle
         obstacleMap           logical  % Obstacle map (1 means occupied)
         dockerMap             logical  % Docker map
         robotMap              int32    % Robot map
-        workerRobotMap        int32    % Robot which current status is working
+        workerRobotMap        int32    % Robot (with its carrying modules) which current status is working
         moduleMap             int32    % Module map
         groupMap              int32    % Group map
         targetMap             int32    % Target map
@@ -179,6 +179,20 @@ classdef map < handle
 %                     disp(pr);
 %                 end
             end
+        end
+        
+        function g_ids = getGroupAroundTarget(obj, tar)
+            t_bound = tar.Boundary;
+            neighbour = [t_bound(1,1:2)-2; t_bound(2,1:2)+2];
+            neighbour(1, 1:2) = max(neighbour(1, 1:2), 0);
+            neighbour(2, 1) = min(neighbour(2, 1), obj.mapSize(1));
+            neighbour(2, 2) = min(neighbour(2, 2), obj.mapSize(2));
+            x_min = neighbour(1,1);x_max = neighbour(2,1);
+            y_min = neighbour(1,2);y_max = neighbour(2,2);
+%             local_map = xor(obj.groupMap, obj.workerRobotMap);
+            local_map = obj.groupMap(x_min:x_max, y_min:y_max);
+            [~, ~, g_ids] = find(local_map);
+            g_ids = unique(g_ids);
         end
         
         function showMap(obj, optional_map)

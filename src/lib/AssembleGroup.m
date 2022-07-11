@@ -10,13 +10,14 @@ classdef AssembleGroup < handle
         attachdir          int32     % robot location - attached module location
         GlobalMap          map       % "pointer" to a global map object
         status             logical   % 0 = fetch; 1 = construct.
-        waiting            logical
+        waiting            logical   % 机器人靠近一个static目标，但是需要先等待对接group到达的状态
         meetingList        int32     % record all the robots that have met
         % dock
         dockFlag           logical
         dockGpID           int32
         changingSite       logical
         % extension
+        target_option      int32
         cl                 int32     % current layer in the extension tree
         ext                Extension
         c_tar_i            int32
@@ -48,6 +49,7 @@ classdef AssembleGroup < handle
             obj.changingSite = false;
         end
         
+        %% Search methods
         function initSearch(obj)
             loc = obj.LeadRobot.Location(1:2);
             [ld, sd] = obj.setSearchDir(loc);
@@ -184,6 +186,8 @@ classdef AssembleGroup < handle
                     end
 %                     temp = obj.getAttachDirs(m_loc(i, 1:2), m_loc(i,3));
 % TODO: m_loc目前只支持单个浮动模块抓取，改成兼容抓取group
+% 返回id即发送抓取指令，所以在抓取之前需要先检查是否为当前建造过程需要的抓取对象
+% （单个模块or模块组，模块组是否符合建造需求）
                     temp = obj.getAttachDirs(m_loc(i, 1:2));
                     [temp_n, ~] = size(temp);
                     for j=1:temp_n
@@ -240,27 +244,125 @@ classdef AssembleGroup < handle
                 end
             end
             if is_arrive && (~isempty(m_loc))
-                id_m = m_loc(1, 3);
+                [Nm, ~, ~] = size(m_loc);
+                for i=1:Nm
+                    if obj.LeadRobot.checkNeighbour([m_loc(i,1:2), 0])
+                        id_m = m_loc(i, 3);
+                        break
+                    end
+                end
                 return
+            end
+        end
+        
+        %% Extension methods (about targets)
+                
+        function robot2target(obj, option)
+            % option = 1 -> target from left child node
+            % option = 2 -> target from right child node
+            % 首先根据当前target的深度判断是否为倒数第二层的节点，是则
+            % 判断机器人编号是否大于子树倒数第二层节点数量，是则将target
+            % 改为其第二个子节点，否则改为第一个子节点
+            % TODO
+            if nargin == 1
+                option = obj.target_option;
+            else
+                obj.target_option = option;
+            end
+            target = obj.ext.tarTree.get(obj.c_tar_i);
+            if target.Size == 2
+                t_loc = target.TargetList(option).Location;
+            else
+                t_loc = target.getTarLoc(obj.attachModuleID, "display");
+            % TODO: assembleGroup的attachmoduleID属性改成记录
+            % attach module在group中的相对位置，同时查找target
+            % 中对应位置的target location，然后向robot发布goal。
+            % Alternative method: 这个时候相当于已经确定模块和target
+            % display id相对应，直接查找与attachmoduleID有相同display
+            % id的target位置，得到t_loc
+            end
+            if target.is2static
+                obj.LeadRobot.isDockerIgnored = true;
+            end
+            obj.LeadRobot.Goal = ...
+                [int32(t_loc)+obj.attachdir, 0];
+        end
+        
+        function flag = toParentTarget(obj)
+            % 判断是否在子树根节点处，在则直接返回false，不在则更新tar index为父节点
+            if obj.c_tar_i ~= obj.c_tar_root
+                obj.c_tar_i = ...
+                    obj.ext.tarTree.getparent(obj.c_tar_i);
+                obj.robot2target();
+                obj.changingSite = true;
+                flag = true;
+            else
+                flag = false;
+            end
+        end
+        
+        %% Docking methods
+        
+        function ignoreDockPair(obj, target)
+            tlocs = target.getLocs();
+            [n, ~] = size(tlocs);
+            ignore_pos = [];
+            for j=1:n
+                tloc = tlocs(j,:);
+                groupid = obj.GlobalMap.workerRobotMap(tloc(1),tloc(2));
+                if groupid
+                    [r, c] = find(obj.GlobalMap.groupMap==groupid);
+                    ignore_pos = [r, c];
+                    break
+                end
+                if obj.GlobalMap.structureMap(tloc(1),tloc(2))
+                    ignore_pos = tloc;
+                    break
+                end
+            end
+            obj.LeadRobot.setIgnorePos(ignore_pos);
+        end
+        
+                
+        function [is_finish, is_moved] = changeDockSite(obj)
+            % 根据当前target检查机器人对接方向是否在允许的方向中，如果不在则
+            % 发布可行的goal并更换对接面，每调用一次函数移动一步，直到完成对接
+            % 面更换返回true TODO
+            if obj.LeadRobot.isCarrying
+                locs = obj.getDockSites();
+            else
+                locs = [];
+            end
+            [n,~] = size(locs);
+            if obj.robotInLocs(locs)
+                obj.robot2target();
+                obj.LeadRobot.isCarrying = true;
+                is_finish = true;
+                is_moved = false;
+                return
+            else
+                if obj.LeadRobot.isCarrying
+                    disp("Group "+string(obj.groupID)+" starts changing dock site.");
+                    obj.LeadRobot.isCarrying = false;
+                    obj.LeadRobot.Goal(1:n,1:2) = locs;
+                    tlocs = obj.modules.getLocations();
+                    ignore_temp = obj.LeadRobot.ignoredPos;
+                    obj.LeadRobot.setIgnorePos([ignore_temp; tlocs(:, 1:2)]);
+                end
+                is_finish = obj.move();
+                is_moved = true;
+%                 obj.robotGp(i).LeadRobot.setIgnorePos(ignore_temp);
+            end
+            if is_finish
+                obj.LeadRobot.isCarrying = true;
+                obj.findAttachment();
+                obj.robot2target();
             end
         end
         
         function locs = getDockSites(obj)
             % find avaliable dock sites from current target and module
             % locations.
-            if obj.groupID == 4
-                dirs = [1, 0];
-                m = obj.modules.getModule(obj.attachModuleID);
-                mloc = m.Location(1:2);
-                locs = mloc+dirs;
-                return
-            elseif obj.groupID == 2
-                dirs = [-1, 0];
-                m = obj.modules.getModule(obj.attachModuleID);
-                mloc = m.Location(1:2);
-                locs = mloc+dirs;
-                return
-            end
             tar = obj.ext.getTargetByIdx(obj.c_tar_i);
             locs = obj.getAllSites();
             [n, ~] = size(locs);
@@ -366,10 +468,22 @@ classdef AssembleGroup < handle
             dirs(del_i, :) = [];
         end
         
+        %%  Moving methods
         function is_arrive = move(obj)
             obj.updateMap("del");
             is_arrive = obj.LeadRobot.move();
             obj.updateMap("add");
+        end
+        
+        function markGroupObstacle(obj, g_id)
+            if g_id == 0
+                obj.LeadRobot.tempGroupMap = zeros(size(obj.LeadRobot.tempGroupMap));
+            else
+                [r, c] = find(obj.GlobalMap.workerRobotMap==g_id);
+                for i=1:length(r)
+                    obj.LeadRobot.tempGroupMap(r(i), c(i)) = g_id;
+                end
+            end
         end
         
         function updateMap(obj, options)
@@ -392,6 +506,7 @@ classdef AssembleGroup < handle
                             mod_loc(2)) = val;
                     end
                 end
+                obj.LeadRobot.priorPlanningID = 0;
             end
         end
         
@@ -405,6 +520,7 @@ classdef AssembleGroup < handle
             % TODO: change to optional argument (add or delete, ect)
             if options == "add"
                 if nargin == 3
+                    % TODO 需要支持module/moduleGroup两种输入
                     obj.LeadRobot.fetchModule(m);
                 end
                 val = obj.groupID;
@@ -429,6 +545,22 @@ classdef AssembleGroup < handle
             end
         end
         
+        %%  Auxiliary methods
+        function changeStatus(obj, status)
+           obj.status = status;
+           if status
+               val = obj.groupID;
+           else
+               val = 0;
+           end
+           r_loc = obj.LeadRobot.Location(1:2);
+           obj.GlobalMap.workerRobotMap(r_loc(1), r_loc(2)) = val;
+           m_locs = obj.modules.getLocations();
+           for i=1:obj.modules.Size
+               obj.GlobalMap.workerRobotMap(m_locs(1), m_locs(2)) = val;
+           end
+        end
+        
         function findAttachment(obj)
             % find attach pos
             obj.attachdir = [];
@@ -450,6 +582,19 @@ classdef AssembleGroup < handle
                 end
             end
         end
+                
+        function decision = robotInLocs(obj, locs)
+            r_loc = obj.LeadRobot.Location;
+            [n,~] = size(locs);
+            for i=1:n
+                if all(r_loc(1:2) == locs(i, 1:2))
+                    decision = true;
+                    return
+                end
+            end
+            decision = false;
+        end
+        
     end
 end
 
