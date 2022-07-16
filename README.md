@@ -1,1 +1,1 @@
-# Planning for module robot docking
+# Planning for docking of module robots.
