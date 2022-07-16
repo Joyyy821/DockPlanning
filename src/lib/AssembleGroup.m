@@ -10,12 +10,14 @@ classdef AssembleGroup < handle
         attachdir          int32     % robot location - attached module location
         GlobalMap          map       % "pointer" to a global map object
         status             logical   % 0 = fetch; 1 = construct.
-        waiting            logical   % 机器人靠近一个static目标，但是需要先等待对接group到达的状态
+        
         meetingList        int32     % record all the robots that have met
         % dock
         dockFlag           logical
         dockGpID           int32
         changingSite       logical
+        dockSiteBlocked    logical
+        delay_access = false
         % extension
         target_option      int32
         cl                 int32     % current layer in the extension tree
@@ -45,7 +47,7 @@ classdef AssembleGroup < handle
                 obj.GlobalMap.groupMap(loc(1), loc(2)) = obj.groupID;
             end
             obj.status = false;
-            obj.waiting = false;
+            obj.dockSiteBlocked = false;
             obj.changingSite = false;
         end
         
@@ -208,7 +210,9 @@ classdef AssembleGroup < handle
             end
             m_loc(del_m, :) = [];
             if isempty(m_loc)
-                obj.LeadRobot.setIgnorePos([]);
+                if ~obj.delay_access
+                    obj.LeadRobot.setIgnorePos([]);
+                end
                 % Step 2: set searching goal
                 c_idx = obj.search_var(1);
                 if ~c_idx || all(obj.LeadRobot.Location(1:2) ==...
@@ -369,8 +373,13 @@ classdef AssembleGroup < handle
             pos_shift = obj.LeadRobot.Goal - obj.LeadRobot.Location;
             pos_shift = pos_shift(1:2);
             del_i = [];
-            om = obj.GlobalMap.groupMap | obj.GlobalMap.structureMap | ...
+            if obj.dockSiteBlocked
+                om = obj.GlobalMap.workerRobotMap | obj.GlobalMap.structureMap | ...
                     obj.GlobalMap.dockerMap | obj.GlobalMap.obstacleMap;
+            else
+                om = obj.GlobalMap.structureMap | ...
+                        obj.GlobalMap.dockerMap | obj.GlobalMap.obstacleMap;
+            end
             [r, c] = find(obj.GlobalMap.groupMap==obj.groupID);
             for i=1:length(r)
                 om(r(i),c(i)) = 0;
@@ -578,8 +587,13 @@ classdef AssembleGroup < handle
                 if m_id && ~isempty(find(all_mod_ids==m_id, 1))
                     obj.attachModuleID = [obj.attachModuleID, m_id];
                     obj.attachdir = [obj.attachdir; -dirs(i, :)];
-                    obj.modules.ModuleList(1).PosShift = [obj.attachdir, 0];
+%                     obj.modules.ModuleList(1).PosShift = [obj.attachdir, 0];
                 end
+            end
+            for i=1:obj.modules.Size
+                m_pos = obj.modules.ModuleList(i).Location;
+                pos_shift = loc - m_pos;
+                obj.modules.ModuleList(i).PosShift = pos_shift;
             end
         end
                 

@@ -224,12 +224,21 @@ classdef targetGroup < matlab.mixin.Copyable
                 if tar.Location(option+1) < pos
                     if c(option+1) >= pos
                         e_delta = c(option+1) - pos + 1;
+%                         if e_delta == 0
+%                             sign = e_delta / abs(e_delta);
+%                             e_delta = sign * floor(abs(e_delta));
+%                         end
                         tar.Location(option+1) = tar.Location(option+1) - exl*e_delta;
                     end
                     tar_l.AddTarget(tar);
                 else
                     if c(option+1)< pos
                         e_delta = pos - c(option+1);
+%                         if e_delta == 0
+%                             sign = e_delta / abs(e_delta);
+%                             e_delta = sign * ceil(abs(e_delta));
+%                         end
+%                         e_delta = c(option+1) - pos + 1;
                         tar.Location(option+1) = tar.Location(option+1) + exl*e_delta;
                     end
                     tar_r.AddTarget(tar);

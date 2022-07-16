@@ -27,6 +27,7 @@ classdef robot < handle
         stepCount = 1                % Number of total steps
         pauseCmd  % Robot will not move if true.
         stuckSteps    int32
+        waiting            logical   % 机器人靠近一个目标，但是需要先等待对接group到达的状态
 %         searchDir = [1, 1]
     end
 	
@@ -38,7 +39,7 @@ classdef robot < handle
                 % Default construction function
                 obj.ID = 0;
                 obj.Location = [0, 0, 0];
-                obj.GlobalMap = map(15, 15);
+                obj.GlobalMap = map([0, 0]);
                 return
             end
             if nargin == 2
@@ -52,6 +53,7 @@ classdef robot < handle
             obj.GlobalMap.robotMap(initLocation(1), initLocation(2)) = id;
             obj.isDockerIgnored = false;
             obj.stuckSteps = 0;
+            obj.waiting = false;
         end
         
 %         function searchModule(obj)
@@ -256,8 +258,46 @@ classdef robot < handle
         function moveModule(obj)
             obj.carriedModule.moveModuleGp(obj.Location);
         end
+
+        function walk(obj)
+            % move to a random direction (choose from avaliable directions)
+            dirs = [0, 1; 0, -1; 1, 0; -1, 0];
+            avaliable_dirs = [];
+            for i=1:4
+                if obj.canMove(dirs(i,:))
+                    avaliable_dirs = [avaliable_dirs; dirs(i,:)];
+                end
+            end
+            [n,~] = size(avaliable_dirs);
+            if n == 0
+                obj.stuckSteps = obj.stuckSteps + 1;
+            else
+                i_dir = randi(n);
+                nextLoc = obj.Location(1:2) + avaliable_dirs(i_dir, :);
+                obj.GlobalMap.robotMap(obj.Location(1), obj.Location(2)) = 0;
+                obj.GlobalMap.robotMap(nextLoc(1), nextLoc(2)) = obj.ID;
+                obj.Location(1:2) = nextLoc;
+                if obj.isCarrying
+                    obj.moveModule();
+                end
+                obj.stuckSteps = 0;
+            end
+        end
         
         function isArrive = move(obj)
+            % move the robot randomly if it has stuck for more than 10
+            % steps.
+            if obj.waiting
+%                 obj.stuckSteps = obj.stuckSteps + 1;
+                isArrive = false;
+                return
+            end
+            if obj.stuckSteps > 5
+                obj.walk();
+                isArrive = false;
+                return
+            end
+            
             % Check whether the robot has arrived at the goal place.
             e = 10e-3;
             [goal_n, ~] = size(obj.Goal);

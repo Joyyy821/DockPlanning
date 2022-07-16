@@ -11,7 +11,7 @@ for i=1:N
 end
 all_tar = targetGroup(Tars);
 
-gmap = map(10, 10);
+gmap = map([20, 20]);
 obstacle_locs = [1, 5; 1, 6; 1, 7];
 obstacles = obstacle(obstacle_locs, gmap, true);
 
@@ -48,6 +48,6 @@ display = display2D(gmap.mapSize, "FinalTarget", all_tar, ...
 t = Extension(all_tar, gmap);
 t.TargetToTree([2, 6], 3);
 % t.showTree();
-% pause(10);
+% pause(6);
 t.showExtension(display, 1);
 % [o, sr] = t.genConstructOrder(3);

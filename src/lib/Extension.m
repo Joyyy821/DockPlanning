@@ -12,7 +12,7 @@ classdef Extension < handle
         curBFSit int32
         curIdxT tree         % Index tree map to the original index
 %         curIdxTwLeaf  tree
-        center (1, 2) int32  % Extension center
+        center (1, 2) double % Extension center
         BFSit  int32         % Breadth first search iterator of tarTree
         Size                 % Number of targets
         extL                 % Extension length
@@ -230,6 +230,7 @@ classdef Extension < handle
             % is_fin = false;
             i = 1;
             c_layer = 1;
+%             L = length(obj.BFSit);
             L = length(obj.BFSit) - obj.finTar.Size;
             while i < L
                 cur_node = obj.tarTree.get(obj.BFSit(i));

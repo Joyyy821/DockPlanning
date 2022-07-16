@@ -225,6 +225,7 @@ classdef Trial < handle
                 [is_changed, is_moved] = obj.robotGp(i).changeDockSite();
                 if is_changed
                     obj.robotGp(i).changingSite = false;
+                    obj.robotGp(i).dockSiteBlocked = false;
                 end
                 if is_moved
                     return
@@ -246,13 +247,18 @@ classdef Trial < handle
                             % 需要根据获得的模块形状判断target位置
                         end
                     end
+                    if obj.robotGp(i).delay_access
+                        obj.robotGp(i).LeadRobot.setIgnorePos([]);
+                        obj.robotGp(i).delay_access = false;
+                    end
                 else
                     % Navigate to the target
-                    if ~obj.robotGp(i).waiting
-                        is_arrive = obj.robotGp(i).move();
-                    else
-                        is_arrive = false;
-                    end
+                    is_arrive = obj.robotGp(i).move();
+%                     if ~obj.robotGp(i).waiting
+%                         is_arrive = obj.robotGp(i).move();
+%                     else
+%                         is_arrive = false;
+%                     end
                     if is_arrive
                         % 如果是static target，attach module然后回去继续搜索
                         % 如果是float target：
@@ -288,6 +294,7 @@ classdef Trial < handle
                             if obj.isTargetCompleted()
                                 obj.dockandRecord();
                                 obj.toNextPT();
+                                obj.robotGp(i).delay_access = true;
                             else
                                 obj.robotGp(i).changeStatus(true);
                                 obj.robotGp(i).changingSite = true;
@@ -320,9 +327,10 @@ classdef Trial < handle
                                 if t.is2static
                                     m_id = obj.robotGp(i).modules.getIDs();
                                     if isempty(find(t.dockerPoints==m_id(1), 1))
-                                        obj.robotGp(i).waiting = true;
+                                        obj.robotGp(i).LeadRobot.waiting = true;
                                         disp("Group "+string(i)+...
-                                            " waiting for docking.");
+                                            " waiting for docking.");                            % 问题：如果有部分已经完成对接但是其他的机器人还没记完meeting？
+
                                         return
 %                                         else
 
@@ -332,7 +340,7 @@ classdef Trial < handle
 %                             end
                             tonext_flag = false;
                             if occupied(2)
-                                obj.robotGp(i).waiting = false;
+                                obj.robotGp(i).LeadRobot.waiting = false;
                                 % ignore dock pair
                                 obj.robotGp(i).ignoreDockPair(t);
                             end
@@ -363,6 +371,8 @@ classdef Trial < handle
                             if tonext_flag
                                 obj.recordMeeting(occupied(2));
                                 obj.robotGp(i).LeadRobot.setIgnorePos([]);
+%                                 obj.robotGp(i).LeadRobot.addIgnorePos()
+%                                 obj.robotGp(i).delay_access = true;
                                 obj.robotGp(i).markGroupObstacle(occupied(1));
                                 obj.toNextPT();
                                 obj.robotGp(i).robot2target(1);
@@ -387,8 +397,8 @@ classdef Trial < handle
                     %     if the other part arrives
                     %         dock and leave for next subtree;
                     % TODO: implement docking?
-                    [silibing_arrive, s_id] = obj.checkSilibingTarget();
-                    if silibing_arrive
+                    [target_complete, s_id] = obj.toCurrentTarget();
+                    if target_complete
                         if ~s_id
                             obj.fixed_mods = [obj.fixed_mods, ...
                                     obj.robotGp(i).modules];
@@ -396,8 +406,12 @@ classdef Trial < handle
                             obj.toNextSubtree();
                             return
                         end
+                        if length(obj.robotGp(s_id).meetingList) < obj.N_rob-1
+                            return
+                        end
                         obj.dockandRecord(i, s_id, false);
                         extract_flag = obj.robotGp(i).toParentTarget();
+                        obj.toNextSubtree(s_id);
                         if ~extract_flag   % arrived the subtree root
                             t = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
                             if t.is2static
@@ -486,19 +500,40 @@ classdef Trial < handle
             end
         end
         
-        function [silibing_arrive, s_id] = checkSilibingTarget(obj)
+        function [target_complete, s_id] = toCurrentTarget(obj)
             % 检查当前target位置有没有另外一边的target在
+            s_id = 0;
             i = obj.ci;
             is_arrive = obj.robotGp(i).move();
+            
             locs = obj.getSilibingTargetLocs();
+%             s_id = obj.gmap.workerRobotMap(locs(1,1), locs(1,2));
             if ~is_arrive
-                silibing_arrive = false;
-                s_id = 0;
-                obj.robotGp(i).LeadRobot.setIgnorePos(locs);
+                target_complete = false;
+                [occupied, observed] = obj.checkTargetStatus();
+                if observed && ~obj.isTargetCompleted(locs)
+                    obj.robotGp(i).LeadRobot.waiting = true;
+                else
+                    obj.robotGp(i).LeadRobot.waiting = false;
+                end
+                if occupied(2)
+                    s_id = occupied(2);
+                    [r, c] = find(obj.gmap.robotMap==s_id);
+                    obj.robotGp(i).LeadRobot.setIgnorePos([r, c; locs]);
+                end
+                % dock site blocked
+                r_loc = obj.robotGp(i).LeadRobot.Location(1:2);
+                if observed && obj.gmap.workerRobotMap(r_loc(1), r_loc(2))
+                    obj.robotGp(i).dockSiteBlocked = true;
+                    obj.robotGp(i).changingSite = true;
+                end
+%                 s_id = 0;
+%                 obj.robotGp(i).LeadRobot.setIgnorePos(locs);
             else
-                silibing_arrive = obj.isTargetCompleted(locs);
-                s_id = obj.gmap.groupMap(locs(1,1), locs(1,2));
+                target_complete = obj.isTargetCompleted(locs);
+                s_id = obj.gmap.workerRobotMap(locs(1,1), locs(1,2));
             end
+            
         end
         
         function locs = getSilibingTargetLocs(obj)
@@ -547,19 +582,40 @@ classdef Trial < handle
         end
         
         function decision = isTargetCompleted(obj, locs)
+            i = obj.ci;
             if nargin == 1
-                i = obj.ci;
                 tar = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
                 locs = tar.getLocs();
 %                 locs = obj.getSilibingTargetLocs();
             end
             [n, ~] = size(locs);
+            s_id = 0;
             for j = 1:n
                 loc = locs(j, 1:2);
                 if ~obj.gmap.structureMap(loc(1), loc(2)) && ...
                         ~obj.gmap.groupMap(loc(1), loc(2))
                     decision = false;
                     return
+                elseif obj.gmap.groupMap(loc(1), loc(2))
+                    temp_id = obj.gmap.groupMap(loc(1), loc(2));
+                    if temp_id ~= i
+                        s_id = temp_id;
+                    end
+                end
+            end
+            if s_id
+                s_tar_idx = obj.robotGp(s_id).c_tar_i;
+                if obj.ext.isTargetPair(obj.robotGp(i).c_tar_i)
+                    p_tar_idx = obj.ext.tarTree.getparent(obj.robotGp(i).c_tar_i);
+                    if s_tar_idx ~= p_tar_idx
+                        decision = false;
+                        return
+                    end
+                else
+                    if s_tar_idx ~= obj.robotGp(i).c_tar_i
+                        decision = false;
+                        return
+                    end
                 end
             end
             decision = true;
@@ -610,19 +666,27 @@ classdef Trial < handle
                     if temp_dist < dist
                         dist = temp_dist; nearest_idx = j;
                     end
+                    if (nearest_idx == 1 && dist <= obj.gmap.robotDist) || ...
+                            (nearest_idx ~= 1 && dist <= obj.gmap.moduleDist)
+                        observed = true;
+                        break
+                    end
+                end
+                if observed
+                    break
                 end
             end
-            if (nearest_idx == 1 && dist <= obj.gmap.robotDist) || ...
-                    (nearest_idx ~= 1 && dist <= obj.gmap.moduleDist)
-                observed = true;
-            end
+%             if (nearest_idx == 1 && dist <= obj.gmap.robotDist) || ...
+%                     (nearest_idx ~= 1 && dist <= obj.gmap.moduleDist)
+%                 observed = true;
+%             end
 
             for j = 1:tar.Size
                 if observed
                     groupid = obj.gmap.groupMap(t_locs(j,1), t_locs(j,2));
                     if (groupid && obj.robotGp(groupid).status)
                         g_size = obj.robotGp(groupid).modules.Size;
-                        if g_size == tar.Size
+                        if g_size == tar.Size  % TODO: 不可以这样判断
                             is_occupied = [groupid, groupid];
                             return
                         else

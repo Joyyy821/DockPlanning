@@ -19,15 +19,21 @@ classdef map < handle
     end
     
     methods
-        function obj = map(Nx, Ny)
+        function obj = map(map_dim, rob_dist, mod_dist)
             %MAP 构造此类的实例
             %   此处显示详细说明
             if nargin == 0
                 Nx = 0; Ny = 0;
             end
-            if nargin == 1
-                Ny = Nx(2);
-                Nx = Nx(1);
+            if nargin >= 1
+                Ny = map_dim(2);
+                Nx = map_dim(1);
+            end
+            if nargin >= 2
+                obj.robotDist = rob_dist;
+            end
+            if nargin >= 3
+                obj.moduleDist = mod_dist;
             end
             obj.mapSize = [Nx, Ny];
             obj.obstacleMap = zeros(Nx, Ny);
