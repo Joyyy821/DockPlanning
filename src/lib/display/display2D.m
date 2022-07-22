@@ -5,15 +5,12 @@ classdef display2D < handle
     properties
         Map_Size                  % length*width
         Robot_Size = [1, 1]       % length*width
-        Obstacle = []
         Robot_Current_Position = []
+        Robot_Dock = []           % With dimension N_robot * 4
         Robot_Path = []
         Robot_PathL = []
-        Object_Current_Position = []
-        Robot_Current_Target = []
-        Object_Current_Target = []
-        Robot_Final_Target = []
-        Object_Final_Target = []
+        Current_Target = []
+        Final_Target = []
         Target_ID = []
         GUI2D % = GUI2D_exported() % GUI object
     end
@@ -25,8 +22,6 @@ classdef display2D < handle
                 options.FinalTarget  targetGroup
                 options.CurrentTarget targetGroup
                 options.Robot  robot
-                options.Module module
-                options.Obstacle     % TODO: data type
             end
             %DISPLAY2D Constructor
             %   version 2 for extension and robot navigation
@@ -34,27 +29,16 @@ classdef display2D < handle
             if isfield(options, "FinalTarget")
                 loc =  obj.objToLoc(options.FinalTarget);
                 obj.getTargetID(options.FinalTarget);
-                obj.Object_Final_Target = loc;
+                obj.Final_Target = loc;
             end
             if isfield(options, "CurrentTarget")
                 loc =  obj.objToLoc(options.CurrentTarget);
-                obj.Object_Current_Target = loc;
+                obj.Current_Target = loc;
                 obj.getTargetID(options.CurrentTarget);
             end
             if isfield(options, "Robot")
                 loc =  obj.objToLoc(options.Robot);
                 obj.Robot_Current_Position = loc;
-                disp("paths: ");
-                disp(obj.Robot_Path);
-                disp("pathL:");
-                disp(obj.Robot_PathL);
-            end
-            if isfield(options, "Module")
-                loc = obj.objToLoc(options.Module);
-                obj.Object_Current_Position = loc;
-            end
-            if isfield(options, "Obstacle")
-                obj.Obstacle = options.Obstacle;
             end
             obj.runGUI2D();
         end
@@ -73,15 +57,12 @@ classdef display2D < handle
             % Load map info to workspace.
             assignin('base', 'Map_Size', obj.Map_Size);
             assignin('base', 'Robot_Size', obj.Robot_Size);
-            assignin('base', 'Obstacle', obj.Obstacle);
             assignin('base', 'Robot_Current_Position', obj.Robot_Current_Position);
+            assignin('base', 'Robot_Dock', obj.Robot_Dock);
             assignin('base', 'Robot_Path', obj.Robot_Path);
             assignin('base', 'Robot_PathL', obj.Robot_PathL);
-            assignin('base', 'Object_Current_Position', obj.Object_Current_Position);
-            assignin('base', 'Robot_Current_Target', obj.Robot_Current_Target);
-            assignin('base', 'Object_Current_Target', obj.Object_Current_Target);
-            assignin('base', 'Robot_Final_Target', obj.Robot_Final_Target);
-            assignin('base', 'Object_Final_Target', obj.Object_Final_Target);
+            assignin('base', 'Current_Target', obj.Current_Target);
+            assignin('base', 'Final_Target', obj.Final_Target);
             assignin('base', 'Target_ID', obj.Target_ID);
         end
         
@@ -98,17 +79,15 @@ classdef display2D < handle
                 obj
                 options.CurrentTarget  targetGroup
                 options.Robot  robot
-                options.Module module
-%                 options.PartialTargetIDs
+                options.TargetID targetGroup
                 options.PartialTargets
-%                 options.Obstacle     % TODO: data type
             end
             % TODO: update the properties and ws variables
 %             disp(obj.GUI2D.Num_robot);
             if isfield(options, "CurrentTarget")
-                obj.Object_Current_Target = obj.objToLoc(options.CurrentTarget);
-                obj.getTargetID(options.CurrentTarget);
-                assignin('base', 'Object_Current_Target', obj.Object_Current_Target);
+                obj.Current_Target = obj.objToLoc(options.CurrentTarget);
+%                 obj.getTargetID(options.CurrentTarget);
+                assignin('base', 'Current_Target', obj.Current_Target);
             end
             if isfield(options, "Robot")
                 obj.Robot_Current_Position = obj.objToLoc(options.Robot);
@@ -116,10 +95,10 @@ classdef display2D < handle
                 assignin('base', 'Robot_Path', obj.Robot_Path);
                 assignin('base', 'Robot_PathL', obj.Robot_PathL);
             end
-            if isfield(options, "Module")
-                obj.Object_Current_Position = obj.objToLoc(options.Module);
-                assignin('base', 'Object_Current_Position', obj.Object_Current_Position);
+            if isfield(options, "TargetID")
+                obj.getTargetID(options.TargetID);
                 assignin('base', 'Target_ID', obj.Target_ID);
+                obj.GUI2D.updateTargetID = true;
             end
             if isfield(options, "PartialTargets")
 %                 idxs = options.PartialTargetIDs;
@@ -127,15 +106,18 @@ classdef display2D < handle
                 [n, ~] = size(locs);
                 for i=1:n
                     if any(locs(i, :))
-                        obj.Object_Current_Target(i, :) = locs(i, :);
+                        obj.Current_Target(i, :) = locs(i, :);
                     end
                 end
-                assignin('base', 'Object_Current_Target', obj.Object_Current_Target);
+                assignin('base', 'Current_Target', obj.Current_Target);
             end
 %             if isfield(options, "Obstacle")
 %                 obj.Obstacle
 %             disp(obj.GUI2D.Num_robot);
             obj.GUI2D.show();
+            if isfield(options, "TargetID")
+                obj.GUI2D.updateTargetID = false;
+            end
         end
         
         function getTargetID(obj, t)
@@ -170,6 +152,11 @@ classdef display2D < handle
                     [path_l(id), ~] = size(r.Path);
                     path_l(id) = path_l(id) + 1;
                 end
+                % Load dock
+                obj.Robot_Dock = false(N, 4);
+                for i=1:N
+                    obj.Robot_Dock(i, 1:4) = e(i).DockJoint;
+                end
                 % Load paths
                 paths = zeros(sum(path_l), 2);
                 for r = e
@@ -185,16 +172,6 @@ classdef display2D < handle
                 obj.Robot_Path = paths;
                 
                 obj.Robot_PathL = path_l;
-            elseif class(e) == "module"
-                % TODO: 改成moduleGroup
-                % 该函数默认只能传一个module
-                N = length(e);
-                loc = zeros(N, 2);
-                for m = e
-                    id = m.ID;
-                    loc(id, :) = m.Location(1:2);
-                end
-                % loc = e.Location(1:2);
             end
         end
         

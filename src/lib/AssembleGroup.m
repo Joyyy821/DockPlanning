@@ -3,31 +3,31 @@ classdef AssembleGroup < handle
     %   此处显示详细说明
     
     properties
+        % Group propereties
         groupID            int32
-        LeadRobot          robot
-        modules            moduleGroup
-        attachModuleID     int32
-        attachdir          int32     % robot location - attached module location
+        LeadRobotID        int32
+        RobotList          robot
+        Size               int32
+        Boundary           (2, 2) int32   % [xmin, ymin; xmax, ymax]
+
         GlobalMap          map       % "pointer" to a global map object
-        status             logical   % 0 = fetch; 1 = construct.
+%         status             logical   % 0 = fetch; 1 = construct.
         
-        meetingList        int32     % record all the robots that have met
+        % Planning properties
+        stuckSteps    int32
+        waiting            logical   % 机器人靠近一个目标，但是需要先等待对接group到达的状态
+        priorPlanningID = 1 % The current planning position which has highest priority
+
         % dock
         dockFlag           logical
         dockGpID           int32
-        changingSite       logical
+%         changingSite       logical
         dockSiteBlocked    logical
-        delay_access = false
-        % extension
-        target_option      int32
-        cl                 int32     % current layer in the extension tree
+%         delay_access = false
+
+        % Extension
         ext                Extension
         c_tar_i            int32
-        c_tar_idx          int32
-        c_tar_root         int32   % current root of the subtree
-        % search
-        searchPath         int32
-        search_var         int32  % [cur search idx, pause counts, start place idxs]
         
     end
     
@@ -39,64 +39,22 @@ classdef AssembleGroup < handle
                 obj.groupID = id;
             end
             if nargin >= 2
-                obj.LeadRobot = rob;
+                obj.RobotList = rob;
+                obj.LeadRobotID = rob.ID;
+                obj.Size = 1;
+                loc = rob.Location(1:2);
+                obj.Boundary = [loc; loc];
             end
             if nargin >= 3
                 obj.GlobalMap = gmap;
-                loc = obj.LeadRobot.Location;
                 obj.GlobalMap.groupMap(loc(1), loc(2)) = obj.groupID;
             end
-            obj.status = false;
-            obj.dockSiteBlocked = false;
-            obj.changingSite = false;
+            obj.stuckSteps = 0;
+            obj.waiting = false;
         end
         
         %% Search methods
-        function initSearch(obj)
-            loc = obj.LeadRobot.Location(1:2);
-            [ld, sd] = obj.setSearchDir(loc);
-            p1 = obj.genPath(ld, sd, loc);
-            [n1, ~] = size(p1);
-            ld2 = -ld; sd2 = -sd;
-            if ~obj.isLocInMap(loc+ld2) && ~obj.isLocInMap(loc+sd2)
-                obj.searchPath = [p1; loc];
-            else
-                p2 = obj.genPath(ld2, sd2, loc);
-                obj.searchPath = [p1; loc; p2; loc];
-            end
-            [n2, ~] = size(obj.searchPath);
-            obj.search_var = [0, 0, n1+1, n2];
-        end
-        
-        function [ld, sd] = setSearchDir(obj, loc)
-            % random a direction
-%             long_dirs = [1, 0; -1, 0; 0, 1; 0, -1];
-%             del_i = [];
-%             for i=1:4
-%                 if ~obj.isLocInMap(loc+long_dirs(i,:))
-%                     del_i = [del_i, i];
-%                 end
-%             end
-%             long_dirs(del_i, :) = [];
-%             [l_n, ~] = size(long_dirs);
-%             ld_idx = randi(l_n);
-%             ld = long_dirs(ld_idx, :);
-            ld = [0, 1];
-            if ld(1)
-                short_dirs = [0, 1; 0, -1];
-            elseif ld(2)
-                short_dirs = [1, 0; -1, 0];
-            end
-            if ~obj.isLocInMap(loc+short_dirs(1, :))
-                sd = short_dirs(2, :);
-            elseif ~obj.isLocInMap(loc+short_dirs(2, :))
-                sd = short_dirs(1, :);
-            else
-                sd_idx = randi(2);
-                sd = short_dirs(sd_idx, :);
-            end
-        end
-        
+     
         function decision = isLocInMap(obj, loc)
             if any(loc(1:2) > obj.GlobalMap.mapSize) || ...
                     any(loc(1:2) < 1)
@@ -106,381 +64,222 @@ classdef AssembleGroup < handle
             end
         end
         
-        function expan_map = getExpandedMap(obj)
-            % return a map with obstacle expaned.
-            expan_map = obj.GlobalMap.obstacleMap | obj.GlobalMap.dockerMap;
-            [allx, ally] = find(expan_map);
-            all_dir = [0 1; 1 0; 0 -1; -1 0; 1 1; 1 -1; -1 1; -1 -1];
-            for i=1:length(allx)
-                for j = 1:8
-                    x = allx(i)+all_dir(j, 1);
-                    y = ally(i)+all_dir(j, 2);
-                    if x <= 0 || y <= 0 || x > obj.GlobalMap.mapSize(1) ...
-                            || y > obj.GlobalMap.mapSize(2)
-                        continue
-                    end
-                    expan_map(x, y) = 1;
-                end
-            end
-        end
-        
-        function p = genPath(obj, ld, sd, loc)
-            cur_loc = loc; cur_d = ld;
-            p = [];
-            mapsize = obj.GlobalMap.mapSize;
-            nstep = 2;
-            while true
-                for i=1:2
-                    if cur_d(i) == 1
-%                         len = mapsize(i) - cur_loc(i);
-                        temp_lst = (cur_loc(i)+1):nstep:mapsize(i);
-%                         len = length(temp_lst);
-%                         temp_p = ones(len, 2) * cur_loc(3-i);
-%                         temp_p(:, i) = temp_lst;
-                    elseif cur_d(i) == -1
-%                         len = cur_loc(i)-1;
-                        temp_lst = flip(1:nstep:(cur_loc(i)-1));
-                    end
-                end
-                len = length(temp_lst);
-                temp_p = ones(len, 2) * cur_loc(3-i);
-                temp_p(:, i) = temp_lst;
-                % Delete the positions with static obstacles (or surround).
-                del_i = [];
-                exp_map = obj.getExpandedMap();
-                for i=1:length(temp_p)
-                    cur_p = temp_p(i, :);
-                    if exp_map(cur_p(1), cur_p(2))
-                        del_i = [del_i, i];
-                    end
-                end
-                temp_p(del_i, :) = [];
-                % TODO: have NOT handle the situation when a certain
-                % row/col is all occupied by obstacles.
-                if ~isempty(temp_p)
-                    p = [p; temp_p; temp_p(end, :)+sd];
-                else
-                    p = [p; cur_loc+sd];
-                end
-                cur_d = -cur_d;
-                cur_loc = p(end, :);
-                if ~obj.isLocInMap(p(end, :))
-                    p(end, :) = [];
-                    break
-                end
-            end
-        end
-        
-        function id_m = search(obj)
-            id_m = [];
-            loc = obj.LeadRobot.Location;
-            % Step 1: update map to see if float module has been found
-            [~, m_loc] = obj.GlobalMap.getMap(loc, "search");
-            del_m = [];
-            if ~isempty(m_loc)
-                [mn, ~] = size(m_loc);
-                robgoals = zeros(1, 3);
-                cnt = 1;
-                for i=1:mn
-                    if obj.GlobalMap.structureMap(m_loc(i,1), m_loc(i,2))
-                        del_m = [del_m, i];
-                        continue
-                    end
-%                     temp = obj.getAttachDirs(m_loc(i, 1:2), m_loc(i,3));
-% TODO: m_loc目前只支持单个浮动模块抓取，改成兼容抓取group
-% 返回id即发送抓取指令，所以在抓取之前需要先检查是否为当前建造过程需要的抓取对象
-% （单个模块or模块组，模块组是否符合建造需求）
-                    temp = obj.getAttachDirs(m_loc(i, 1:2));
-                    [temp_n, ~] = size(temp);
-                    for j=1:temp_n
-%                         robgoals((i-1)*temp_n+j, 1:3) = ...
-%                             [m_loc(i, 1:2)+temp(j, :), 0];
-                    robgoals(cnt, 1:3) = ...
-                            [m_loc(i, 1:2)+temp(j, :), 0];
-                    cnt = cnt + 1;
-                    end
-%                     robgoals = [robgoals; temp];
-                end
-                % Set goal according to the attach dir and module location
-                if ~isempty(find(robgoals,1))
-                    obj.LeadRobot.Goal = robgoals;
-                end
-                % Set the ignore pos
-                obj.LeadRobot.setIgnorePos(m_loc(1, 1:2));
-            end
-            m_loc(del_m, :) = [];
-            if isempty(m_loc)
-                if ~obj.delay_access
-                    obj.LeadRobot.setIgnorePos([]);
-                end
-                % Step 2: set searching goal
-                c_idx = obj.search_var(1);
-                if ~c_idx || all(obj.LeadRobot.Location(1:2) ==...
-                        obj.LeadRobot.Goal(1:2)) || ...
-                        (obj.search_var(2) > 2 && ...
-                        isempty(find(obj.search_var(3:4)==c_idx, 1)))
-                    [n, ~] = size(obj.searchPath);
-                    obj.search_var(1) = c_idx+1;
-                    if obj.search_var(1) > n
-                        obj.initSearch();
-                        obj.search_var(1) = 1;
-                    end
-                    obj.search_var(2) = 0;
-                    obj.LeadRobot.Goal = [obj.searchPath(...
-                        obj.search_var(1), :), 0];
-                end
-            end
-            % Step 3: move the robot and check goal
-            is_arrive = obj.move();
-            if obj.LeadRobot.pauseCmd
-                obj.search_var(2) = obj.search_var(2) + 1;
-            end
-            [goal_n, ~] = size(obj.LeadRobot.Goal);
-            e = 10e-3;
-            if ~is_arrive
-                for i=1:goal_n
-                    if norm(obj.LeadRobot.Location(1:2) - ...
-                            obj.LeadRobot.Goal(i, 1:2)) < e
-                        is_arrive = true;
-                        obj.LeadRobot.Goal = obj.LeadRobot.Goal(i,:);
-                        break
-                    end
-                end
-            end
-            if is_arrive && (~isempty(m_loc))
-                [Nm, ~, ~] = size(m_loc);
-                for i=1:Nm
-                    if obj.LeadRobot.checkNeighbour([m_loc(i,1:2), 0])
-                        id_m = m_loc(i, 3);
-                        break
-                    end
-                end
-                return
-            end
-        end
-        
-        %% Extension methods (about targets)
-                
-        function robot2target(obj, option)
-            % option = 1 -> target from left child node
-            % option = 2 -> target from right child node
-            % 首先根据当前target的深度判断是否为倒数第二层的节点，是则
-            % 判断机器人编号是否大于子树倒数第二层节点数量，是则将target
-            % 改为其第二个子节点，否则改为第一个子节点
-            % TODO
-            if nargin == 1
-                option = obj.target_option;
-            else
-                obj.target_option = option;
-            end
-            target = obj.ext.tarTree.get(obj.c_tar_i);
-            if target.Size == 2
-                t_loc = target.TargetList(option).Location;
-            else
-                t_loc = target.getTarLoc(obj.attachModuleID, "display");
-            % TODO: assembleGroup的attachmoduleID属性改成记录
-            % attach module在group中的相对位置，同时查找target
-            % 中对应位置的target location，然后向robot发布goal。
-            % Alternative method: 这个时候相当于已经确定模块和target
-            % display id相对应，直接查找与attachmoduleID有相同display
-            % id的target位置，得到t_loc
-            end
-            if target.is2static
-                obj.LeadRobot.isDockerIgnored = true;
-            end
-            obj.LeadRobot.Goal = ...
-                [int32(t_loc)+obj.attachdir, 0];
-        end
-        
-        function flag = toParentTarget(obj)
-            % 判断是否在子树根节点处，在则直接返回false，不在则更新tar index为父节点
-            if obj.c_tar_i ~= obj.c_tar_root
-                obj.c_tar_i = ...
-                    obj.ext.tarTree.getparent(obj.c_tar_i);
-                obj.robot2target();
-                obj.changingSite = true;
-                flag = true;
-            else
-                flag = false;
-            end
-        end
-        
-        %% Docking methods
-        
-        function ignoreDockPair(obj, target)
-            tlocs = target.getLocs();
-            [n, ~] = size(tlocs);
-            ignore_pos = [];
-            for j=1:n
-                tloc = tlocs(j,:);
-                groupid = obj.GlobalMap.workerRobotMap(tloc(1),tloc(2));
-                if groupid
-                    [r, c] = find(obj.GlobalMap.groupMap==groupid);
-                    ignore_pos = [r, c];
-                    break
-                end
-                if obj.GlobalMap.structureMap(tloc(1),tloc(2))
-                    ignore_pos = tloc;
-                    break
-                end
-            end
-            obj.LeadRobot.setIgnorePos(ignore_pos);
-        end
-        
-                
-        function [is_finish, is_moved] = changeDockSite(obj)
-            % 根据当前target检查机器人对接方向是否在允许的方向中，如果不在则
-            % 发布可行的goal并更换对接面，每调用一次函数移动一步，直到完成对接
-            % 面更换返回true TODO
-            if obj.LeadRobot.isCarrying
-                locs = obj.getDockSites();
-            else
-                locs = [];
-            end
-            [n,~] = size(locs);
-            if obj.robotInLocs(locs)
-                obj.robot2target();
-                obj.LeadRobot.isCarrying = true;
-                is_finish = true;
-                is_moved = false;
-                return
-            else
-                if obj.LeadRobot.isCarrying
-                    disp("Group "+string(obj.groupID)+" starts changing dock site.");
-                    obj.LeadRobot.isCarrying = false;
-                    obj.LeadRobot.Goal(1:n,1:2) = locs;
-                    tlocs = obj.modules.getLocations();
-                    ignore_temp = obj.LeadRobot.ignoredPos;
-                    obj.LeadRobot.setIgnorePos([ignore_temp; tlocs(:, 1:2)]);
-                end
-                is_finish = obj.move();
-                is_moved = true;
-%                 obj.robotGp(i).LeadRobot.setIgnorePos(ignore_temp);
-            end
-            if is_finish
-                obj.LeadRobot.isCarrying = true;
-                obj.findAttachment();
-                obj.robot2target();
-            end
-        end
-        
-        function locs = getDockSites(obj)
-            % find avaliable dock sites from current target and module
-            % locations.
-            tar = obj.ext.getTargetByIdx(obj.c_tar_i);
-            locs = obj.getAllSites();
-            [n, ~] = size(locs);
-            pos_shift = obj.LeadRobot.Goal - obj.LeadRobot.Location;
-            pos_shift = pos_shift(1:2);
-            del_i = [];
-            if obj.dockSiteBlocked
-                om = obj.GlobalMap.workerRobotMap | obj.GlobalMap.structureMap | ...
-                    obj.GlobalMap.dockerMap | obj.GlobalMap.obstacleMap;
-            else
-                om = obj.GlobalMap.structureMap | ...
-                        obj.GlobalMap.dockerMap | obj.GlobalMap.obstacleMap;
-            end
-            [r, c] = find(obj.GlobalMap.groupMap==obj.groupID);
-            for i=1:length(r)
-                om(r(i),c(i)) = 0;
-            end
-            for i = 1:n
-                if tar.isLocInTar(locs(i,:), pos_shift)
-                    del_i = [del_i, i];
-                    continue
-                end
-                loc = locs(i,:)+pos_shift;
-                
-                if om(loc(1), loc(2))
-%                     if any(int32(obj.LeadRobot.Location(1:2)) ~= loc)
-                    del_i = [del_i, i];
-%                     end
-                end
-            end
-            locs(del_i, :) = [];
-%             tar_ch = obj.ext.tarTree.getchildren(obj.c_tar_i);
-%             if length(tar_ch) == 1
-%                 locs = obj.getAllSites();
-%             else
-%                 for i=1:2
-%                     t = tar_ch(i);
-%                     for j = 1:t.Size
-%                         id = t.TargetList(j).displayID;
-%                         if id
-%                             m_id = obj.modules.getIDs();
-%                             if ~isempty(find(m_id==id, 1))
-%                                 break
-%                             end
-%                         else
-%                             break
-%                         end
-%                     end
-%                 end
-%                 
-%             end
-        end
-        
-        function locs = getAllSites(obj)
-            mod_bound = obj.modules.Boundary;
-            [locs, ~] = obj.ext.nearLocs(mod_bound);
-        end
-        
-%         function dirs = getAttachDirs(obj, m_loc, m_id)
-        function dirs = getAttachDirs(obj, m_loc)
-            % TODO: m_loc -> m_bound
-%             tar_ch = obj.ext.tarTree.getchildren(obj.c_tar_i);
-            targp = obj.ext.tarTree.get(obj.c_tar_i);
-            tar_bound = targp.Boundary;
-            dock_idx = obj.ext.tarTree.getsiblings(obj.c_tar_i);
-            while true
-                if dock_idx(1) == obj.c_tar_i && length(dock_idx) == 2
-                    dock_idx = dock_idx(2);
-                    break
-                elseif length(dock_idx) == 2 && dock_idx(2) == obj.c_tar_i
-                    dock_idx = dock_idx(1);
-                    break
-                elseif length(dock_idx) == 1
-                    % TODO: if reach the root?
-                    p = obj.ext.tarTree.getparent(dock_idx);
-                    dock_idx = obj.ext.tarTree.getsiblings(p);
-                end
-            end
-            targp_dock = obj.ext.tarTree.get(dock_idx);
-            tar_dock_bound = targp_dock.Boundary;
-            
-%             tar_loc = obj.ext.getLocations(m_id, obj.cl);
-%             [~, tar_attach_loc] = obj.ext.getSilibing(m_id, obj.cl);
-            dirs = [1, 0; -1, 0; 0, 1; 0, -1];
-%             tar_dir = tar_attach_loc - tar_loc;
-            % [delta_xmin, delta_ymin; delta_xmax, delta_ymax];
-            tar_dir = tar_dock_bound - tar_bound;
-            if all(tar_dir(1, :) > 0)
-                dirs(1, :) = [];
-            elseif all(tar_dir(1, :) < 0)
-                dirs(2, :) = [];
-            elseif all(tar_dir(2, :) > 0)
-                dirs(3, :) = [];
-            elseif all(tar_dir(2, :) < 0)
-                dirs(4, :) = [];
-            end
-            del_i = [];
-            for i=1:3
-                if ~obj.isLocInMap(m_loc+dirs(i, :))
-                    del_i = [del_i, i];
-                end
-                att_loc = dirs(i,:)+targp.TargetList(1).Location;
-                omap = obj.GlobalMap.obstacleMap | obj.GlobalMap.dockerMap;
-                if omap(att_loc(1), att_loc(2))
-                    del_i = [del_i, i];
-                end
-            end
-            dirs(del_i, :) = [];
-        end
-        
         %%  Moving methods
+
+        function setGoal(obj, lead_goal)
+            for i=1:obj.Size
+                obj.RobotList(i).Goal = int32(lead_goal) - obj.RobotList(i).pos_shift;
+            end
+        end
+
+        function decision = canMove(obj, move_dir)
+            for i =1:obj.Size
+                obj.RobotList(i).updateMap(false);
+                % check robot
+                if ~obj.RobotList(i).checkNextStep(move_dir)
+                    decision = 0;
+                    return
+                end
+            end
+            decision = 1;
+        end
+
+        function obstacleExpansion(obj)
+            % TODO
+            % get the module group size and the carring direction
+            obj.RobotList(1).updateMap();
+            map_cp = obj.RobotList(1).CognMap;
+            gp_loc = obj.Boundary;
+            loc = obj.RobotList(1).Location(1:2);
+            % Extension length (in the extension direction, opposite from 
+            % the module carrying direction): 
+            % [left, lower; right, upper];
+            ext_l = gp_loc - [loc; loc];
+            ext_l(1, :) = max(ext_l(1, :), [0, 0]);
+            ext_l(2, :) = abs(min(ext_l(2, :), [0, 0]));
+            % Combine the cogn map of robot and modules
+            for i=2:obj.Size
+                r_map = obj.RobotList(i).updateMap(true);
+                obj.RobotList(1).CognMap = obj.RobotList(1).CognMap | r_map;
+            end
+            % expand the obstacle accordingly
+            [M, N] = size(map_cp);
+            for i=1:M
+                for j=1:N
+                    if obj.RobotList(1).CognMap(i, j) == 1
+                        left = max(i - ext_l(1, 1), 1);
+                        right = min(i + ext_l(2, 1), M);
+                        down = max(j - ext_l(1, 2), 1);
+                        up = min(j + ext_l(2, 2), N);
+                        map_cp(left:right, down:up) = 1;
+                    end
+                end
+            end
+            
+            % TODO: check the direction. expand the margin
+            map_cp(M-ext_l(1,1)+1:M, :) = 1;
+            map_cp(1:ext_l(2,1), :) = 1;
+            map_cp(N-ext_l(1,2)+1:N, :) = 1;
+            map_cp(1:ext_l(2,2), :) = 1;
+            obj.RobotList(1).CognMap = map_cp;
+        end
+
+        function updatePath(obj, path, rob_i)
+            % According to the path proposed by rob_i, update the path for
+            % all other robots in this group.
+            % if rob_i = 1, update the path for other robots based on the
+            % pos_shift; else update lead robot's path first and then
+            % repeat.
+            if isempty(path)
+                for i=1:obj.Size
+                    obj.RobotList(i).Path = [];
+                end
+            else
+                [n, ~] = size(path);
+                % Update path for the lead robot
+                if rob_i ~= 1
+                    pos_shift = obj.RobotList(rob_i).pos_shift;
+                    for i=1:n
+                        obj.RobotList(1).Path(i,:) = obj.RobotList(1).Path(i,:) + pos_shift;
+                    end
+                end
+                % Update path for the slave robots
+                for i=2:obj.Size
+                    pos_shift = obj.RobotList(i).pos_shift;
+                    for j=1:n
+                        obj.RobotList(i).Path(j,:) = obj.RobotList(1).Path(i,:) - pos_shift;
+                    end
+                end
+            end
+        end
+
+        function [result, path] = plan(obj)
+            % move the robot randomly if it has stuck for more than 10
+            % steps.
+            if obj.waiting
+%                 obj.stuckSteps = obj.stuckSteps + 1;
+                result = false;
+                path = [];
+                obj.updatePath([]);
+                return
+            end
+%             if obj.stuckSteps > 5
+%                 obj.walk();
+%                 result = false;
+%                 return
+%             end
+            
+            % Check whether the robot has arrived at the goal place.
+            e = 10e-3;
+            [goal_n, ~] = size(obj.RobotList(1).Goal);
+            for i=1:goal_n
+                if norm(obj.RobotList(i).Location(1:2) - obj.RobotList(i).Goal(i, 1:2)) < e
+                    disp("Group "+string(obj.groupID)+" already at the goal position "+...
+                        "["+string(obj.RobotList(i).Goal(i, 1))+", "+...
+                        string(obj.RobotList(i).Goal(i, 2))+"].");
+                    result = true;
+                    obj.RobotList(i).Goal = obj.RobotList(i).Goal(i, :);
+                    path = [];
+                    obj.updatePath([]);
+                    return
+                end
+            end
+            
+            % Planning in turn
+            if obj.Size == 1
+                obj.priorPlanningID = 1;
+            end
+            obj.RobotList(obj.priorPlanningID).Astar();
+            path = obj.RobotList(obj.priorPlanningID).Path;
+            loc = obj.RobotList(obj.priorPlanningID).Location(1:2);
+
+            if obj.RobotList(obj.priorPlanningID).pauseCmd
+                disp("Group "+string(obj.groupID)+" stuck.");
+                result = false;
+                obj.stuckSteps = obj.stuckSteps + 1;
+                obj.updatePath(path, obj.priorPlanningID);
+                return
+            end
+
+            while norm(path(1, 1:2) - loc) < e
+%                 disp("delete:");
+%                 disp(obj.Path(1, :));
+                path(1, :) = [];
+            end
+            nextLoc = path(1, 1:2);
+            move_dir = nextLoc - loc;
+            cnt = 0;
+            while true
+                % Find a feasible path for the group
+                decision = obj.canMove(move_dir);
+                if decision ~= 1 && ...
+                        (obj.Size > 1 && cnt < obj.Size-1)
+                    % Rotate to the next one
+                    obj.priorPlanningID = rem(obj.priorPlanningID, obj.Size) + 1;
+                    disp("Group "+string(obj.groupID)+" is blocked. Replanning path...");
+                    path = obj.RobotList(obj.priorPlanningID).Path;
+                    if obj.RobotList(obj.priorPlanningID).pauseCmd
+                        disp("Group "+string(obj.groupID)+" blocked.");
+                        result = false;
+                        obj.stuckSteps = obj.stuckSteps + 1;
+                        obj.updatePath(path, obj.priorPlanningID);
+                        return
+                    end
+                    % Update the move direction and count
+                    nextLoc = path(1, 1:2);
+                    loc = obj.RobotList(obj.priorPlanningID).Location(1:2);
+                    move_dir = nextLoc - loc;
+                    cnt =cnt + 1;
+                elseif decision == 1
+                    disp("Replan success from object No. "+...
+                        string(obj.priorPlanningID));
+%                     disp(obj.Path);
+                    break
+                elseif (obj.Size > 1 && cnt == obj.Size-1)
+                    % No path can work, consider obstacle expansion
+                    obj.RobotList(1).obstacleExpansion();
+                    obj.RobotList(1).AstarAlg(obj.RobotList(1).Location(1:2), ...
+                        obj.RobotList(1).Goal(1:2));
+                    
+                    if obj.RobotList(1).pauseCmd == true
+                        disp("Group "+string(obj.groupID)+" blocked.");
+                        path = [];
+                        result = false;
+                        obj.stuckSteps = obj.stuckSteps + 1;
+                        obj.updatePath(path, 1);
+                        return
+                    else
+                        disp("Replanned path by obstacle expansion.");
+%                         disp(obj.Path);
+                        path = obj.RobotList(1).Path;
+                        next_loc = path(2, 1:2);
+                        move_dir = next_loc - obj.RobotList(1).Location(1:2);
+                        cnt =cnt + 1;
+%                         break
+                    end
+                else
+                    for j=1:obj.Size
+                        obj.RobotList(j).pauseCmd = true;
+                    end
+                    disp("Group "+string(obj.groupID)+" stuck.");
+                    obj.updatePath([], 1);
+                    result = false;
+                    obj.stuckSteps = obj.stuckSteps + 1;
+                    return
+                end
+            end
+            result = false;
+        end
+
         function is_arrive = move(obj)
             obj.updateMap("del");
-            is_arrive = obj.LeadRobot.move();
+            [is_arrive, path] = obj.plan();
+            if ~isempty(path)
+                for i=1:obj.Size
+                    obj.RobotList(i).move();
+                end
+            end
+            obj.setGroupLocForRobot();
             obj.updateMap("add");
         end
         
@@ -494,6 +293,12 @@ classdef AssembleGroup < handle
                 end
             end
         end
+
+        function setIgnorePos(obj, locs)
+            for i=1:obj.Size
+                obj.RobotList(i).setIgnorePos(locs);
+            end
+        end
         
         function updateMap(obj, options)
             if options == "add"
@@ -501,102 +306,54 @@ classdef AssembleGroup < handle
             elseif options == "del"
                 val = 0;
             end
-            rob_loc = obj.LeadRobot.Location;
-            if obj.status
-                obj.GlobalMap.workerRobotMap(rob_loc(1), rob_loc(2)) = val;
-            end
-            obj.GlobalMap.groupMap(rob_loc(1), rob_loc(2)) = val;
-            if obj.LeadRobot.isCarrying
-                for i=1:obj.modules.Size
-                    mod_loc = obj.modules.ModuleList(i).Location;
-                    obj.GlobalMap.groupMap(mod_loc(1), mod_loc(2)) = val;
-                    if obj.status
-                        obj.GlobalMap.workerRobotMap(mod_loc(1), ...
-                            mod_loc(2)) = val;
-                    end
-                end
-                obj.LeadRobot.priorPlanningID = 0;
+            for i=1:obj.Size
+                loc = obj.RobotList(i).Location;
+                obj.GlobalMap.groupMap(loc(1), loc(2)) = val;
             end
         end
         
-        function updateGroup(obj, options, m)
-%             arguments
-%                 obj
-%                 options.add
-%             end
-            %METHOD1 此处显示有关此方法的摘要
-            %   此处显示详细说明
-            % TODO: change to optional argument (add or delete, ect)
-            if options == "add"
-                if nargin == 3
-                    % TODO 需要支持module/moduleGroup两种输入
-                    obj.LeadRobot.fetchModule(m);
-                end
-                val = obj.groupID;
-                
-            elseif options == "del"
-                val = 0;
-                obj.attachModuleID = [];
+        function addGroup(obj, r)
+            arguments
+                obj   AssembleGroup
+                r     AssembleGroup
             end
-            % update the group map
-            for i=1:obj.LeadRobot.carriedModule.Size
-                loc = obj.LeadRobot.carriedModule.ModuleList(i).Location;
-                obj.GlobalMap.groupMap(loc(1), loc(2)) = val;
+            obj.RobotList = [obj.RobotList, r.RobotList];
+            obj.Size = obj.Size + r.Size;
+            % update boundary
+            obj.CombineBoundary(r.Boundary);
+            % update pos shift 
+            r_loc = r.RobotList(1).Location;
+            for i=(obj.Size-r.Size+1):obj.Size
+                loc = obj.RobotList(i).Location;
+                obj.RobotList(i).pos_shift = r_loc - loc;
+                % update map
+                obj.GlobalMap.groupMap(loc(1), loc(2)) = obj.groupID;
             end
-            % update the group attributes
-            if options == "del"
-                obj.LeadRobot.isCarrying = false;
-                obj.LeadRobot.carriedModule = moduleGroup();
+            % update robot attribute
+            obj.setGroupLocForRobot();
+        end
+
+        function setGroupLocForRobot(obj)
+            locs = obj.getLocation();
+            for i=1:obj.Size
+                obj.RobotList(i).groupPos = locs;
             end
-            obj.modules = obj.LeadRobot.carriedModule;
-            if options == "add"
-                obj.findAttachment();
+        end
+
+        function locs = getLocation(obj)
+            locs = zeros(obj.Size, 2);
+            for i=1:obj.Size
+                locs(i, :) = obj.RobotList(i).Location(1:2);
             end
         end
         
         %%  Auxiliary methods
-        function changeStatus(obj, status)
-           obj.status = status;
-           if status
-               val = obj.groupID;
-           else
-               val = 0;
-           end
-           r_loc = obj.LeadRobot.Location(1:2);
-           obj.GlobalMap.workerRobotMap(r_loc(1), r_loc(2)) = val;
-           m_locs = obj.modules.getLocations();
-           for i=1:obj.modules.Size
-               obj.GlobalMap.workerRobotMap(m_locs(1), m_locs(2)) = val;
-           end
+
+        function CombineBoundary(obj, bound)
+            obj.Boundary(1, :) = min(obj.Boundary(1, :), bound(1, :));
+            obj.Boundary(2, :) = max(obj.Boundary(2, :), bound(2, :));
         end
         
-        function findAttachment(obj)
-            % find attach pos
-            obj.attachdir = [];
-            obj.attachModuleID = [];
-            loc = obj.LeadRobot.Location;
-            dirs = [1, 0; -1, 0; 0, 1; 0, -1];
-            for i=1:4
-                m_pos = loc(1:2) + dirs(i, :);
-                if ~obj.isLocInMap(m_pos)
-                    continue
-                end
-                m_id = obj.GlobalMap.moduleMap(loc(1)+dirs(i,1), ...
-                        loc(2)+dirs(i,2));
-                all_mod_ids = obj.modules.getIDs();
-                if m_id && ~isempty(find(all_mod_ids==m_id, 1))
-                    obj.attachModuleID = [obj.attachModuleID, m_id];
-                    obj.attachdir = [obj.attachdir; -dirs(i, :)];
-%                     obj.modules.ModuleList(1).PosShift = [obj.attachdir, 0];
-                end
-            end
-            for i=1:obj.modules.Size
-                m_pos = obj.modules.ModuleList(i).Location;
-                pos_shift = loc - m_pos;
-                obj.modules.ModuleList(i).PosShift = pos_shift;
-            end
-        end
-                
         function decision = robotInLocs(obj, locs)
             r_loc = obj.LeadRobot.Location;
             [n,~] = size(locs);

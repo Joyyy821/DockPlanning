@@ -4,10 +4,6 @@ classdef targetGroup < matlab.mixin.Copyable
         TargetList  (:, 1)  targetPoint   % An array of target pointers
         Boundary    (2, 2)  double        % Rectangular bound [xmin, ymin; xmax, ymax]
         Size        (1, 1)  int32         % Number of targets
-        % whether module at this target is going to dock to a static 
-        % structure (bank or structure already attach to bank).
-        is2static           logical
-        dockerPoints        int32
     end
     
     methods (Access = public)
@@ -35,7 +31,6 @@ classdef targetGroup < matlab.mixin.Copyable
                 obj.Size = 0;
                 obj.Boundary = [0, 0; 0, 0];
             end
-            obj.is2static = false;
         end
         
         function ids = getIDs(obj)
@@ -99,15 +94,9 @@ classdef targetGroup < matlab.mixin.Copyable
             decision = false;
         end
         
-        function success = setDisplayID(obj, t_id, m_id)
-            success = false;
+        function setDisplayID(obj, assignment)
             for i=1:obj.Size
-                if obj.TargetList(i).ID == t_id
-                    if ~obj.TargetList(i).displayID
-                        obj.TargetList(i).displayID = m_id;
-                        success = true;
-                    end
-                end
+                obj.TargetList(i).displayID = assignment(i);
             end
         end
         

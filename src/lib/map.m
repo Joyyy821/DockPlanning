@@ -4,22 +4,17 @@ classdef map < handle
     
     properties
         mapSize        (1, 2) int32    % Map Size: (x, y)
-        obstacleMap           logical  % Obstacle map (1 means occupied)
-        dockerMap             logical  % Docker map
         robotMap              int32    % Robot map
         workerRobotMap        int32    % Robot (with its carrying modules) which current status is working
-        moduleMap             int32    % Module map
         groupMap              int32    % Group map
         targetMap             int32    % Target map
         structureMap          logical  % Final target map
         robotDist = 3                  % Cognition distance of robot
-        moduleDist = 3                 % Cognition distance of module
         robotCogn             logical  % Robot cognition area (circle)
-        moduleCogn            logical  % Module cognition area (circle)
     end
     
     methods
-        function obj = map(map_dim, rob_dist, mod_dist)
+        function obj = map(map_dim, rob_dist)
             %MAP 构造此类的实例
             %   此处显示详细说明
             if nargin == 0
@@ -32,43 +27,24 @@ classdef map < handle
             if nargin >= 2
                 obj.robotDist = rob_dist;
             end
-            if nargin >= 3
-                obj.moduleDist = mod_dist;
-            end
             obj.mapSize = [Nx, Ny];
-            obj.obstacleMap = zeros(Nx, Ny);
-            obj.dockerMap = zeros(Nx, Ny);
             obj.robotMap = zeros(Nx, Ny);
             obj.workerRobotMap = zeros(Nx, Ny);
-            obj.moduleMap = zeros(Nx, Ny);
             obj.targetMap = zeros(Nx, Ny);
             obj.structureMap = zeros(Nx, Ny);
             obj.groupMap = zeros(Nx, Ny);
             obj.robotCogn = obj.getCircle(obj.robotDist);
-            obj.moduleCogn = obj.getCircle(obj.moduleDist);
         end
         
-        function setDist(obj, options)
-            arguments
-                obj
-                options.robot   int32
-                options.module  int32
-            end
-            if isfield(options, "robot")
-                obj.robotDist = options.robot;
-                obj.robotCogn = obj.getCircle(options.robot);
-            end
-            if isfield(options, "module")
-                obj.moduleDist = options.module;
-                obj.moduleCogn = obj.getCircle(options.module);
-            end
-            
+        function setDist(obj, rob_dist)
+            obj.robotDist = rob_dist;
+            obj.robotCogn = obj.getCircle(rob_dist);
         end
         
-        function setStructureMap(obj, mlocs)
-            [n, ~] = size(mlocs);
+        function setStructureMap(obj, locs)
+            [n, ~] = size(locs);
             for i=1:n
-                obj.structureMap(mlocs(i,1), mlocs(i,2)) = 1;
+                obj.structureMap(locs(i,1), locs(i,2)) = 1;
             end
         end
         
@@ -92,20 +68,13 @@ classdef map < handle
             len = sqrt(sum((x - y).^2));
         end
         
-        function [local_map, m_loc, pr] = getMap(obj, loc, type)
+        function [local_map, pr] = getMap(obj, loc)
             % getMap
             %   此处显示详细说明
-            m_loc = [];
-            pr = [];  % robot location + id (priority)
-            if type == "r" || type == "search"
-                dist = obj.robotDist;
-                circle = obj.robotCogn;
-            elseif type == "m"
-                dist = obj.moduleDist;
-                circle = obj.moduleCogn;
-            else
-                error("Wrong input of element type: "+string(type)+". type must be r or m.");
-            end
+            % pr = [];  % robot location + id (priority)
+            dist = obj.robotDist;
+            circle = obj.robotCogn;
+
             local_map = zeros(obj.mapSize(1), obj.mapSize(2));
             l = max(loc(2)-dist, 1);               % left margin
             r = min(loc(2)+dist, obj.mapSize(2));  % right margin
@@ -115,13 +84,10 @@ classdef map < handle
 %             disp("r: "+string(r));
 %             disp("d: "+string(d));
 %             disp("u: "+string(u));
-            mo = obj.obstacleMap(d:u, l:r);        % map obstacle (local)
-            md = obj.dockerMap(d:u, l:r);          % map docker
             mr = obj.robotMap(d:u, l:r);           % map robot
             mw = obj.workerRobotMap(d:u, l:r);     % map worker
             mg = obj.groupMap(d:u, l:r);           % map group
-            mm = obj.moduleMap(d:u, l:r);          % map module
-            ml = mo | mr | mm | md;                % combined local map (to a logical map)
+            ml = mr;                % combined local map (to a logical map)
             % Combine local map with cognition circle
             cl = 1; cr = 2*dist+1; cu = 2*dist+1; cd = 1;
             if r-l == 2*dist && u-d == 2*dist
@@ -148,42 +114,24 @@ classdef map < handle
                 ml = ml & circle(cd:cu, cl:cr);
             end
             local_map(d:u, l:r) = ml;
-            if type == "search"
-                [r, c] = find(local_map);
-                N = length(r);
-                for i=1:N
-                    if obj.moduleMap(r(i), c(i)) && ...
-                            (~obj.groupMap(r(i), c(i)))
-                        temp = [r(i), c(i)];
-                        temp(3) = obj.moduleMap(r(i), c(i));
-                        m_loc = [m_loc; temp];
-%                         return
-                    end
-                end
-            else  % type == r or type == m
-                % TOODO: pr 从mr find出来 并和|circle的index进行比较，如果在
-                % circle内则添加至pr
-                % TODO: map 增加一个一个属性记录正在等待docking的机器人
-                mr_del = mr & (~circle(cd:cu, cl:cr));
-                [r_del, c_del] = find(mr_del);
-                for i=1:length(r_del)
-                    mg(r_del(i), c_del(i)) = 0;
-                    mw(r_del(i), c_del(i)) = 0;
-                end
-                [rr, rc, rv] = find(mg);
-                rr = rr + d - 1;
-                rc = rc + l - 1;
-                pr = [rr, rc, rv];
-                [~, ~, wks] = find(mw);
-                for i=1:length(wks)
-                    ri = find(rv==wks(i));
-                    pr(ri, 3) = 0;
-                end
-                
-%                 if ~isempty(pr)
-%                     disp("find groups:");
-%                     disp(pr);
-%                 end
+
+            % TOODO: pr 从mr find出来 并和|circle的index进行比较，如果在
+            % circle内则添加至pr
+            % TODO: map 增加一个一个属性记录正在等待docking的机器人
+            mr_del = mr & (~circle(cd:cu, cl:cr));
+            [r_del, c_del] = find(mr_del);
+            for i=1:length(r_del)
+                mg(r_del(i), c_del(i)) = 0;
+                mw(r_del(i), c_del(i)) = 0;
+            end
+            [rr, rc, rv] = find(mg);
+            rr = rr + d - 1;
+            rc = rc + l - 1;
+            pr = [rr, rc, rv];
+            [~, ~, wks] = find(mw);
+            for i=1:length(wks)
+                ri = find(rv==wks(i));
+                pr(ri, 3) = 0;
             end
         end
         
@@ -203,12 +151,8 @@ classdef map < handle
         
         function showMap(obj, optional_map)
             if nargin == 1
-                disp("Obstacle map: ");
-                obj.showMap(obj.obstacleMap);
                 disp("Robot map: ");
                 obj.showMap(obj.robotMap);
-                disp("Module map: ");
-                obj.showMap(obj.moduleMap);
                 disp("Current taget map: ");
                 obj.showMap(obj.targetMap);
                 disp("Final target map: ");

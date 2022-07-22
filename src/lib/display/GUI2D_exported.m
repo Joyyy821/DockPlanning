@@ -5,34 +5,28 @@ classdef GUI2D_exported < matlab.apps.AppBase
         UIFigure                   matlab.ui.Figure
         GridLayout                 matlab.ui.container.GridLayout
         LeftPanel                  matlab.ui.container.Panel
-        MapInformationLabel        matlab.ui.control.Label
-        NumberofrobotsLabel        matlab.ui.control.Label
-        NumberofobjectsLabel       matlab.ui.control.Label
-        PauseButton                matlab.ui.control.Button
-        StepsLabel                 matlab.ui.control.Label
-        ItemstodisplayLabel        matlab.ui.control.Label
-        PathSwitch                 matlab.ui.control.Switch
-        DisplaypathLabel_2         matlab.ui.control.Label
-        CTargetSwitch              matlab.ui.control.Switch
-        DisplaycurrenttargetLabel  matlab.ui.control.Label
-        ObjectSwitch               matlab.ui.control.Switch
-        DisplayobjectLabel         matlab.ui.control.Label
-        RobotSwitch                matlab.ui.control.Switch
-        DisplayrobotLabel          matlab.ui.control.Label
-        GridSwitch                 matlab.ui.control.Switch
-        DisplaygridLabel           matlab.ui.control.Label
-        FTargetSwitch              matlab.ui.control.Switch
         DisplayfinaltargetLabel    matlab.ui.control.Label
-        ObstacleSwitch             matlab.ui.control.Switch
-        DisplayobstacleLabel       matlab.ui.control.Label
-        NumberofobstaclesLabel     matlab.ui.control.Label
+        FTargetSwitch              matlab.ui.control.Switch
+        DisplaygridLabel           matlab.ui.control.Label
+        GridSwitch                 matlab.ui.control.Switch
+        DisplayrobotLabel          matlab.ui.control.Label
+        RobotSwitch                matlab.ui.control.Switch
+        DisplaycurrenttargetLabel  matlab.ui.control.Label
+        CTargetSwitch              matlab.ui.control.Switch
+        DisplaypathLabel_2         matlab.ui.control.Label
+        PathSwitch                 matlab.ui.control.Switch
+        ItemstodisplayLabel        matlab.ui.control.Label
+        StepsLabel                 matlab.ui.control.Label
+        PauseButton                matlab.ui.control.Button
+        NumberofrobotsLabel        matlab.ui.control.Label
+        MapInformationLabel        matlab.ui.control.Label
         RightPanel                 matlab.ui.container.Panel
-        UIAxes                     matlab.ui.control.UIAxes
-        UIAxesLegend               matlab.ui.control.UIAxes
-        AdjustthemovingvelocityoftheitemsSliderLabel  matlab.ui.control.Label
-        AdjustthemovingvelocityoftheitemsSlider  matlab.ui.control.Slider
-        assigntargetSwitchLabel    matlab.ui.control.Label
         assigntargetSwitch         matlab.ui.control.Switch
+        assigntargetSwitchLabel    matlab.ui.control.Label
+        AdjustthemovingvelocityoftheitemsSlider  matlab.ui.control.Slider
+        AdjustthemovingvelocityoftheitemsSliderLabel  matlab.ui.control.Label
+        UIAxesLegend               matlab.ui.control.UIAxes
+        UIAxes                     matlab.ui.control.UIAxes
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -54,28 +48,16 @@ classdef GUI2D_exported < matlab.apps.AppBase
                        'position', {}, ... % Current position of the robot
                        'nextPos', {}, ... % Next position of the robot
                        'handlers', {}, ... % Handler of the robot figure and the text label (2D)
+                       'dockers', {}, ...  % Dock joints [up, down, left, right]
+                       'dockHandler', {}, ...  % Handler for the dock joints.
                        'target', {}, ... % Label of the current target
                        ...'targetPosition', {}, ... % Position of the current target
                        'path', {},... % Planed path for the items to move
                        ...'pathL', {}, ... % Path length
                        'pathHandler', {} ... % Handler of the path line (1D)
                        )
-
-        Object = struct(...
-                        'position', {}, ... 
-                        'nextPos', {}, ...
-                        'handlers', {}, ...
-                        'target', {} ...
-                        )
-
-        Robot_targets = struct(... Current target
-                         'assignedLabel', {}, ... Label after assignment
-                         'position', {}, ...
-                         'nextPos', {}, ...
-                         'handlers', {} ...
-                         )
         
-        Object_targets = struct(... Current target
+        targets = struct(... Current target
                          'assignedLabel', {}, ... Label after assignment
                          'position', {}, ...
                          'nextPos', {}, ...
@@ -83,36 +65,29 @@ classdef GUI2D_exported < matlab.apps.AppBase
                          )
         
         % Static items
-        Obstacle = []  % Position of obstacle(s)
-        Obstacle_h = []  % Handler of obstacle (1D, w/o label)
-        Robot_final_target = []  % Final target of robot(s)
-        Robot_final_target_h = []  % Handler of robot final target (2D, w label)
-        Obj_final_target = []  % Final target of object(s)
-        Obj_final_target_h = []  % Handler of object final target (2D, w label)
+        final_target = []  % Final target of object(s)
+        final_target_h = []  % Handler of object final target (2D, w label)
         
         % Representation of items
-        Robot_fig = imread("robot.png")
-        Color_list = ["r", "#0072BD", "[0.5 0.5 0.5]", "#D95319", 'w', '#4DBEEE'] % Color used for display
-        % (1) Robot (2) Object (3) Obstacle (4) Path (5) white (for text)
-        % (6) Current target
-        Target_alpha = 0.5
+        Color_list = ["#0072BD", "#D95319", 'w', '#4DBEEE'] % Color used for display
+        % (1) Robot (2) Path (3) Text (white) (4) Target
         Path_shape = '-'
         Path_width = 1
         
         % Map information
         Num_robot = 0  % Number of robot(s)
-        Num_obj = 0  % Number of object(s)
-        Num_obj_target = 0;
-        Num_robot_target = 0;
-        Num_obstacle = 0  % Number of obstacle(s)
+        Num_target = 0
         step = 0  % Number of step(s)
         
         % Controlling parameters
         V_move = 10  % The velocity for moving items
         Stop_event = false  % Whether the moving process has been paused.
-        CTarget_created = false; % Whether the current targets have been decided.
+        CTarget_created = false  % Whether the current targets have been decided.
         Target_assigned = false  % Whether the current targets have been assigned to robots or objects.
-
+    end
+    
+    properties (Access = public)
+        updateTargetID = false   % whether to update target id when calling the show method.
     end
     
     methods (Access = public)
@@ -157,62 +132,41 @@ classdef GUI2D_exported < matlab.apps.AppBase
             % robot
             app.Robot_size = evalin('base', 'Robot_Size');
             Robot_pos = evalin('base', 'Robot_Current_Position');
+            Robot_dock = evalin('base', 'Robot_Dock');
             pathL = evalin('base', 'Robot_PathL');
             paths = evalin('base', 'Robot_Path');
             [app.Num_robot, ~] = size(Robot_pos);
             for i = 1:app.Num_robot
                 app.Robot(i).position = Robot_pos(i, :);
                 app.Robot(i).nextPos = app.Robot(i).position;
+                app.Robot(i).dockers = Robot_dock(i, :);
                 p_idx = sum(pathL(1:i-1));
                 app.Robot(i).path = paths(p_idx+1:p_idx+pathL(i), :);
                 disp("p_idx: "+string(p_idx));
                 disp("app robbot path: ");
                 disp(app.Robot(i).path);
             end
-            disp('Robot position(s) and path(s) have been loaded.');
-
-            % object
-            Obj_pos = evalin('base', 'Object_Current_Position');
-            [app.Num_obj, ~] = size(Obj_pos);
-            for i = 1:app.Num_obj
-                app.Object(i).position = Obj_pos(i, :);
-                app.Object(i).nextPos = app.Object(i).position;
-            end
-            disp('Object position(s) has/have been loaded.');
+            disp('Robot position(s), dock sites, and path(s) have been loaded.');
                         
             % final target
-            app.Robot_final_target = evalin('base', 'Robot_Final_Target');
-            app.Obj_final_target = evalin('base', 'Object_Final_Target');
+            app.final_target = evalin('base', 'Final_Target');
             disp('Final target(s) has/have been loaded.');
-            [app.Num_robot_target, ~] = size(app.Robot_final_target);
-            [app.Num_obj_target, ~] = size(app.Obj_final_target);
+            [app.Num_target, ~] = size(app.final_target);
 %             disp(app.Num_obj_target);
             
             % current target
-            robot_target = evalin('base', 'Robot_Current_Target');
-            obj_target = evalin('base', 'Object_Current_Target');
+            target = evalin('base', 'Current_Target');
             target_id = evalin('base', 'Target_ID');
-            %%% TODO: ÿÿÿÿÿÿcurrent target ÿÿ %%%
-            
-            for i = 1:length(robot_target)
-                app.Robot_targets(i).position = robot_target(i, :);
-                app.Robot_targets(i).nextPos = app.Robot_targets(i).position;
+
+            for i = 1:length(target)
+                app.targets(i).position = target(i, :);
+                app.targets(i).nextPos = app.targets(i).position;
+                app.targets(i).assignedLabel = target_id(i);
             end
-            
-            for i = 1:length(obj_target)
-                app.Object_targets(i).position = obj_target(i, :);
-                app.Object_targets(i).nextPos = app.Object_targets(i).position;
-                app.Object_targets(i).assignedLabel = target_id(i);
-            end
-            if isempty(robot_target)
-%                 for i = 1:app.Num_robot_target
-%                     app.Robot_targets(i).position = app.Robot_final_target(i, :);
-%                 end
-                app.CTarget_created = false;
-            end
-            if isempty(obj_target)
-                for i = 1:app.Num_obj_target
-                    app.Object_targets(i).position = app.Obj_final_target(i, :);
+
+            if isempty(target)
+                for i = 1:app.Num_target
+                    app.targets(i).position = app.final_target(i, :);
                 end
                 app.CTarget_created = false;
             else
@@ -220,29 +174,9 @@ classdef GUI2D_exported < matlab.apps.AppBase
             end
             disp('Current target(s) has/have been loaded.');
 
-            
-            % obstacle
-            app.Obstacle = evalin("base", 'Obstacle');
-            app.Num_obstacle = length(app.Obstacle);
-            disp('Obstacle(s) has/have been loaded.');
-            
-            % path
-            % TODO
-            
             % Update map info
             app.NumberofrobotsLabel.Text = "Number of robot(s): " + int2str(app.Num_robot);
-            app.NumberofobjectsLabel.Text = "Number of object(s): " + int2str(app.Num_obj);
-            app.NumberofobstaclesLabel.Text = "Number of obstacle(s): " + int2str(app.Num_obstacle);
             app.StepsLabel.Text = "Step(s): " + int2str(app.step);
-            
-%             % Check whether the number of position(s) and the number of
-%             % target(s) are in accordance.
-%             if app.Num_robot == length(robot_target) && app.Num_obj == length(obj_target)
-%                 success = true;
-%             else
-%                 success = false;
-%                 disp('Numbers of the loaded position(s) and target(s) are not in accordance.');
-%             end
         end
         
         function updateData(app)
@@ -250,9 +184,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             Robot_pos_next = evalin('base', 'Robot_Current_Position');
             pathL = evalin('base', 'Robot_PathL');
             paths = evalin('base', 'Robot_Path');
-            Robot_target_next = evalin('base', 'Robot_Current_Target');
-            Obj_pos_next = evalin('base', 'Object_Current_Position');
-            Obj_target_next = evalin('base', 'Object_Current_Target');
+            target_next = evalin('base', 'Current_Target');
             target_id_next = evalin('base', 'Target_ID');
             
             for i = 1:app.Num_robot
@@ -260,17 +192,9 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 p_idx = sum(pathL(1:i-1));
                 app.Robot(i).path = paths(p_idx+1:p_idx+pathL(i), :);
             end
-            for i=1:app.Num_robot_target
-                app.Robot_targets(i).nextPos = Robot_target_next(i, :);
-            end
-            
-            for i = 1:app.Num_obj
-                app.Object(i).nextPos = Obj_pos_next(i, :);
-            end
-            if ~isempty(Obj_target_next)
-                for i=1:app.Num_obj_target
-                    app.Object_targets(i).nextPos = Obj_target_next(i, :);
-                    app.Object_targets(i).assignedLabel = target_id_next(i);
+            if ~isempty(target_next)
+                for i=1:app.Num_target
+                    app.targets(i).nextPos = target_next(i, :);
                     app.CTarget_created = true;
 %                     if isempty(app.Object_targets(i).position)
 %                         app.Object_targets(i).position = app.Obj_final_target(i, :);
@@ -278,6 +202,12 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 end
 %             else
 %                 app.Object_targets(i).nextPos = app.Object_targets(i).position;
+            end
+
+            if ~isempty(target_id_next)
+                for i=1:app.Num_target
+                    app.targets(i).assignedLabel = target_id_next(i);
+                end
             end
             
             % If target has been assigned and target need to be switched
@@ -292,34 +222,20 @@ classdef GUI2D_exported < matlab.apps.AppBase
         
         % display all items
         function displayItems(app)
-                        
-            % Display obstacles
-            for i=1:app.Num_obstacle
-                app.Obstacle_h = [app.Obstacle_h, app.drawItem(app.UIAxes, "Obstacle", ...
-                    app.Obstacle(i, :))];
-            end
-            
-            for i=1:app.Num_obj_target
+            for i=1:app.Num_target
                 % Display current object target
-                obj_target_pos = [app.Object_targets(i).position(1), app.Object_targets(i).position(2)];
-                app.Object_targets(i).handlers = app.drawItem(app.UIAxes, "Object_target", ...
+                obj_target_pos = [app.targets(i).position(1), app.targets(i).position(2)];
+                app.targets(i).handlers = app.drawItem(app.UIAxes, "target", ...
                     obj_target_pos, i);
                 if ~app.CTarget_created
-                    set(app.Object_targets(i).handlers, 'visible', 'off');
+                    set(app.targets(i).handlers, 'visible', 'off');
                 
                 end
                 % Display final object target
-                obj_h = app.drawItem(app.UIAxes, "Object_final_target", ...
-                    app.Obj_final_target(i, :));
-                app.Obj_final_target_h = [app.Obj_final_target_h; obj_h];
+                obj_h = app.drawItem(app.UIAxes, "final_target", ...
+                    app.final_target(i, :));
+                app.final_target_h = [app.final_target_h; obj_h];
                 
-            end
-            
-            % Display current object
-            for i=1:app.Num_obj
-                % draw object with labelled id.
-                obj_pos = [app.Object(i).position(1), app.Object(i).position(2)];
-                app.Object(i).handlers = app.drawItem(app.UIAxes, "Object", obj_pos, i);
             end
             
             % Display current robot
@@ -328,19 +244,6 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 robot_pos = [app.Robot(i).position(1), app.Robot(i).position(2)];
                 app.Robot(i).handlers = app.drawItem(app.UIAxes, "Robot", robot_pos, i);
                 app.Robot(i).pathHandler = app.drawItem(app.UIAxes, "Path", robot_pos, i);
-            end
-            for i=1:app.Num_robot_target
-                % Display current robot target
-                if app.CTarget_created
-                    robot_target_pos = [app.Robot_targets(i).position(1), app.Robot_targets(i).position(2)];
-                    app.Robot_targets(i).handlers = app.drawItem(app.UIAxes, "Robot_target", ...
-                        robot_target_pos, i);
-                end
-                % Display final robot target
-                robot_h = app.drawItem(app.UIAxes, "Robot_final_target", ...
-                    app.Robot_final_target(i, :));
-                app.Robot_final_target_h = [app.Robot_final_target_h; robot_h];
-
             end
             
                 
@@ -356,6 +259,15 @@ classdef GUI2D_exported < matlab.apps.AppBase
         function success = moveItems(app)
             accuracy = 0.001;
             isMoveFinished = false;
+
+            % update target id
+            if app.updateTargetID
+                for i=1:app.Num_target
+                    app.targets(i).handlers(2).String = app.targets(i).assignedLabel;
+                    set(app.targets(i).handlers(1), 'Visible', 'on');
+                    set(app.targets(i).handlers(2), 'Visible', 'on');
+                end
+            end
             % Draw the new path
             for i=1:app.Num_robot
                 if ~isempty(app.Robot(i).path)
@@ -371,148 +283,69 @@ classdef GUI2D_exported < matlab.apps.AppBase
 
                 % stopping criterion
                 isMoveFinished = true;
-%                 if (all(all(abs(app.Robot.position - app.Robot.nextPos) < accuracy)) && ...
-%                         all(all(abs(app.Object.position - app.Object.nextPos) < accuracy)) && ...
-%                         all(all(abs(app.Robot_targets.position - app.Robot_targets.nextPos) < accuracy)) && ...
-%                         all(all(abs(app.Object_targets.position - app.Object_targets.nextPos) < accuracy)))
-%                     disp('end')
-%                     success = true;
-%                     return;
-%                 else
                     % move robot
                 for i=1:app.Num_robot
                     if ~(norm(app.Robot(i).position - app.Robot(i).nextPos) < accuracy)
                         isMoveFinished = false;
-%                         disp('Robot move: from');
-%                         disp(app.Robot(i).position);
                         for j=1:2
                             sign = app.isASmallerThanB(app.Robot(i).position(j), ...
                                 app.Robot(i).nextPos(j));
+                            % move robot (rect)
+                            app.Robot(i).handlers(1).Position(j) = ...
+                                app.Robot(i).handlers(1).Position(j) + sign * 0.1;
+                            % move path
                             if j == 1
-                                app.Robot(i).handlers(1).XData = ...
-                                    app.Robot(i).handlers(1).XData + sign * 0.1;
                                 app.Robot(i).pathHandler.XData(1) = ...
                                     app.Robot(i).pathHandler.XData(1) + sign * 0.1;
-                            else
-                                app.Robot(i).handlers(1).YData = ...
-                                    app.Robot(i).handlers(1).YData + sign * 0.1;
+                            elseif j == 2
                                 app.Robot(i).pathHandler.YData(1) = ...
                                     app.Robot(i).pathHandler.YData(1) + sign * 0.1;
                             end
+                            % move robot (text)
                             app.Robot(i).handlers(2).Position(j) = ...
                                 app.Robot(i).handlers(2).Position(j) + sign * 0.1;
+                            % move docker
+                            for k=1:4
+                                if j == 1
+                                    app.Robot(i).dockHandler(k).XData = ...
+                                        app.Robot(i).dockHandler(k).XData + sign * 0.1;
+                                elseif j == 2
+                                    app.Robot(i).dockHandler(k).YData = ...
+                                        app.Robot(i).dockHandler(k).YData + sign * 0.1;
+                                end
+                            end
                             % Update position
                             app.Robot(i).position(j) = app.Robot(i).handlers(2).Position(j)...
                                 - app.Robot_size(j)/2;
                         end
-%                         disp('to');
-%                         disp(app.Robot(i).nextPos);
                     end
                 end
-                
-                % Move robot target
-                for i=1:app.Num_robot_target
+
+                % move target
+                for i=1:app.Num_target
                     if app.CTarget_created
-%                         if ~(norm(app.Robot_targets(i).position - app.Robot_targets(i).nextPos) < accuracy)
-%                             isMoveFinished = false;
-%     %                         disp('Robot target move: from');
-%     %                         disp(app.Robot_targets(i).position);
-%                             for j=1:2
-%                                 sign = app.isASmallerThanB(app.Robot_targets(i).position(j), ...
-%                                     app.Robot_targets(i).nextPos(j));
-%                                 
-%                                 app.Robot_targets(i).handlers(1).Position(j) = ...
-%                                     app.Robot_targets(i).handlers(1).Position(j) + sign * 0.1;
-%                                 app.Robot_targets(i).handlers(2).Position(j) = ...
-%                                     app.Robot_targets(i).handlers(2).Position(j) + sign * 0.1;
-%                                 % Update position
-%                                 app.Robot_targets(i).position(j) = app.Robot_targets(i).handlers(1).Position(j);
-%                             end
-%     %                         disp('to');
-%     %                         disp(app.Robot_targets(i).nextPos);
-%                         end
-                        app.Robot_targets(i).handlers(1).Position = app.Robot_targets(i).nextPos;
-                        app.Robot_targets(i).handlers(2).Position = app.Robot_targets(i).nextPos;
-                        app.Robot_targets(i).position = app.Robot_targets(i).nextPos;
-                    end 
-                end
-                
-                % move object
-                for i=1:app.Num_obj
-                    if ~(norm(app.Object(i).position - app.Object(i).nextPos) < accuracy)
-                        isMoveFinished = false;
-%                         disp('Object move: from');
-%                         disp(app.Object(i).position);
-                        for j=1:2
-                            sign = app.isASmallerThanB(app.Object(i).position(j), ...
-                                app.Object(i).nextPos(j));
-                            
-                            app.Object(i).handlers(1).Position(j) = ...
-                                app.Object(i).handlers(1).Position(j) + sign * 0.1;
-                            app.Object(i).handlers(2).Position(j) = ...
-                                app.Object(i).handlers(2).Position(j) + sign * 0.1;
-                            % Update position
-                            app.Object(i).position(j) = app.Object(i).handlers(1).Position(j);
-                        end
-%                         disp('to');
-%                         disp(app.Object(i).nextPos);
-                    end
-                end
-                
-                % move object target
-                for i=1:app.Num_obj_target
-                    if app.CTarget_created
-                        set(app.Object_targets(i).handlers(1), 'visible', 'on');
-                        id = app.Object_targets(i).assignedLabel;
+                        set(app.targets(i).handlers(1), 'Visible', 'on');
+                        id = app.targets(i).assignedLabel;
                         if id ~= 0
-                            set(app.Object_targets(i).handlers(2), 'string', int2str(id));
-                            set(app.Object_targets(i).handlers(2), 'visible', 'on');
+                            set(app.targets(i).handlers(2), 'string', int2str(id));
+                            set(app.targets(i).handlers(2), 'Visible', 'on');
                         end
-                        if ~isempty([app.Object_targets(i).nextPos])
-%                             if ~(norm(app.Object_targets(i).position - app.Object_targets(i).nextPos) < accuracy)
-%                                 isMoveFinished = false;
-%     %                             disp('Object target move: from');
-%     %                             disp(app.Object_targets(i).position);
-%                                 for j=1:2
-%                                     sign = app.isASmallerThanB(app.Object_targets(i).position(j), ...
-%                                         app.Object_targets(i).nextPos(j));
-%                                     
-%                                     app.Object_targets(i).handlers(1).Position(j) = ...
-%                                         app.Object_targets(i).handlers(1).Position(j) + sign * 0.1;
-%                                     app.Object_targets(i).handlers(2).Position(j) = ...
-%                                         app.Object_targets(i).handlers(2).Position(j) + sign * 0.1;
-%                                     % Update position
-%                                     app.Object_targets(i).position(j) = app.Object_targets(i).handlers(1).Position(j);
-%                                 end
-%     %                             disp('to');
-%     %                             disp(app.Object_targets(i).nextPos);
-%                             end
-                            pos_delta = app.Object_targets(i).nextPos - app.Object_targets(i).position;
+                        if ~isempty([app.targets(i).nextPos])
+                            pos_delta = app.targets(i).nextPos - app.targets(i).position;
                             for j=1:2
-                                app.Object_targets(i).handlers(1).Position(j) = ...
-                                    app.Object_targets(i).handlers(1).Position(j) + pos_delta(j);
-%                                 app.Object_targets(i).handlers(2).Position = app.Object_targets(i).nextPos;
-                                app.Object_targets(i).handlers(2).Position(j) = ...
-                                    app.Object_targets(i).handlers(2).Position(j) + pos_delta(j);                                
+                                app.targets(i).handlers(1).Position(j) = ...
+                                    app.targets(i).handlers(1).Position(j) + pos_delta(j);
+                                app.targets(i).handlers(2).Position(j) = ...
+                                    app.targets(i).handlers(2).Position(j) + pos_delta(j);                                
                             end
-                            app.Object_targets(i).position = app.Object_targets(i).nextPos;
+                            app.targets(i).position = app.targets(i).nextPos;
                         end
                     end
-%                         pause(1/app.V_move);
                 end
-                
-                    %% TODO: Move path(?) %%
-                    
-                drawnow;
-%                 pause(1/app.V_move);
-%                 end
+
+%                 drawnow;
+                pause(1/app.V_move);
             end
-%             if all(all(abs(item_lst - item_lst_next) < 0.01))
-%                 success = true;
-%             else
-%                 success = false;
-%             end
-            
             success = true;
         end
 
@@ -524,68 +357,26 @@ classdef GUI2D_exported < matlab.apps.AppBase
 %             legend_text = ["Robot", "Object", "Robot/Object final target", ...
 %                 "Robot/Object current target",  "(before assignment)", ...
 %                 "Robot/Object current target", "(after assignment)", "Path"];
-            legend_text = ["Robot", "Object", "Final target", ...
-                "Current target", "Obstacle/Docker", "Path"];
+            legend_text = ["Robot", "Final target", ...
+                "Current target", "Path"];
             l = length(legend_text);
             for i = 1:l
-                text(app.UIAxesLegend, 3.5, 20.5-2*i, legend_text(i), ...
+                text(app.UIAxesLegend, 3.5, 10.5-2*i, legend_text(i), ...
                     "HorizontalAlignment","left", "FontSize", 14);
             end
             
-            % Robot
-%             axis(app.UIAxesLegend, [0, 1, 18, 19]);
-%             app.drawItem(app.UIAxesLegend, "Robot", [1, 18]);
-%             axis(app.UIAxesLegend, [0, 20, 0, 20]);
-            
+            app.drawItem(app.UIAxesLegend, "Robot", [1, 8]);
 
-%             set(gcf, "Position", [1, 18, 1, 1]);
-%             disp(get(gcf));
-            app.drawItem(app.UIAxesLegend, "Robot", [1, 18]);
-%             rectangle(app.UIAxesLegend,"EdgeColor",app.Color_list(1),...
-%                 "FaceColor","none", "Position", [1, 18, 1, 1], "LineWidth",1);
-            
-            % Object
-            app.drawItem(app.UIAxesLegend, "Object", [1, 16]);
-%             rectangle(app.UIAxesLegend,"EdgeColor",app.Color_list(2),...
-%                 "FaceColor",app.Color_list(2), "Position", [1, 16, 1, 1]);
-            
             % Final target
-%             app.drawItem(app.UIAxesLegend, "Robot_final_target", [0.5, 14]);
-            app.drawItem(app.UIAxesLegend, "Object_final_target", [1, 14]);
-%             rectangle(app.UIAxesLegend, "FaceColor", "none", "EdgeColor", app.Color_list(1), ...
-%                 "Position", [0.5, 14, 1, 1], "LineWidth", 1);
-%             rectangle(app.UIAxesLegend, "FaceColor", "none", "EdgeColor", app.Color_list(2), ...
-%                 "Position", [2, 14, 1, 1], "LineWidth", 1);
-            
+            app.drawItem(app.UIAxesLegend, "final_target", [1, 6]);        
             %% TODO: Current target before assignment
-%             rectangle(app.UIAxesLegend,"EdgeColor",app.Color_list(1),...
-%                 "LineStyle", "--",...
-%                 "FaceColor",app.Color_list(1), "Position", [1, 12, 1, 1]);        
-%             for i = 1:2
-%                 dohatch(app.UIAxesLegend, [0.5, 0.5, 1.5, 1.5]+1.5*(i-1),...
-%                     [14, 15, 15, 14], 30, app.Color_list(i), "-", 4, 1);
-%             end
+            app.drawItem(app.UIAxesLegend, "target", [1, 4]);
 
-%             app.drawItem(app.UIAxesLegend, "Robot_target", [0.5, 11]);
-            app.drawItem(app.UIAxesLegend, "Object_target", [1, 12]);
-            
-            % Current target after assignment
-%             for i = 0:1
-%                rectangle(app.UIAxesLegend,"FaceColor", app.Color_list(i+1), ...
-%                    "EdgeColor",app.Color_list(i+1),"Curvature",1,...
-%                    "Position",[0.5+1.5*i, 7, 1, 1]);
-%             end
-            
-            % Obstacle
-            app.drawItem(app.UIAxesLegend, "Obstacle", [1, 10]);
-            
-            
             % Path
-%             line(app.UIAxesLegend, [0.5, 3], [4.5, 4.5], "LineWidth", 1, "Color", app.Color_list(4));
-            line(app.UIAxesLegend, [0.5, 3], [8.5, 8.5], "LineWidth", 1, "Color", app.Color_list(4));
+            line(app.UIAxesLegend, [0.5, 3], [2.5, 2.5], "LineWidth", 1, "Color", app.Color_list(2));
 
             % coordinate system
-            axis(app.UIAxesLegend, [0, 20, 0, 20]);
+            axis(app.UIAxesLegend, [0, 10, 0, 10]);
 %             set(app.UIAxesLegend, 'XTick', 0:app.Map_x, ...
 %                 'YTick', 0:app.Map_y, ...
 %                 'XTickMode', 'manual', 'YTickMode', 'manual');
@@ -604,8 +395,8 @@ classdef GUI2D_exported < matlab.apps.AppBase
         end
         
         function h = drawItem(app, axis, type, pos, id)
-            % ÿÿÿÿÿÿÿÿÿÿÿÿaxisÿÿÿÿÿÿÿÿÿÿRobot/Object/Targetÿ
-            % ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿhandler
+            % å¯¹ç”»å›¾å‘½ä»¤è¿›è¡Œå°è£…ï¼Œè¾“å…¥axisï¼Œå·¦ä¸‹è§’åæ ‡ï¼Œç±»åž‹ï¼ˆRobot/Object/Targetï¼‰
+            % ç”¨äºŽç¬¬ä¸€æ¬¡åˆ›å»ºå›¾å½¢ï¼Œæ˜¾ç¤ºç›¸åº”å›¾åƒï¼Œå¹¶è¿”å›žå›¾å½¢ç›¸åº”çš„handler
             text_c = 'k';
             if axis == app.UIAxes
                 rob_x = app.Robot_size(1);
@@ -618,94 +409,54 @@ classdef GUI2D_exported < matlab.apps.AppBase
             end
             switch(type)
                 case "Robot"
-%                     item_h = rectangle(axis, "EdgeColor","none", ...
-%                             "LineWidth", 0.5, ...
-%                             "FaceColor",app.Color_list(1), ...
-%                             "Position",[pos, rob_x, rob_y]);
-                    if axis == app.UIAxes                    
-                        d = 0;
-                    else
-                        d = -0.5;
+                    % robot
+                    item_h = rectangle(axis, "EdgeColor","none",...
+                            "LineWidth", 0.5,...
+                            "FaceColor",app.Color_list(1), ...
+                            "Position",[pos, rob_x, rob_y]);
+                    % dock
+                    dock_x = [0, 1; 0, 1; 0, 0; 1, 1] * app.Robot_size(1);
+                    dock_y = [1, 1; 0, 0; 0, 1; 0, 1] * app.Robot_size(2);
+                    if axis == app.UIAxes
+                        for i=1:4
+                            temp_h = line(axis, pos(1)+dock_x(i,:), pos(2)+dock_y(i,:), ...
+                                "LineWidth", 1, ...
+                                "Color", 'r');
+                            app.Robot(id).dockHandler(i) = temp_h;
+                            if ~app.Robot(id).dockers(i)
+                                set(app.Robot(id).dockHandler(i), 'visible', 'off');
+                            end
+                        end
                     end
-                    item_h = imagesc(axis, app.Robot_fig, "XData", [pos(1)+d, pos(1)+rob_x-d], ...
-                        "YData", [pos(2)+rob_y-d, pos(2)+d]);
-                        
                     % Display robot ID
                     delta_pos_text = app.Robot_size / 2;
                     text_c = 'k'; % '#7E2F8E';
-                    
-                case "Object"
-                    item_h = rectangle(axis, "EdgeColor","none",...
-                            "LineWidth", 0.5,...
-                            "FaceColor",app.Color_list(2), ...
-                            "Position",[pos, 1, 1]);
-                    % Display object ID
-                    delta_pos_text = [0.5 0.5];
-                    
-                case "Robot_target"
-%                     X = [pos(1), pos(1), pos(1)+rob_x, pos(1)+rob_x];
-%                     Y = [pos(2), pos(2)+rob_y, pos(2)+rob_y, pos(2)];
-%                     v = [X(1), Y(1); X(2), Y(2); X(3), Y(3); X(4), Y(4)];
-%                     f = [1 2 3 4];
-%                     item_h = patch(axis, 'Faces', f, 'Vertices', v, ...
-%                         'FaceColor', app.Color_list(1), ...
-%                         "EdgeColor","none",...
-%                         'FaceAlpha', app.Target_alpha);
-                    
-                    item_h = rectangle(axis, "FaceColor", app.Color_list(1), ...
-                        "EdgeColor", "none", ...
-                        "Position", [pos, rob_x, rob_y]);
-                    % item_h.FaceColor = [app.Color_list(1), app.Target_alpha];
-                    item_h.FaceColor = app.Color_list(1);
-                    % Display target ID
-                    delta_pos_text = app.Robot_size / 2;
-                    
-                case "Object_target"
-%                     X = [pos(1), pos(1), pos(1)+1, pos(1)+1];
-%                     Y = [pos(2), pos(2)+1, pos(2)+1, pos(2)];
-%                     v = [X(1), Y(1); X(2), Y(2); X(3), Y(3); X(4), Y(4)];
-%                     f = [1 2 3 4];
-%                     item_h = patch(axis, 'Faces', f, 'Vertices', v, ...
-%                         'FaceColor', app.Color_list(2), ...
-%                         "EdgeColor","none",...
-%                         'FaceAlpha', app.Target_alpha);
-                    
-                    item_h = rectangle(axis, "FaceColor", app.Color_list(6), ...
+
+                case "target"
+                    item_h = rectangle(axis, "FaceColor", app.Color_list(4), ...
                         "EdgeColor", "none", ...
                         "Position", [pos, 1, 1]);
                     % item_h.FaceColor = [app.Color_list(2), app.Target_alpha];
-                    item_h.FaceColor = app.Color_list(6);
+                    item_h.FaceColor = app.Color_list(4);
                     % Display target ID
                     delta_pos_text = [0.5 0.5];
                     if nargin == 5
-                        id = app.Object_targets(id).assignedLabel;
+                        id = app.targets(id).assignedLabel;
                     end
-                case "Robot_final_target"
+
+                case "final_target"
                     item_h = rectangle(axis, "FaceColor", "none", ...
-                        "EdgeColor", app.Color_list(1), ...
-                        "LineWidth", 1, ...
-                        "Position", [pos, rob_x, rob_y]);
-                    delta_pos_text = app.Robot_size / 2;
-                    
-                case "Object_final_target"
-                    item_h = rectangle(axis, "FaceColor", "none", ...
-                        "EdgeColor", app.Color_list(6), ...
+                        "EdgeColor", app.Color_list(4), ...
                         "LineWidth", 1, ...
                         "Position", [pos, 1, 1]);
                     delta_pos_text = [0.5 0.5];
-                    
-                case "Obstacle"
-                    item_h = rectangle(axis, "FaceColor", app.Color_list(3), ...
-                        "EdgeColor", app.Color_list(3), ...
-                        "LineWidth", 1, ...
-                        "Position", [pos, 1, 1]);
-                    
+
                 case "Path"
                     if axis == app.UIAxes
                         % draw path according to the algorithm 
                         if ~isempty(app.Robot(id).path)
                             item_h = plot(axis, app.Robot(id).path(:, 1),...
-                                app.Robot(id).path(:, 2), "Color", app.Color_list(4));
+                                app.Robot(id).path(:, 2), "Color", app.Color_list(2));
                         else
                             item_h = plot(axis, pos(1)+0.5, pos(2)+0.5, "Color", app.Color_list(4));
                         end
@@ -737,23 +488,6 @@ classdef GUI2D_exported < matlab.apps.AppBase
             end
         end
         
-%         function updataItem(app, type, pos, id)
-%             switch(type)
-%                 case "Robot"
-%                     
-%                 case "Object"
-%                     
-%                 case "Robot_target"
-%                     
-%                 case "Object_target"
-%                     
-%                 case "Path"
-%                     
-%                 otherwise
-%                     disp("Wrong input of type for updataItem request.");
-%             end
-%         end
-        
         function success = doTargetAssignment(app)
             %% TODO: Check whether the target label has been assgined.
             % If not, print a message and return false
@@ -776,10 +510,10 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 % Object
                 for i = 1:app.Num_obj
                 % Robot_targets(i).assignLabel
-                    app.Object_targets(i).handlers(1).Curvature = ...
-                        app.Object_targets(i).handlers(1).Curvature + 0.1;
+                    app.targets(i).handlers(1).Curvature = ...
+                        app.targets(i).handlers(1).Curvature + 0.1;
                     % int to string?
-                    app.Object_targets(i).handlers(2).Text = app.Object_targets(i).assignedLabel;
+                    app.targets(i).handlers(2).Text = app.targets(i).assignedLabel;
                 end
                 
                 pause(time/assign_step);
@@ -826,35 +560,6 @@ classdef GUI2D_exported < matlab.apps.AppBase
             end
         end
 
-        % Value changed function: ObjectSwitch
-        function ObjectSwitchValueChanged(app, event)
-            value = app.ObjectSwitch.Value;
-            if value == "On"
-                % object(s) set to visible
-                for i = 1:app.Num_obj
-                    set(app.Object(i).handlers, 'visible', 'on');
-                end
-            else
-                % value == "Off", object(s) set to invisible
-                for i = 1:app.Num_obj
-                    set(app.Object(i).handlers, 'visible', 'off');
-                end
-            end
-        end
-
-        % Value changed function: ObstacleSwitch
-        function ObstacleSwitchValueChanged(app, event)
-            value = app.ObstacleSwitch.Value;
-            
-            if value == "On"
-                % obstacle sets to visible
-                set(app.Obstacle_h, 'visible', 'on');
-            else
-                % obstacle sets to invisble
-                set(app.Obstacle_h, 'visible', 'off');
-            end
-        end
-
         % Value changed function: CTargetSwitch
         function CTargetSwitchValueChanged(app, event)
             value = app.CTargetSwitch.Value;
@@ -866,7 +571,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 end
                 
                 for i = 1:app.Num_obj
-                    set(app.Object_targets(i).handlers, 'visible', 'on');
+                    set(app.targets(i).handlers, 'visible', 'on');
                 end
                 
             elseif value == "Off"
@@ -877,7 +582,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 end
                 
                 for i = 1:app.Num_obj
-                    set(app.Object_targets(i).handlers, 'visible', 'off');
+                    set(app.targets(i).handlers, 'visible', 'off');
                 end
                 
             end
@@ -890,11 +595,11 @@ classdef GUI2D_exported < matlab.apps.AppBase
             if value == "On"
                 % final target sets to visible
                 set(app.Robot_final_target_h, 'visible', 'on');
-                set(app.Obj_final_target_h, 'visible', 'on');
+                set(app.final_target_h, 'visible', 'on');
             else
                 % final target sets to invisble
                 set(app.Robot_final_target_h, 'visible', 'off');
-                set(app.Obj_final_target_h, 'visible', 'off');
+                set(app.final_target_h, 'visible', 'off');
             end
         end
 
@@ -937,8 +642,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             app.V_move = int32(value * 10);
         end
 
-        % Value changing function: 
-        % AdjustthemovingvelocityoftheitemsSlider
+        % Value changing function: AdjustthemovingvelocityoftheitemsSlider
         function AdjustthemovingvelocityoftheitemsSliderValueChanging(app, event)
             changingValue = event.Value;
             app.V_move = int32(changingValue * 10);
@@ -958,7 +662,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             currentFigureWidth = app.UIFigure.Position(3);
             if(currentFigureWidth <= app.onePanelWidth)
                 % Change to a 2x1 grid
-                app.GridLayout.RowHeight = {669, 669};
+                app.GridLayout.RowHeight = {635, 635};
                 app.GridLayout.ColumnWidth = {'1x'};
                 app.RightPanel.Layout.Row = 2;
                 app.RightPanel.Layout.Column = 1;
@@ -981,7 +685,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.AutoResizeChildren = 'off';
-            app.UIFigure.Position = [100 100 1039 669];
+            app.UIFigure.Position = [100 100 1039 635];
             app.UIFigure.Name = 'UI Figure';
             app.UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
 
@@ -1003,40 +707,34 @@ classdef GUI2D_exported < matlab.apps.AppBase
             app.MapInformationLabel = uilabel(app.LeftPanel);
             app.MapInformationLabel.FontSize = 16;
             app.MapInformationLabel.FontWeight = 'bold';
-            app.MapInformationLabel.Position = [69 180 130 22];
+            app.MapInformationLabel.Position = [69 236 130 22];
             app.MapInformationLabel.Text = 'Map Information';
 
             % Create NumberofrobotsLabel
             app.NumberofrobotsLabel = uilabel(app.LeftPanel);
             app.NumberofrobotsLabel.FontSize = 14;
-            app.NumberofrobotsLabel.Position = [34 140 154 22];
+            app.NumberofrobotsLabel.Position = [34 196 154 22];
             app.NumberofrobotsLabel.Text = 'Number of robot(s): ';
-
-            % Create NumberofobjectsLabel
-            app.NumberofobjectsLabel = uilabel(app.LeftPanel);
-            app.NumberofobjectsLabel.FontSize = 14;
-            app.NumberofobjectsLabel.Position = [34 100 154 22];
-            app.NumberofobjectsLabel.Text = 'Number of object(s): ';
 
             % Create PauseButton
             app.PauseButton = uibutton(app.LeftPanel, 'push');
             app.PauseButton.ButtonPushedFcn = createCallbackFcn(app, @PauseButtonPushed, true);
             app.PauseButton.BackgroundColor = [1 1 1];
             app.PauseButton.FontSize = 20;
-            app.PauseButton.Position = [69 583 130 62];
+            app.PauseButton.Position = [69 549 130 62];
             app.PauseButton.Text = 'Pause';
 
             % Create StepsLabel
             app.StepsLabel = uilabel(app.LeftPanel);
             app.StepsLabel.FontSize = 14;
-            app.StepsLabel.Position = [34 20 120 28];
+            app.StepsLabel.Position = [34 156 120 28];
             app.StepsLabel.Text = 'Step(s): ';
 
             % Create ItemstodisplayLabel
             app.ItemstodisplayLabel = uilabel(app.LeftPanel);
             app.ItemstodisplayLabel.FontSize = 16;
             app.ItemstodisplayLabel.FontWeight = 'bold';
-            app.ItemstodisplayLabel.Position = [71 526 137 22];
+            app.ItemstodisplayLabel.Position = [71 492 137 22];
             app.ItemstodisplayLabel.Text = 'Item(s) to display';
 
             % Create PathSwitch
@@ -1044,13 +742,13 @@ classdef GUI2D_exported < matlab.apps.AppBase
             app.PathSwitch.ValueChangedFcn = createCallbackFcn(app, @PathSwitchValueChanged, true);
             app.PathSwitch.FontSize = 1;
             app.PathSwitch.FontColor = [0.9412 0.9412 0.9412];
-            app.PathSwitch.Position = [34 284 45 20];
+            app.PathSwitch.Position = [35 331 45 20];
             app.PathSwitch.Value = 'On';
 
             % Create DisplaypathLabel_2
             app.DisplaypathLabel_2 = uilabel(app.LeftPanel);
             app.DisplaypathLabel_2.FontSize = 14;
-            app.DisplaypathLabel_2.Position = [98 284 83 22];
+            app.DisplaypathLabel_2.Position = [98 331 83 22];
             app.DisplaypathLabel_2.Text = 'Display path';
 
             % Create CTargetSwitch
@@ -1058,41 +756,27 @@ classdef GUI2D_exported < matlab.apps.AppBase
             app.CTargetSwitch.ValueChangedFcn = createCallbackFcn(app, @CTargetSwitchValueChanged, true);
             app.CTargetSwitch.FontSize = 1;
             app.CTargetSwitch.FontColor = [0.9412 0.9412 0.9412];
-            app.CTargetSwitch.Position = [34 364 45 20];
+            app.CTargetSwitch.Position = [35 411 45 20];
             app.CTargetSwitch.Value = 'On';
 
             % Create DisplaycurrenttargetLabel
             app.DisplaycurrenttargetLabel = uilabel(app.LeftPanel);
             app.DisplaycurrenttargetLabel.FontSize = 14;
-            app.DisplaycurrenttargetLabel.Position = [98 364 155 22];
+            app.DisplaycurrenttargetLabel.Position = [98 411 155 22];
             app.DisplaycurrenttargetLabel.Text = 'Display current target';
-
-            % Create ObjectSwitch
-            app.ObjectSwitch = uiswitch(app.LeftPanel, 'slider');
-            app.ObjectSwitch.ValueChangedFcn = createCallbackFcn(app, @ObjectSwitchValueChanged, true);
-            app.ObjectSwitch.FontSize = 1;
-            app.ObjectSwitch.FontColor = [0.9412 0.9412 0.9412];
-            app.ObjectSwitch.Position = [34 444 45 20];
-            app.ObjectSwitch.Value = 'On';
-
-            % Create DisplayobjectLabel
-            app.DisplayobjectLabel = uilabel(app.LeftPanel);
-            app.DisplayobjectLabel.FontSize = 14;
-            app.DisplayobjectLabel.Position = [98 444 109 22];
-            app.DisplayobjectLabel.Text = 'Display object';
 
             % Create RobotSwitch
             app.RobotSwitch = uiswitch(app.LeftPanel, 'slider');
             app.RobotSwitch.ValueChangedFcn = createCallbackFcn(app, @RobotSwitchValueChanged, true);
             app.RobotSwitch.FontSize = 1;
             app.RobotSwitch.FontColor = [0.9412 0.9412 0.9412];
-            app.RobotSwitch.Position = [34 484 45 20];
+            app.RobotSwitch.Position = [35 451 45 20];
             app.RobotSwitch.Value = 'On';
 
             % Create DisplayrobotLabel
             app.DisplayrobotLabel = uilabel(app.LeftPanel);
             app.DisplayrobotLabel.FontSize = 14;
-            app.DisplayrobotLabel.Position = [98 484 103 22];
+            app.DisplayrobotLabel.Position = [98 451 103 22];
             app.DisplayrobotLabel.Text = 'Display robot';
 
             % Create GridSwitch
@@ -1100,13 +784,13 @@ classdef GUI2D_exported < matlab.apps.AppBase
             app.GridSwitch.ValueChangedFcn = createCallbackFcn(app, @GridSwitchValueChanged, true);
             app.GridSwitch.FontSize = 1;
             app.GridSwitch.FontColor = [0.9412 0.9412 0.9412];
-            app.GridSwitch.Position = [34 244 45 20];
+            app.GridSwitch.Position = [35 291 45 20];
             app.GridSwitch.Value = 'On';
 
             % Create DisplaygridLabel
             app.DisplaygridLabel = uilabel(app.LeftPanel);
             app.DisplaygridLabel.FontSize = 14;
-            app.DisplaygridLabel.Position = [98 244 99 22];
+            app.DisplaygridLabel.Position = [98 291 99 22];
             app.DisplaygridLabel.Text = 'Display grid';
 
             % Create FTargetSwitch
@@ -1114,34 +798,14 @@ classdef GUI2D_exported < matlab.apps.AppBase
             app.FTargetSwitch.ValueChangedFcn = createCallbackFcn(app, @FTargetSwitchValueChanged, true);
             app.FTargetSwitch.FontSize = 1;
             app.FTargetSwitch.FontColor = [0.9412 0.9412 0.9412];
-            app.FTargetSwitch.Position = [34 324 45 20];
+            app.FTargetSwitch.Position = [35 371 45 20];
             app.FTargetSwitch.Value = 'On';
 
             % Create DisplayfinaltargetLabel
             app.DisplayfinaltargetLabel = uilabel(app.LeftPanel);
             app.DisplayfinaltargetLabel.FontSize = 14;
-            app.DisplayfinaltargetLabel.Position = [98 324 120 22];
+            app.DisplayfinaltargetLabel.Position = [98 371 120 22];
             app.DisplayfinaltargetLabel.Text = 'Display final target';
-
-            % Create ObstacleSwitch
-            app.ObstacleSwitch = uiswitch(app.LeftPanel, 'slider');
-            app.ObstacleSwitch.ValueChangedFcn = createCallbackFcn(app, @ObstacleSwitchValueChanged, true);
-            app.ObstacleSwitch.FontSize = 1;
-            app.ObstacleSwitch.FontColor = [0.9412 0.9412 0.9412];
-            app.ObstacleSwitch.Position = [34 404 45 20];
-            app.ObstacleSwitch.Value = 'On';
-
-            % Create DisplayobstacleLabel
-            app.DisplayobstacleLabel = uilabel(app.LeftPanel);
-            app.DisplayobstacleLabel.FontSize = 14;
-            app.DisplayobstacleLabel.Position = [98 404 107 22];
-            app.DisplayobstacleLabel.Text = 'Display obstacle';
-
-            % Create NumberofobstaclesLabel
-            app.NumberofobstaclesLabel = uilabel(app.LeftPanel);
-            app.NumberofobstaclesLabel.FontSize = 14;
-            app.NumberofobstaclesLabel.Position = [34 60 174 22];
-            app.NumberofobstaclesLabel.Text = 'Number of obstacle(s): ';
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
@@ -1150,44 +814,42 @@ classdef GUI2D_exported < matlab.apps.AppBase
 
             % Create UIAxes
             app.UIAxes = uiaxes(app.RightPanel);
-            title(app.UIAxes, '')
-            xlabel(app.UIAxes, '')
-            ylabel(app.UIAxes, '')
             app.UIAxes.PlotBoxAspectRatio = [1.01748251748252 1 1];
-            app.UIAxes.FontSize = 14;
             app.UIAxes.TickLength = [0 0];
+            app.UIAxes.XAxisLocation = 'origin';
+            app.UIAxes.XTick = [0 1];
+            app.UIAxes.XTickLabelRotation = 0;
+            app.UIAxes.YTick = [0 1];
+            app.UIAxes.YTickLabelRotation = 0;
+            app.UIAxes.ZTickLabelRotation = 0;
+            app.UIAxes.XGrid = 'on';
+            app.UIAxes.YGrid = 'on';
+            app.UIAxes.FontSize = 14;
             app.UIAxes.GridColor = [0.902 0.902 0.902];
             app.UIAxes.GridAlpha = 1;
             app.UIAxes.Box = 'on';
-            app.UIAxes.XAxisLocation = 'origin';
-            app.UIAxes.XTick = [0 1];
-            app.UIAxes.YTick = [0 1];
-            app.UIAxes.XGrid = 'on';
-            app.UIAxes.YGrid = 'on';
-            app.UIAxes.TitleFontWeight = 'bold';
-            app.UIAxes.Position = [5 145 500 500];
+            app.UIAxes.Position = [5 111 518 518];
 
             % Create UIAxesLegend
             app.UIAxesLegend = uiaxes(app.RightPanel);
-            title(app.UIAxesLegend, '')
-            xlabel(app.UIAxesLegend, '')
-            ylabel(app.UIAxesLegend, '')
             app.UIAxesLegend.DataAspectRatio = [1 1 1];
             app.UIAxesLegend.PlotBoxAspectRatio = [1 1 1];
-            app.UIAxesLegend.FontSize = 1;
             app.UIAxesLegend.TickLength = [0 0];
             app.UIAxesLegend.XColor = [0.9412 0.9412 0.9412];
+            app.UIAxesLegend.XTickLabelRotation = 0;
             app.UIAxesLegend.YAxisLocation = 'right';
             app.UIAxesLegend.YColor = [0.9412 0.9412 0.9412];
-            app.UIAxesLegend.TitleFontWeight = 'bold';
-            app.UIAxesLegend.Position = [504 403 243 242];
+            app.UIAxesLegend.YTickLabelRotation = 0;
+            app.UIAxesLegend.ZTickLabelRotation = 0;
+            app.UIAxesLegend.FontSize = 1;
+            app.UIAxesLegend.Position = [556 369 191 190];
 
             % Create AdjustthemovingvelocityoftheitemsSliderLabel
             app.AdjustthemovingvelocityoftheitemsSliderLabel = uilabel(app.RightPanel);
             app.AdjustthemovingvelocityoftheitemsSliderLabel.HorizontalAlignment = 'right';
             app.AdjustthemovingvelocityoftheitemsSliderLabel.FontSize = 16;
             app.AdjustthemovingvelocityoftheitemsSliderLabel.FontWeight = 'bold';
-            app.AdjustthemovingvelocityoftheitemsSliderLabel.Position = [101 108 307 22];
+            app.AdjustthemovingvelocityoftheitemsSliderLabel.Position = [101 74 307 22];
             app.AdjustthemovingvelocityoftheitemsSliderLabel.Text = 'Adjust the moving velocity of the items';
 
             % Create AdjustthemovingvelocityoftheitemsSlider
@@ -1196,19 +858,19 @@ classdef GUI2D_exported < matlab.apps.AppBase
             app.AdjustthemovingvelocityoftheitemsSlider.MajorTicks = [1 2 3 4 5 6 7 8 9 10];
             app.AdjustthemovingvelocityoftheitemsSlider.ValueChangingFcn = createCallbackFcn(app, @AdjustthemovingvelocityoftheitemsSliderValueChanging, true);
             app.AdjustthemovingvelocityoftheitemsSlider.BusyAction = 'cancel';
-            app.AdjustthemovingvelocityoftheitemsSlider.Position = [126 87 256 3];
+            app.AdjustthemovingvelocityoftheitemsSlider.Position = [126 53 256 3];
             app.AdjustthemovingvelocityoftheitemsSlider.Value = 1;
 
             % Create assigntargetSwitchLabel
             app.assigntargetSwitchLabel = uilabel(app.RightPanel);
             app.assigntargetSwitchLabel.HorizontalAlignment = 'center';
-            app.assigntargetSwitchLabel.Position = [614 266 74 22];
+            app.assigntargetSwitchLabel.Position = [614 232 74 22];
             app.assigntargetSwitchLabel.Text = 'assign target';
 
             % Create assigntargetSwitch
             app.assigntargetSwitch = uiswitch(app.RightPanel, 'slider');
             app.assigntargetSwitch.ValueChangedFcn = createCallbackFcn(app, @assigntargetSwitchValueChanged, true);
-            app.assigntargetSwitch.Position = [627 303 45 20];
+            app.assigntargetSwitch.Position = [627 269 45 20];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
