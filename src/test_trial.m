@@ -14,7 +14,7 @@ trial = Trial();
 trial.gmap = map(Map_Size, 3);
 
 % Robots
-robot_locs = [1, 1; 5, 1; 9, 1; 13, 1];
+robot_locs = [1, 13; 5, 13; 9, 1; 13, 1];
 dock = [0,0,0,1;...
         0,1,0,1;...
         0,0,1,0;...
@@ -31,7 +31,7 @@ else
     
     %% Main loop
     max_steps = 1e6;
-    while ~all(trial.structure_arrive) && trial.step_cnt <= max_steps
+    while ~trial.structure_arrive && trial.step_cnt <= max_steps
         trial.execute();
     end
 end

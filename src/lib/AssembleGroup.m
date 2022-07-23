@@ -135,19 +135,21 @@ classdef AssembleGroup < handle
                     obj.RobotList(i).Path = [];
                 end
             else
-                [n, ~] = size(path);
                 % Update path for the lead robot
                 if rob_i ~= 1
-                    pos_shift = obj.RobotList(rob_i).pos_shift;
+                    [n, ~] = size(path);
+                    pos_shift = obj.RobotList(rob_i).pos_shift(1:2);
                     for i=1:n
-                        obj.RobotList(1).Path(i,:) = obj.RobotList(1).Path(i,:) + pos_shift;
+                        obj.RobotList(1).Path(i,:) = int32(obj.RobotList(1).Path(i,:)) + pos_shift;
                     end
+                else
+                    [n, ~] = size(obj.RobotList(1).Path);
                 end
                 % Update path for the slave robots
                 for i=2:obj.Size
-                    pos_shift = obj.RobotList(i).pos_shift;
+                    pos_shift = obj.RobotList(i).pos_shift(1:2);
                     for j=1:n
-                        obj.RobotList(i).Path(j,:) = obj.RobotList(1).Path(i,:) - pos_shift;
+                        obj.RobotList(i).Path(j,:) = int32(obj.RobotList(1).Path(j,:)) - pos_shift;
                     end
                 end
             end
@@ -268,6 +270,7 @@ classdef AssembleGroup < handle
                     return
                 end
             end
+            obj.updatePath(path, obj.priorPlanningID);
             result = false;
         end
 
@@ -322,7 +325,7 @@ classdef AssembleGroup < handle
             % update boundary
             obj.CombineBoundary(r.Boundary);
             % update pos shift 
-            r_loc = r.RobotList(1).Location;
+            r_loc = obj.RobotList(1).Location;
             for i=(obj.Size-r.Size+1):obj.Size
                 loc = obj.RobotList(i).Location;
                 obj.RobotList(i).pos_shift = r_loc - loc;

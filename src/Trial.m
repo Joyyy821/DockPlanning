@@ -27,6 +27,7 @@ classdef Trial < handle
             %TRIAL 构造此类的实例
             %   此处显示详细说明
             obj.step_cnt = 0;
+            obj.structure_arrive = false;
             addpath('lib');
             addpath('lib/display'); addpath('lib/alg');
             addpath('lib/alg/connect');
@@ -39,7 +40,7 @@ classdef Trial < handle
                 obj.robGp(i) = AssembleGroup(i, r, obj.gmap);
             end
             obj.start = false(1, l);
-            obj.structure_arrive = false(1, l);
+%             obj.structure_arrive = false(1, l);
             obj.N_rob = l;
         end
 
@@ -141,7 +142,7 @@ classdef Trial < handle
                 % Go to the parent node
                 parent_idx = obj.ext.tarTree.getparent(obj.robGp(i).c_tar_i);
                 if parent_idx == 0
-                    obj.structure_arrive(i) = true;
+                    obj.structure_arrive = true;
                     disp("Robot "+string(i)+" finished.");
                     return
                 end
@@ -178,7 +179,15 @@ classdef Trial < handle
                     obj.setRobotTarget();
                     obj.start(i) = true;
                 end
-                if ~obj.structure_arrive(i)
+                if ~obj.structure_arrive
+                    if ~obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i)
+                        [occupied, observed] = obj.checkTargetStatus();
+                        if observed && ~occupied(2)
+                            obj.robGp(i).waiting = true;
+                        elseif observed && occupied(2)
+                            obj.robGp(i).waiting = false;
+                        end
+                    end
                     is_arrive = obj.robGp(i).move();
                     if is_arrive && ~obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i)
                         [flag, gp] = obj.isTargetCompleted();
@@ -187,7 +196,20 @@ classdef Trial < handle
                         else
                             obj.robGp(i).waiting = false;
                             % dock
-                            dock_lst = [dock_lst; gp];
+                            if length(gp) == 2
+                                [nr, ~] = size(dock_lst);
+                                add_gp = true;
+                                for j=1:nr
+                                    if dock_lst(j,1) == obj.robGp(i).groupID ...
+                                            || dock_lst(j,2) == obj.robGp(i).groupID
+                                        add_gp = false;
+                                        break
+                                    end
+                                end
+                                if add_gp
+                                    dock_lst = [dock_lst; gp];
+                                end
+                            end
                             obj.setRobotTarget();
                         end
                     elseif is_arrive
@@ -219,6 +241,7 @@ classdef Trial < handle
         function dock(obj, g_idx1, g_idx2)
             obj.robGp(g_idx1).addGroup(obj.robGp(g_idx2));
             obj.robGp(g_idx2) = [];
+            obj.robGp(g_idx1).waiting = false;
         end
 
         %% Extension/Target methods
@@ -286,7 +309,7 @@ classdef Trial < handle
             observed = false;
             is_occupied = [0, 0];
             i = obj.ci;
-            tar = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
+            tar = obj.ext.getTargetByIdx(obj.robGp(i).c_tar_i);
             % TODO: define a function to check whether it is PT with depth
             % -1
 %             is_leaf = obj.ext.isTargetPair(obj.robotGp(i).c_tar_i);
@@ -306,19 +329,16 @@ classdef Trial < handle
 %                 end
 %             end
 %             
-            r_loc = obj.robotGp(i).LeadRobot.Location;
-            m_locs = obj.robotGp(i).modules.getLocations();
-            group_locs = [r_loc; m_locs];
+            group_locs = obj.robGp(i).getLocation();
             dist = ceil(sqrt(double(obj.gmap.mapSize(1)^2+obj.gmap.mapSize(2)^2)));
             t_locs = tar.getLocs();
-            for j=1:obj.robotGp(i).modules.Size+1
+            for j=1:obj.robGp(i).Size
                 for k = 1:tar.Size
                     temp_dist = sqrt(sum((t_locs(k,1:2)-group_locs(j, 1:2)).^2));
                     if temp_dist < dist
-                        dist = temp_dist; nearest_idx = j;
+                        dist = temp_dist;
                     end
-                    if (nearest_idx == 1 && dist <= obj.gmap.robotDist) || ...
-                            (nearest_idx ~= 1 && dist <= obj.gmap.moduleDist)
+                    if dist <= obj.gmap.robotDist
                         observed = true;
                         break
                     end
@@ -335,32 +355,22 @@ classdef Trial < handle
             for j = 1:tar.Size
                 if observed
                     groupid = obj.gmap.groupMap(t_locs(j,1), t_locs(j,2));
-                    if (groupid && obj.robotGp(groupid).status)
-                        g_size = obj.robotGp(groupid).modules.Size;
+                    if groupid
+                        [g_size, ~] = size(find(obj.gmap.groupMap==groupid));
                         if g_size == tar.Size  % TODO: 不可以这样判断
                             is_occupied = [groupid, groupid];
                             return
                         else
                             % check target position
-                            r_goal = obj.robotGp(i).LeadRobot.Goal;
-                            m_goal = int32(r_goal(1:2)) - obj.robotGp(i).attachdir;
-                            if obj.gmap.groupMap(m_goal(1), m_goal(2)) == groupid
+                            r_goal = obj.robGp(i).RobotList(1).Goal;
+                            if obj.gmap.groupMap(r_goal(1), r_goal(2)) == groupid
                                 is_occupied(1) = groupid;
                             else
-                                is_occupied(2) = groupid;
+                                if g_size == tar.Size - obj.robGp(i).Size
+                                    is_occupied(2) = groupid;
+                                end
 %                                 obj.robotGp(i).ignoreDockPair(tar);
                             end
-                        end
-                    end
-                    if obj.gmap.structureMap(t_locs(j,1), t_locs(j,2))
-                        % check target position
-                        r_goal = obj.robotGp(i).LeadRobot.Goal;
-                        m_goal = int32(r_goal(1:2)) - obj.robotGp(i).attachdir;
-                        if obj.gmap.structureMap(m_goal(1), m_goal(2))
-                            is_occupied(1) = -1;
-                        end
-                        if ~all(m_goal(1:2)==t_locs(j,:))
-                            is_occupied(2) = -1;
                         end
                     end
                 end
