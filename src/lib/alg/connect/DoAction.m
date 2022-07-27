@@ -14,7 +14,8 @@
 % Contact Info: sm.kalami@gmail.com, info@yarpiz.com
 %
 
-function q = DoAction(p, a)
+function [q, dock] = DoAction(p, d, a)
+    dock = d; q = p;
 
     switch a(1)
         case 1
@@ -28,6 +29,10 @@ function q = DoAction(p, a)
         case 3
             % Insertion
             q = DoInsertion(p, a(2), a(3));
+
+        case 4
+            % Rotation
+            dock = DoRotation(d, a(2), a(3));
             
     end
 

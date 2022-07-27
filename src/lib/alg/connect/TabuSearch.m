@@ -5,6 +5,7 @@ classdef TabuSearch < handle
     properties
         point    % target positions
         dock     % dock status
+        rotation % rotation command
         N_tar
         N_rob
     end
@@ -15,16 +16,23 @@ classdef TabuSearch < handle
             %   Detailed explanation goes here
             if nargin == 0
                 obj.point = [4,4;5,4;5,5;6,5]; % x, y
-                obj.dock = [0,0,0,1;...
-                            0,1,0,1;...
-                            0,0,1,0;...
-                            1,0,1,0]; % up, down, left, right
+                obj.dock = [1,0,0,0;...
+                            1,0,1,0;...
+                            0,1,0,0;...
+                            1,0,1,0;...
+                            1,1,0,0
+                            ]; % up, down, left, right
+%                 obj.dock = [0,0,0,1;...
+%                             0,1,0,1;...
+%                             0,0,1,0;...
+%                             1,0,1,0]; % up, down, left, right
             elseif nargin == 2
                 obj.point = init_point;
                 obj.dock = init_dock;
             end
             [obj.N_tar, ~] = size(obj.point);
             [obj.N_rob, ~] = size(obj.dock);
+            obj.rotation = zeros(obj.N_rob, 1);
         end
 
         function setTS(obj, pt, d)
@@ -34,14 +42,27 @@ classdef TabuSearch < handle
             [obj.N_rob, ~] = size(obj.dock);
         end
         
-        function [sol, cost] = search(obj)
+        function [sol, rotation, cost] = search(obj)
+            %% All-zero Dock Input Checking
+            N_invalid = 0;
+            for i=1:obj.N_rob
+                if ~any(obj.dock(i,:))
+                    N_invalid = N_invalid + 1;
+                end
+            end
+            if obj.N_rob - N_invalid < obj.N_tar
+                error("Invalid input with "+string(N_invalid)+...
+                    " out of "+string(obj.N_rob)+" robots having no "+...
+                    "avaliable dock sites, but "+string(obj.N_tar)+...
+                    " targets are given to connect.");
+            end
             %% Problem Definition
             
             CostFunction = @(p) obj.MyCost(p);    % Cost Function
             
-            [nQueen, ~] = size(obj.point);   % Number of Queens
+            [nQueen, ~] = size(obj.dock);   % Number of Queens
             
-            ActionList = CreatePermActionList(nQueen);    % Action List
+            ActionList = CreatePermActionList(obj.dock);    % Action List
             
             nAction = numel(ActionList);              % Number of Actions
             
@@ -83,7 +104,12 @@ classdef TabuSearch < handle
                 % Apply Actions
                 for i = 1:nAction
                     if TC(i) == 0
-                        newsol.Position = DoAction(sol.Position, ActionList{i});
+                        [newsol.Position, obj.dock] = DoAction(sol.Position, obj.dock, ActionList{i});
+                        if ActionList{i}(1) == 4
+                            % record rotation
+                            a = ActionList{i}(2:3);
+                            obj.rotation(a(1)) = rem(obj.rotation(a(1))+a(2),4);
+                        end
                         newsol.Cost = CostFunction(newsol.Position);
                         newsol.ActionIndex = i;
             
@@ -143,6 +169,7 @@ classdef TabuSearch < handle
                 disp(['Queen #' num2str(j) ' at (' num2str(x(j)) ', ' num2str(y(j)) ')']);
             end
             sol = x;
+            rotation = obj.rotation;
         end
 
         function z = MyCost(obj, x)

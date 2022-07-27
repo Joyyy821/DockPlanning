@@ -14,12 +14,24 @@
 % Contact Info: sm.kalami@gmail.com, info@yarpiz.com
 %
 
-function ActionList = CreatePermActionList(n)
-
+function ActionList = CreatePermActionList(dock)
+    
+    [n, ~] = size(dock);
     nSwap = n*(n-1)/2;
     nReversion = n*(n-1)/2;
     nInsertion = n^2;
-    nAction = nSwap+nReversion+nInsertion;
+
+    % add rotation
+    nRotation = 3*n;
+%     for i=1:n
+%         if all(dock(i,:)==[1,1,0,0]) || all(dock(i,:)==[0,0,1,1])
+%             nRotation = nRotation - 2;
+%         elseif all(dock(i,:))
+%             nRotation = nRotation - 3;
+%         end
+%     end
+
+    nAction = nSwap+nReversion+nInsertion+nRotation;
     
     ActionList = cell(nAction, 1);
     
@@ -49,6 +61,21 @@ function ActionList = CreatePermActionList(n)
             if abs(i-j)>1
                 c = c+1;
                 ActionList{c} = [3 i j];
+            end
+        end
+    end
+
+    % Add Rotation
+    for i=1:n
+        if all(dock(i,:)==[1,1,0,0]) || all(dock(i,:)==[0,0,1,1])
+            c = c+1;
+            ActionList{c} = [4 i 1];
+        elseif all(dock(i,:))
+            continue
+        else
+            for j=1:3
+                c = c+1;
+                ActionList{c} = [4 i j];
             end
         end
     end
