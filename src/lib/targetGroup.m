@@ -54,6 +54,13 @@ classdef targetGroup < matlab.mixin.Copyable
             end
         end
         
+        function docks = getDocks(obj)
+            docks = zeros(obj.Size, 4);
+            for i=1:obj.Size
+                docks(i, :) = obj.TargetList(i).DockJoint;
+            end
+        end
+        
         function loc = getTarLoc(obj, id, type)
             % TODO: if id not in the group, return []
             % otherwise, return the loc of the provided id.
@@ -94,9 +101,10 @@ classdef targetGroup < matlab.mixin.Copyable
             decision = false;
         end
         
-        function setDisplayID(obj, assignment)
+        function setDisplayIDandDock(obj, assignment, docks)
             for i=1:obj.Size
                 obj.TargetList(i).displayID = assignment(i);
+                obj.TargetList(i).DockJoint = docks(assignment(i), :);
             end
         end
         
@@ -133,40 +141,94 @@ classdef targetGroup < matlab.mixin.Copyable
             newobj.Boundary(2, :) = max(newobj.Boundary(2, :), targetGp.Boundary(2, :));
         end
         
-        function [tar_left, tar_right] = TargetSplitting(obj, option, c, exl)
-%             j = 1;
-            temp_mul = zeros(obj.Size, 1);
-%             disp("nargin: "); disp(nargin);
-            if nargin < 4
-                exl = 1;
+        function result = isConnected(obj, tar)
+            arguments
+                obj     targetGroup
+                tar     targetGroup
             end
+            if nargin == 1
+                tar = obj;
+            end
+            if tar.Size == 1
+                result = true;
+                return
+            end
+            points = tar.getLocs();
+            docks = tar.getDocks();
+            con_num = ConnectionCheck(points, docks);
+            if con_num == 1
+                result = true;
+            else
+                result = false;
+            end
+        end
+        
+        function center_idx = getSplitCenter(obj, option)
+            temp_mul = zeros(obj.Size, 1);
             for i = (obj.Boundary(1, option+1)+1):obj.Boundary(2, option+1)
                 [temp_l, temp_r] = obj.GetSplitNum(i, option);
-%                 disp("left");
-%                 disp(temp_l);
-%                 disp("right");
-%                 disp(temp_r);
                 temp_mul(i) = temp_l * temp_r;
-%                 disp("multiple");
-%                 disp(temp_mul);
-%                 j = j + 1;
             end
             [~, i] = max(temp_mul);
 %             disp("max index");
 %             disp(i);
-            [tar_left, tar_right] = obj.GetSplitGroup(i, option, c, exl);
+            center_idx = i;
         end
         
-        function result = CanBeSplit(obj)
-            if obj.Boundary(2, 1) - obj.Boundary(1, 1) >= 1
-                result(1) = true;
-            else
-                result(1) = false;
+        function [tar_left, tar_right] = TargetSplitting(obj, option, c, exl)
+            if nargin < 4
+                exl = 1;
             end
-            if obj.Boundary(2, 2) - obj.Boundary(1, 2) >= 1
-                result(2) = true;
+            % Try splitting
+            c_i0 = obj.getSplitCenter(option);
+            c_i1 = obj.getSplitCenter(~option);
+            c_i = [c_i0, c_i1];
+            [tar_left, tar_right] = obj.GetSplitGroup(c_i0, option, c, exl);
+            change_option = obj.CanBeSplit();
+            if ~change_option(~option + 1)
+                i = 2; increament = 2;
             else
-                result(2) = false;
+                i = 1; increament = 1;
+            end
+            delta_i = 0; sign = 0;
+            while ~(obj.isConnected(tar_left) && obj.isConnected(tar_right))
+                option = ~option;
+                if rem(i, 4) == 2   % move right
+                    delta_i = delta_i + 1;
+                    sign = 1;
+                elseif rem(i, 4) == 0
+                    sign = -1;
+                end
+                % Check if the spilt avaliable
+                i = i + increament; cut_pos = c_i(option+1)+sign*delta_i;
+                if obj.CanBeSplit(option, cut_pos)
+                    [tar_left, tar_right] = obj.GetSplitGroup(...
+                        cut_pos, option, c, exl);
+                end
+            end
+        end
+        
+        function result = CanBeSplit(obj, option, c_i)
+            % Only used to check the target group dimension.
+            % Does not relate to the dock sites.
+            if nargin == 1
+                if obj.Boundary(2, 1) - obj.Boundary(1, 1) >= 1
+                    result(1) = true;
+                else
+                    result(1) = false;
+                end
+                if obj.Boundary(2, 2) - obj.Boundary(1, 2) >= 1
+                    result(2) = true;
+                else
+                    result(2) = false;
+                end
+            else
+                if obj.Boundary(1, option+1) > c_i || ...
+                        obj.Boundary(2, option+1) <= c_i
+                    result = false;
+                else
+                    result = true;
+                end
             end
         end
     end
@@ -213,21 +275,12 @@ classdef targetGroup < matlab.mixin.Copyable
                 if tar.Location(option+1) < pos
                     if c(option+1) >= pos
                         e_delta = c(option+1) - pos + 1;
-%                         if e_delta == 0
-%                             sign = e_delta / abs(e_delta);
-%                             e_delta = sign * floor(abs(e_delta));
-%                         end
                         tar.Location(option+1) = tar.Location(option+1) - exl*e_delta;
                     end
                     tar_l.AddTarget(tar);
                 else
                     if c(option+1)< pos
                         e_delta = pos - c(option+1);
-%                         if e_delta == 0
-%                             sign = e_delta / abs(e_delta);
-%                             e_delta = sign * ceil(abs(e_delta));
-%                         end
-%                         e_delta = c(option+1) - pos + 1;
                         tar.Location(option+1) = tar.Location(option+1) + exl*e_delta;
                     end
                     tar_r.AddTarget(tar);

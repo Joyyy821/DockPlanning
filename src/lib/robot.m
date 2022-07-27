@@ -24,6 +24,8 @@ classdef robot < handle
         Goal          (:, 3) double  % Current robot goal [x, y, z]
         Path = [] % Current planned path 
         stepCount = 1                % Number of total steps
+        % True if the group with lower priority should be included in planning
+        includeLowerPriGp  logical
         pauseCmd  % Robot will not move if true.
     end
 	
@@ -162,7 +164,7 @@ classdef robot < handle
             end
             
             % Check the robot priority
-            if is_planning
+            if is_planning && ~obj.includeLowerPriGp
                 [Nr, ~] = size(pr);
                 for i=1:Nr
                     if pr(i,3) > obj.ID

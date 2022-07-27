@@ -4,6 +4,7 @@ classdef targetPoint < matlab.mixin.Copyable
         % Can be directly modified by the user.
         ID            (1, 1) int32 {mustBeNonnegative}  % ID of the target point
         displayID     (1, 1) int32
+        DockJoint     (1, 4) logical % [up, down, left, right]
         Location      (1, 2) double  % Current target position
         NextPosition  (1, 2) double  % Next position of the target point
         PrevPositions (:, 2) double  % Previous positions of the target point

@@ -11,7 +11,7 @@ classdef AssembleGroup < handle
         Boundary           (2, 2) int32   % [xmin, ymin; xmax, ymax]
 
         GlobalMap          map       % "pointer" to a global map object
-%         status             logical   % 0 = fetch; 1 = construct.
+        status             logical   % 0 = fetch; 1 = construct.
         
         % Planning properties
         stuckSteps    int32
@@ -165,11 +165,14 @@ classdef AssembleGroup < handle
                 obj.updatePath([]);
                 return
             end
-%             if obj.stuckSteps > 5
-%                 obj.walk();
-%                 result = false;
-%                 return
-%             end
+            if obj.stuckSteps > 5
+                flag = true;
+            else
+                flag = false;
+            end
+            for i=1:obj.Size
+                obj.RobotList(i).includeLowerPriGp = flag;
+            end
             
             % Check whether the robot has arrived at the goal place.
             e = 10e-3;
@@ -265,6 +268,7 @@ classdef AssembleGroup < handle
                     end
                     disp("Group "+string(obj.groupID)+" stuck.");
                     obj.updatePath([], 1);
+                    path = [];
                     result = false;
                     obj.stuckSteps = obj.stuckSteps + 1;
                     return
@@ -281,6 +285,7 @@ classdef AssembleGroup < handle
                 for i=1:obj.Size
                     obj.RobotList(i).move();
                 end
+                obj.stuckSteps = 0;
             end
             obj.setGroupLocForRobot();
             obj.updateMap("add");
@@ -312,6 +317,9 @@ classdef AssembleGroup < handle
             for i=1:obj.Size
                 loc = obj.RobotList(i).Location;
                 obj.GlobalMap.groupMap(loc(1), loc(2)) = val;
+                if obj.status
+                    obj.GlobalMap.workerRobotMap(loc(1), loc(2)) = val;
+                end
             end
         end
         
@@ -349,6 +357,13 @@ classdef AssembleGroup < handle
                 locs(i, :) = obj.RobotList(i).Location(1:2);
             end
         end
+        
+%         function docks = getDock(obj)
+%             docks = zeros(obj.Size, 4);
+%             for i = 1:obj.Size
+%                 docks(i, :) = obj.RobotList(i).DockJoint;
+%             end
+%         end
         
         %%  Auxiliary methods
 

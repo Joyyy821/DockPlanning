@@ -73,6 +73,8 @@ classdef Trial < handle
             if nargin == 2
                 ext_c = locs(1,:);
                 ext_l = 3;
+            elseif nargin == 3
+                ext_l = 3;
             end
             [l, ~] = size(locs);
             Tars = [];
@@ -82,7 +84,7 @@ classdef Trial < handle
             obj.tars = targetGroup(Tars);
             ts_flag = obj.runTS();
             if ts_flag
-                obj.tars.setDisplayID(obj.assignment);
+                obj.tars.setDisplayIDandDock(obj.assignment, obj.getDock);
                 % Binary tree construction / extension
                 obj.ext = Extension(obj.tars, obj.gmap);
                 obj.ext.TargetToTree(ext_c, ext_l);
@@ -96,7 +98,7 @@ classdef Trial < handle
                 [sol, cost] = obj.ts.search();
                 if cost > 1
                     disp("Invalid solution with smallest number of connected"+...
-                        "graph = "+str(cost));
+                        "graph = "+string(cost));
                     ts_flag = 0;
                     return
                 elseif cost == 1
@@ -125,7 +127,7 @@ classdef Trial < handle
             obj.display.updateMap("TargetID", obj.tars);
 
             % Extension
-            obj.ext.showExtension(obj.display);
+            obj.ext.showExtension(obj.display, 1);
             cl = length(obj.ext.GroupLayers);
             for i=1:length(obj.robGp)
                 obj.robGp(i).c_tar_i = obj.ext.getTreeIdx(i, cl);
@@ -160,6 +162,7 @@ classdef Trial < handle
                 end
                 obj.robGp(i).c_tar_i = parent_idx;
                 obj.robGp(i).setIgnorePos(ignore_loc);
+                obj.robGp(i).status = true;
 %                 obj.robGp(i).dock_loc = obj.getSilibingTargetLocs();
             end
             disp("Robot "+string(obj.robGp(i).groupID)+"'s goal: ["+...

@@ -48,7 +48,7 @@ classdef TabuSearch < handle
             
             %% Tabu Search Parameters
             
-            MaxIt = 50;                      % Maximum Number of Iterations
+            MaxIt = 5000;                      % Maximum Number of Iterations
             
             TL = round(0.5*nAction);      % Tabu Length
             
@@ -114,7 +114,9 @@ classdef TabuSearch < handle
                 BestCost(it) = BestSol.Cost;
                 
                 % Show Iteration Information
-                disp(['Iteration ' num2str(it) ': Best Cost = ' num2str(BestCost(it))]);
+                if ~rem(it, 10)
+                    disp(['Iteration ' num2str(it) ': Best Cost = ' num2str(BestCost(it))]);
+                end
                 
             %     % Plot Best Solution
             %     figure(1);
