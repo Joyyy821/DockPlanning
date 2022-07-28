@@ -5,13 +5,15 @@ classdef TabuSearch < handle
     properties
         point    % target positions
         dock     % dock status
+        rob_loc  % robot initial locations
         rotation % rotation command
         N_tar
         N_rob
+        solutions  % Feasible solutions
     end
     
     methods
-        function obj = TabuSearch(init_point,init_dock)
+        function obj = TabuSearch(init_point,init_dock, init_loc)
             %TABUSEARCH Construct an instance of this class
             %   Detailed explanation goes here
             if nargin == 0
@@ -22,17 +24,19 @@ classdef TabuSearch < handle
                             1,0,1,0;...
                             1,1,0,0
                             ]; % up, down, left, right
+                obj.rob_loc = [1, 1; 4, 1; 7, 1; 10, 1; 13, 1];
 %                 obj.dock = [0,0,0,1;...
 %                             0,1,0,1;...
 %                             0,0,1,0;...
 %                             1,0,1,0]; % up, down, left, right
-            elseif nargin == 2
+            elseif nargin == 3
                 obj.point = init_point;
                 obj.dock = init_dock;
+                obj.rob_loc = init_loc;
             end
             [obj.N_tar, ~] = size(obj.point);
             [obj.N_rob, ~] = size(obj.dock);
-            obj.rotation = zeros(obj.N_rob, 1);
+%             obj.rotation = zeros(obj.N_rob, 1);
         end
 
         function setTS(obj, pt, d)
@@ -43,6 +47,8 @@ classdef TabuSearch < handle
         end
         
         function [sol, rotation, cost] = search(obj)
+            obj.rotation = zeros(obj.N_rob, 1);
+            obj.solutions = [];
             %% All-zero Dock Input Checking
             N_invalid = 0;
             for i=1:obj.N_rob
@@ -69,7 +75,7 @@ classdef TabuSearch < handle
             
             %% Tabu Search Parameters
             
-            MaxIt = 5000;                      % Maximum Number of Iterations
+            MaxIt = 50000;                      % Maximum Number of Iterations
             
             TL = round(0.5*nAction);      % Tabu Length
             
@@ -79,11 +85,13 @@ classdef TabuSearch < handle
             % Create Empty Individual Structure
             empty_individual.Position = [];
             empty_individual.Cost = [];
+            empty_individual.Rotation = [];
             
             % Create Initial Solution
             sol = empty_individual;
             sol.Position = randperm(nQueen);
             sol.Cost = CostFunction(sol.Position);
+            sol.Rotation = obj.rotation;
             
             % Initialize Best Solution Ever Found
             BestSol = sol;
@@ -96,9 +104,26 @@ classdef TabuSearch < handle
             
             
             %% Tabu Search Main Loop
+
+            opt_it = [];
             
             for it = 1:MaxIt
                 
+                % Set maximum iteration number for the next soluion
+                if ~isempty(opt_it)
+                    if length(opt_it) == 1
+                        prev_it = opt_it(end);
+                    elseif length(opt_it) > 1
+                        prev_it = opt_it(end) - opt_it(end-1);
+                    end
+                    if it - opt_it(end) > prev_it * 2
+                        disp("Iteration end. Found "+string(length(obj.solutions))...
+                            +" feasible solutions.");
+                        disp(obj.solutions);
+                        break
+                    end
+                end
+
                 bestnewsol.Cost = inf;
                 
                 % Apply Actions
@@ -111,6 +136,7 @@ classdef TabuSearch < handle
                             obj.rotation(a(1)) = rem(obj.rotation(a(1))+a(2),4);
                         end
                         newsol.Cost = CostFunction(newsol.Position);
+                        newsol.Rotation = obj.rotation;
                         newsol.ActionIndex = i;
             
                         if newsol.Cost <= bestnewsol.Cost
@@ -140,7 +166,7 @@ classdef TabuSearch < handle
                 BestCost(it) = BestSol.Cost;
                 
                 % Show Iteration Information
-                if ~rem(it, 10)
+                if ~rem(it, 100)
                     disp(['Iteration ' num2str(it) ': Best Cost = ' num2str(BestCost(it))]);
                 end
                 
@@ -151,7 +177,11 @@ classdef TabuSearch < handle
                 
                 % If Global Minimum is Reached
                 if BestCost(it) == 1 + obj.N_rob - obj.N_tar
-                    break;
+                    obj.solutions = [obj.solutions BestSol];
+                    opt_it = [opt_it it];
+                    disp("Found a feasible solution: ")
+                    disp(BestSol);
+%                     break;
                 end
                 
             end
@@ -161,15 +191,42 @@ classdef TabuSearch < handle
             
             %% Results
             
+            % Find best solution for the candidates
+            obj.FindShortestSolution();
+
             disp(' ');
             disp('Best Solution:');
-            x = BestSol.Position;
+            x = obj.solutions.Position;
             y = 1:nQueen;
             for j = 1:nQueen
                 disp(['Queen #' num2str(j) ' at (' num2str(x(j)) ', ' num2str(y(j)) ')']);
             end
             sol = x;
             rotation = obj.rotation;
+        end
+
+        function FindShortestSolution(obj)
+            dist_sum = inf; best_i = 0;
+            for i=1:length(obj.solutions)
+                x = obj.solutions(i).Position;
+                temp_dist = 0;
+                for j=1:obj.N_tar
+                    t = obj.point(j,:);
+                    r = obj.rob_loc(x(j),:);
+                    d = obj.getManhattanDist(t, r);
+                    temp_dist = temp_dist + d;
+                end
+                if temp_dist < dist_sum
+                    dist_sum = temp_dist;
+                    best_i = i;
+                end
+            end
+            obj.solutions = obj.solutions(best_i);
+            obj.rotation = obj.solutions.Rotation;
+        end
+
+        function d = getManhattanDist(~, p1, p2)
+            d = sum(abs(p1 - p2));
         end
 
         function z = MyCost(obj, x)
