@@ -31,11 +31,11 @@ tar_locs = [12, 14; 13, 14; 14, 14;
             12, 13; 13, 13; 14, 13;
             12, 12; 13, 12; 14, 12
         ];
-success = trial.setTargets(tar_locs, [13, 13]);
+[success, rotated_dock] = trial.setTargets(tar_locs, [13, 13]);
 if ~success
     disp("Program exit ...")
 else
-    trial.setDisplay(8);
+    trial.setDisplay(rotated_dock, 4);
     
     %% Main loop
     max_steps = 1e6;

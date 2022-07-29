@@ -21,4 +21,4 @@
 % Initialization with default target and robot settings.
 myts = TabuSearch();
 % Searching
-[sol, cost] = myts.search();
+[sol, dock, cost] = myts.search();

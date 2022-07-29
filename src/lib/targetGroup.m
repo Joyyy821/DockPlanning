@@ -182,7 +182,11 @@ classdef targetGroup < matlab.mixin.Copyable
             % Try splitting
             c_i0 = obj.getSplitCenter(option);
             c_i1 = obj.getSplitCenter(~option);
-            c_i = [c_i0, c_i1];
+            if option
+                c_i = [c_i1, c_i0];
+            else
+                c_i = [c_i0, c_i1];
+            end
             [tar_left, tar_right] = obj.GetSplitGroup(c_i0, option, c, exl);
             change_option = obj.CanBeSplit();
             if ~change_option(~option + 1)
@@ -223,8 +227,8 @@ classdef targetGroup < matlab.mixin.Copyable
                     result(2) = false;
                 end
             else
-                if obj.Boundary(1, option+1) > c_i || ...
-                        obj.Boundary(2, option+1) <= c_i
+                if obj.Boundary(1, option+1) >= c_i || ...
+                        obj.Boundary(2, option+1) < c_i
                     result = false;
                 else
                     result = true;

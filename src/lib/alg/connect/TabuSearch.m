@@ -46,7 +46,7 @@ classdef TabuSearch < handle
             [obj.N_rob, ~] = size(obj.dock);
         end
         
-        function [sol, rotation, cost] = search(obj)
+        function [sol, dock, cost] = search(obj)
             obj.rotation = zeros(obj.N_rob, 1);
             obj.solutions = [];
             %% All-zero Dock Input Checking
@@ -75,23 +75,28 @@ classdef TabuSearch < handle
             
             %% Tabu Search Parameters
             
-            MaxIt = 50000;                      % Maximum Number of Iterations
+            MaxIt = 1e5;                      % Maximum Number of Iterations
             
             TL = round(0.5*nAction);      % Tabu Length
             
-            
+            CandLen = 10;               % Record maximum 5 feasible solution
+
+            SearchMulti = 500;           % Allowed multiple iteration times for next solution
+
+            ExitCode = 0;             % Indicate why the program stops
+
             %% Initialization
             
             % Create Empty Individual Structure
             empty_individual.Position = [];
             empty_individual.Cost = [];
-            empty_individual.Rotation = [];
+            empty_individual.Dock = [];
             
             % Create Initial Solution
             sol = empty_individual;
             sol.Position = randperm(nQueen);
             sol.Cost = CostFunction(sol.Position);
-            sol.Rotation = obj.rotation;
+            sol.Dock = obj.dock;
             
             % Initialize Best Solution Ever Found
             BestSol = sol;
@@ -102,24 +107,38 @@ classdef TabuSearch < handle
             % Initialize Action Tabu Counters
             TC = zeros(nAction, 1);
             
+            opt_it = zeros(CandLen, 1);  opt_i = 1;
             
             %% Tabu Search Main Loop
-
-            opt_it = [];
             
             for it = 1:MaxIt
                 
                 % Set maximum iteration number for the next soluion
-                if ~isempty(opt_it)
-                    if length(opt_it) == 1
-                        prev_it = opt_it(end);
-                    elseif length(opt_it) > 1
-                        prev_it = opt_it(end) - opt_it(end-1);
-                    end
-                    if it - opt_it(end) > prev_it * 2
-                        disp("Iteration end. Found "+string(length(obj.solutions))...
+                if opt_it(end)
+                    disp("Reach maximum length of candidate list.")
+                    disp("Found "+string(length(obj.solutions))...
                             +" feasible solutions.");
-                        disp(obj.solutions);
+%                     disp(obj.solutions);
+                    disp("Exit searching ...")
+                    ExitCode = 1;
+%                     it = it - 1;
+                    break
+                end
+                if any(opt_it)
+%                     if opt_it(2) == 0   % length == 1
+%                         prev_it = opt_it(opt_i-1);
+%                     else                % length > 1
+%                         prev_it = opt_it(opt_i-1) - opt_it(opt_i-2);
+%                     end
+                    prev_it = opt_it(1);
+                    if it - opt_it(opt_i-1) > prev_it * SearchMulti
+%                         disp("Iteration end.");
+                        disp("Total number of iterations: "+string(it));
+                        disp("Found "+string(length(obj.solutions))...
+                            +" feasible solutions.");
+%                         disp(obj.solutions);
+                        ExitCode = 2;
+%                         it = it - 1;
                         break
                     end
                 end
@@ -129,14 +148,15 @@ classdef TabuSearch < handle
                 % Apply Actions
                 for i = 1:nAction
                     if TC(i) == 0
-                        [newsol.Position, obj.dock] = DoAction(sol.Position, obj.dock, ActionList{i});
-                        if ActionList{i}(1) == 4
-                            % record rotation
-                            a = ActionList{i}(2:3);
-                            obj.rotation(a(1)) = rem(obj.rotation(a(1))+a(2),4);
-                        end
+                        [newsol.Position, newsol.Dock] = DoAction(sol.Position, sol.Dock, ActionList{i});
+%                         if ActionList{i}(1) == 4
+%                             % record rotation
+%                             a = ActionList{i}(2:3);
+%                             obj.rotation(a(1)) = rem(obj.rotation(a(1))+a(2),4);
+%                         end
+                        obj.dock = newsol.Dock;
                         newsol.Cost = CostFunction(newsol.Position);
-                        newsol.Rotation = obj.rotation;
+%                         newsol.Rotation = obj.rotation;
                         newsol.ActionIndex = i;
             
                         if newsol.Cost <= bestnewsol.Cost
@@ -177,20 +197,39 @@ classdef TabuSearch < handle
                 
                 % If Global Minimum is Reached
                 if BestCost(it) == 1 + obj.N_rob - obj.N_tar
-                    obj.solutions = [obj.solutions BestSol];
-                    opt_it = [opt_it it];
-                    disp("Found a feasible solution: ")
-                    disp(BestSol);
+                    add_newsol = true;
+                    for i=1:length(obj.solutions)
+                        temp_x = obj.solutions(i).Position;
+                        if all(BestSol.Position == temp_x)
+                            add_newsol = false;
+                        end
+                    end
+                    if add_newsol
+                        obj.solutions = [obj.solutions BestSol];
+                        opt_it(opt_i) = it;
+                        opt_i = opt_i + 1;
+                        disp("Iteration "+string(it)+" :");
+                        disp("Found a feasible solution: ")
+                        disp(BestSol);
+                    end
+                    ExitCode = 3;
 %                     break;
                 end
                 
             end
             
+            if ExitCode == 1 || ExitCode == 2
+                it = it - 1;
+            end
+
             BestCost = BestCost(1:it);
             cost = BestCost(end) - (obj.N_rob - obj.N_tar);
             
             %% Results
             
+            % Print exit code
+            obj.DispExitCode(ExitCode);
+
             % Find best solution for the candidates
             obj.FindShortestSolution();
 
@@ -201,8 +240,8 @@ classdef TabuSearch < handle
             for j = 1:nQueen
                 disp(['Queen #' num2str(j) ' at (' num2str(x(j)) ', ' num2str(y(j)) ')']);
             end
-            sol = x;
-            rotation = obj.rotation;
+            sol = obj.solutions.Position;
+            dock = obj.solutions.Dock;
         end
 
         function FindShortestSolution(obj)
@@ -222,7 +261,7 @@ classdef TabuSearch < handle
                 end
             end
             obj.solutions = obj.solutions(best_i);
-            obj.rotation = obj.solutions.Rotation;
+%             obj.rotation = obj.solutions.Rotation;
         end
 
         function d = getManhattanDist(~, p1, p2)
@@ -239,6 +278,44 @@ classdef TabuSearch < handle
 %                         obj.dock(x(3),:);obj.dock(x(4),:)];
         
             z = ConnectionCheck(obj.point, dock_swap);
+        end
+
+        function DispExitCode(obj, exitcode)
+            disp("Exit code: "+string(exitcode));
+
+            switch exitcode
+                
+                case 0
+                    % reach maximum iteration times and have not found
+                    % feasible solution
+                    disp("Maximum number of iterations has reached,"+...
+                        " but faied to find any feasible solution subject"+...
+                        " to the user input.");
+
+                case 1
+                    % find sufficient candidates
+                    disp("Candidate list has been filled up. The program"+...
+                        " considers the number of candidates is sufficient.");
+                    disp("Adjust the CandLen parameter if more/less"+...
+                        " candidates are desired.");
+
+                case 2
+                    % hard to find next candidate
+                    disp("Maximum number of iteration for searching the"+...
+                        " next candidate has reached.");
+                    disp("The CandLen paremeter could be too large "+...
+                        "subject to the user input.");
+
+                case 3
+                    % reach maximum iteration times and found some feasible
+                    % solutions
+                    disp("Maximum number of iterations has reached.");
+                    disp("Found "+string(length(obj.solutions))...
+                            +" feasible solutions.");
+                    disp("Consider to tune the parameters CandLen and"+...
+                        " SearchMulti to improve the program efficiency.");
+
+            end
         end
     end
 end

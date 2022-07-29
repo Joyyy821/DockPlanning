@@ -15,6 +15,7 @@ classdef AssembleGroup < handle
         
         % Planning properties
         stuckSteps    int32
+        isStarted          logical   % whether the robot has started assembly
         waiting            logical   % 机器人靠近一个目标，但是需要先等待对接group到达的状态
         priorPlanningID = 1 % The current planning position which has highest priority
 
@@ -51,6 +52,7 @@ classdef AssembleGroup < handle
             end
             obj.stuckSteps = 0;
             obj.waiting = false;
+            obj.isStarted = false;
         end
         
         %% Search methods

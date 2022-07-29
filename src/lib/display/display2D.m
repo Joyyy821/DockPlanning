@@ -65,6 +65,12 @@ classdef display2D < handle
             assignin('base', 'Final_Target', obj.Final_Target);
             assignin('base', 'Target_ID', obj.Target_ID);
         end
+
+        function rotateRobot(obj, dock)
+            obj.Robot_Dock = dock;
+            assignin('base', 'Robot_Dock', obj.Robot_Dock);
+            obj.GUI2D.updateRobotDock();
+        end
         
 %         function updateMap(obj, objTar)
 %             % TODO: update the properties and ws variables

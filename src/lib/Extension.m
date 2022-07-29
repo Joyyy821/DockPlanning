@@ -72,6 +72,7 @@ classdef Extension < handle
                 tree_id = 1;
                 return
             end
+            tree_id = [];
             for i=obj.Nnode(layer-1)+1:obj.Nnode(layer)
                 temp_id = obj.BFSit(i);
                 targets = obj.tarTree.get(temp_id);

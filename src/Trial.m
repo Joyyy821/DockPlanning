@@ -45,9 +45,12 @@ classdef Trial < handle
         end
 
         function rs = getRobots(obj)
-            rs = [];
+            rs = robot();
             for i=1:length(obj.robGp)
-                rs = [rs, obj.robGp(i).RobotList];
+                for j=1:obj.robGp(i).Size
+                    k = obj.robGp(i).RobotList(j).ID;
+                    rs(k) = obj.robGp(i).RobotList(j);
+                end
             end
         end
 
@@ -69,7 +72,22 @@ classdef Trial < handle
             end
         end
 
-        function ts_flag = setTargets(obj, locs, ext_c, ext_l)
+        function setDock(obj, docks)
+            rs = obj.getRobots();
+            for i=1:obj.N_rob
+                rs(i).DockJoint = docks(i,:);
+            end
+        end
+
+        function locs = getAllRobotLoc(obj)
+            locs = zeros(obj.N_rob, 2);
+            rs = obj.getRobots();
+            for i=1:obj.N_rob
+                locs(i,:) = rs(i).Location(1:2);
+            end
+        end
+
+        function [ts_flag, dock] = setTargets(obj, locs, ext_c, ext_l)
             if nargin == 2
                 ext_c = locs(1,:);
                 ext_l = 3;
@@ -82,20 +100,23 @@ classdef Trial < handle
                 Tars =[Tars; targetPoint(i, locs(i, :), obj.gmap)];
             end
             obj.tars = targetGroup(Tars);
-            ts_flag = obj.runTS();
+            [ts_flag, dock] = obj.runTS();
             if ts_flag
-                obj.tars.setDisplayIDandDock(obj.assignment, obj.getDock);
+                obj.tars.setDisplayIDandDock(obj.assignment, dock);
                 % Binary tree construction / extension
                 obj.ext = Extension(obj.tars, obj.gmap);
                 obj.ext.TargetToTree(ext_c, ext_l);
             end
         end
 
-        function ts_flag = runTS(obj)
+        function [ts_flag, dock] = runTS(obj)
             if obj.N_rob == obj.tars.Size
                 % Set tabu search
-                obj.ts = TabuSearch(obj.tars.getLocs, obj.getDock);
-                [sol, cost] = obj.ts.search();
+                obj.ts = TabuSearch(obj.tars.getLocs, obj.getDock, obj.getAllRobotLoc);
+                [sol, dock, cost] = obj.ts.search();
+                disp("sol:");disp(sol);
+                disp("dock: "); disp(dock);
+%                 obj.setDock(dock);
                 if cost > 1
                     disp("Invalid solution with smallest number of connected"+...
                         "graph = "+string(cost));
@@ -111,8 +132,8 @@ classdef Trial < handle
             ts_flag = -1;   % Robot has not been set yet.
         end
         
-        function setDisplay(obj, pause_t)
-            if nargin == 1
+        function setDisplay(obj, dock, pause_t)
+            if nargin == 2
                 pause_t = 0;
             end
             % Display
@@ -125,21 +146,33 @@ classdef Trial < handle
 
             % show assignment result
             obj.display.updateMap("TargetID", obj.tars);
+            
+            % Rotation robots
+            obj.setDock(dock);
+            obj.display.rotateRobot(dock);
 
             % Extension
             obj.ext.showExtension(obj.display, 1);
             cl = length(obj.ext.GroupLayers);
             for i=1:length(obj.robGp)
-                obj.robGp(i).c_tar_i = obj.ext.getTreeIdx(i, cl);
+                id = obj.robGp(i).RobotList(1).ID;
+                obj.robGp(i).c_tar_i = obj.ext.getTreeIdx(id, cl);
+                if isempty(obj.robGp(i).c_tar_i)
+                    obj.robGp(i).RobotList(1).Goal = obj.robGp(i).RobotList(1).Location;
+                end
             end
         end
         
         function setRobotTarget(obj)
             i = obj.ci;
-            if ~obj.start(i)
+            if isempty(obj.robGp(i).c_tar_i)
+                return
+            end
+            if ~obj.robGp(i).isStarted
                 % Go to the leaf node
                 goal_tar = obj.ext.getTargetByIdx(obj.robGp(i).c_tar_i);
                 goal_loc = goal_tar.TargetList(1).Location;
+                obj.robGp(i).isStarted = true;
             else
                 % Go to the parent node
                 parent_idx = obj.ext.tarTree.getparent(obj.robGp(i).c_tar_i);
@@ -163,6 +196,8 @@ classdef Trial < handle
                 obj.robGp(i).c_tar_i = parent_idx;
                 obj.robGp(i).setIgnorePos(ignore_loc);
                 obj.robGp(i).status = true;
+                % TODO: update current target
+                
 %                 obj.robGp(i).dock_loc = obj.getSilibingTargetLocs();
             end
             disp("Robot "+string(obj.robGp(i).groupID)+"'s goal: ["+...
@@ -178,9 +213,9 @@ classdef Trial < handle
             dock_lst = [];
             for i=1:length(obj.robGp)
                 obj.ci = i;
-                if ~obj.start(i)
+                if ~obj.robGp(i).isStarted
                     obj.setRobotTarget();
-                    obj.start(i) = true;
+%                     obj.start(i) = true;
                 end
                 if ~obj.structure_arrive
                     if ~obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i)

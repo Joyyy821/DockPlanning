@@ -114,6 +114,22 @@ classdef GUI2D_exported < matlab.apps.AppBase
             % move all items
             app.moveItems();                        
         end
+
+        function updateRobotDock(app)
+            Robot_dock = evalin('base', 'Robot_Dock');
+            for i = 1:app.Num_robot
+                app.Robot(i).dockers = Robot_dock(i, :);
+                for j=1:4
+                    if app.Robot(i).dockers(j)
+                        v = "on";
+                    else
+                        v = "off";
+                    end
+                    set(app.Robot(i).dockHandler(j), 'visible', v);
+                end
+                pause(1/app.V_move);
+            end
+        end
         
     end
     
@@ -195,6 +211,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             if ~isempty(target_next)
                 for i=1:app.Num_target
                     app.targets(i).nextPos = target_next(i, :);
+                    app.targets(i).assignedLabel = target_id_next(i);
                     app.CTarget_created = true;
 %                     if isempty(app.Object_targets(i).position)
 %                         app.Object_targets(i).position = app.Obj_final_target(i, :);
@@ -202,12 +219,6 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 end
 %             else
 %                 app.Object_targets(i).nextPos = app.Object_targets(i).position;
-            end
-
-            if ~isempty(target_id_next)
-                for i=1:app.Num_target
-                    app.targets(i).assignedLabel = target_id_next(i);
-                end
             end
             
             % If target has been assigned and target need to be switched
@@ -264,8 +275,7 @@ classdef GUI2D_exported < matlab.apps.AppBase
             if app.updateTargetID
                 for i=1:app.Num_target
                     app.targets(i).handlers(2).String = app.targets(i).assignedLabel;
-                    set(app.targets(i).handlers(1), 'Visible', 'on');
-                    set(app.targets(i).handlers(2), 'Visible', 'on');
+                    set(app.targets(i).handlers, 'visible', 'on');
                 end
             end
             % Draw the new path
@@ -324,11 +334,11 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 % move target
                 for i=1:app.Num_target
                     if app.CTarget_created
-                        set(app.targets(i).handlers(1), 'Visible', 'on');
+                        set(app.targets(i).handlers(1), 'visible', 'on');
                         id = app.targets(i).assignedLabel;
                         if id ~= 0
                             set(app.targets(i).handlers(2), 'string', int2str(id));
-                            set(app.targets(i).handlers(2), 'Visible', 'on');
+                            set(app.targets(i).handlers(2), 'visible', 'on');
                         end
                         if ~isempty([app.targets(i).nextPos])
                             pos_delta = app.targets(i).nextPos - app.targets(i).position;
