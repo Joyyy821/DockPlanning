@@ -12,6 +12,7 @@ classdef display2D < handle
         Current_Target = []
         Final_Target = []
         Target_ID = []
+        showInUI = true
         GUI2D % = GUI2D_exported() % GUI object
     end
     
@@ -22,6 +23,7 @@ classdef display2D < handle
                 options.FinalTarget  targetGroup
                 options.CurrentTarget targetGroup
                 options.Robot  robot
+                options.ShowUI  logical
             end
             %DISPLAY2D Constructor
             %   version 2 for extension and robot navigation
@@ -40,6 +42,9 @@ classdef display2D < handle
                 loc =  obj.objToLoc(options.Robot);
                 obj.Robot_Current_Position = loc;
             end
+            if isfield(options, "ShowUI")
+                obj.showInUI = options.ShowUI;
+            end
             obj.runGUI2D();
         end
         
@@ -47,8 +52,10 @@ classdef display2D < handle
             %METHOD1 此处显示有关此方法的摘要
             %   此处显示详细说明
             obj.loadMap();
-            obj.GUI2D = GUI2D_exported();
-            obj.GUI2D.initial();
+            if obj.showInUI
+                obj.GUI2D = GUI2D_exported();
+                obj.GUI2D.initial();
+            end
 %             disp(obj.GUI2D.Num_robot);
 %             obj.GUI2D.show();
         end
@@ -69,7 +76,9 @@ classdef display2D < handle
         function rotateRobot(obj, dock)
             obj.Robot_Dock = dock;
             assignin('base', 'Robot_Dock', obj.Robot_Dock);
-            obj.GUI2D.updateRobotDock();
+            if obj.showInUI
+                obj.GUI2D.updateRobotDock();
+            end
         end
         
 %         function updateMap(obj, objTar)
@@ -104,7 +113,9 @@ classdef display2D < handle
             if isfield(options, "TargetID")
                 obj.getTargetID(options.TargetID);
                 assignin('base', 'Target_ID', obj.Target_ID);
-                obj.GUI2D.updateTargetID = true;
+                if obj.showInUI
+                    obj.GUI2D.updateTargetID = true;
+                end
             end
             if isfield(options, "PartialTargets")
 %                 idxs = options.PartialTargetIDs;
@@ -120,9 +131,11 @@ classdef display2D < handle
 %             if isfield(options, "Obstacle")
 %                 obj.Obstacle
 %             disp(obj.GUI2D.Num_robot);
-            obj.GUI2D.show();
-            if isfield(options, "TargetID")
-                obj.GUI2D.updateTargetID = false;
+            if obj.showInUI
+                obj.GUI2D.show();
+                if isfield(options, "TargetID")
+                    obj.GUI2D.updateTargetID = false;
+                end
             end
         end
         

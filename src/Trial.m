@@ -10,10 +10,12 @@ classdef Trial < handle
         robGp              AssembleGroup
         display            display2D
         ts                 TabuSearch
+        log                Logging
         % Flags
         structure_arrive   logical
         start              logical
         % params
+        name               string
         assignment         int32    % robot - target assignment
         N_rob              int32
         ci
@@ -23,14 +25,20 @@ classdef Trial < handle
     methods
         
         %%  Trial methods
-        function obj = Trial()
+        function obj = Trial(name)
             %TRIAL 构造此类的实例
             %   此处显示详细说明
             obj.step_cnt = 0;
             obj.structure_arrive = false;
             addpath('lib');
-            addpath('lib/display'); addpath('lib/alg');
-            addpath('lib/alg/connect');
+            addpath('lib/display'); addpath('lib/log');
+            addpath('lib/alg'); addpath('lib/alg/connect');
+            if nargin == 1
+                obj.name = name;
+            else
+                obj.name = "";
+            end
+%             obj.log = Logging();
         end
         
         function setRobots(obj, locs, docks)
@@ -72,9 +80,28 @@ classdef Trial < handle
             end
         end
 
-        function setDock(obj, docks)
+        function rots = setDock(obj, docks)
             rs = obj.getRobots();
+            rots = zeros(1, obj.N_rob);
             for i=1:obj.N_rob
+                % check the degree of rotation first
+                rotate_matrix = [1 2 3 4;
+                                 3 4 2 1;
+                                 2 1 4 3;
+                                 4 3 1 2
+                                ];
+                for j=1:4
+                    if all(rs(i).DockJoint(rotate_matrix(j,:)) == docks(i,:))
+                        rs(i).rotation = (j-1)*pi/2;
+                        rots(i) = rs(i).rotation;
+                        break
+                    end
+                end
+                if isempty(rs(i).rotation)
+                    error("Invalid rotation for robot "+num2str(i)+...
+                        ", where the origin shape is "+num2str(rs(i).DockJoint)+...
+                        " and the desired shape is "+num2str(docks(i,:))+".");
+                end
                 rs(i).DockJoint = docks(i,:);
             end
         end
@@ -113,6 +140,7 @@ classdef Trial < handle
             if obj.N_rob == obj.tars.Size
                 % Set tabu search
                 obj.ts = TabuSearch(obj.tars.getLocs, obj.getDock, obj.getAllRobotLoc);
+                disp("Search for valid target assignment...");
                 [sol, dock, cost] = obj.ts.search();
                 disp("sol:");disp(sol);
                 disp("dock: "); disp(dock);
@@ -139,8 +167,12 @@ classdef Trial < handle
             % Display
             obj.display = display2D(obj.gmap.mapSize, ...
                                     "FinalTarget", obj.tars, ...
-                                    "Robot", obj.getRobots);
-
+                                    "Robot", obj.getRobots, ...
+                                    "ShowUI", true);
+            if ~isempty(obj.log)
+                obj.log.recordInit();
+            end
+            
             % Wait for the UI initialization
             pause(pause_t);
 
@@ -148,11 +180,21 @@ classdef Trial < handle
             obj.display.updateMap("TargetID", obj.tars);
             
             % Rotation robots
-            obj.setDock(dock);
+            rots = obj.setDock(dock);
             obj.display.rotateRobot(dock);
-
+            
+            if ~isempty(obj.log)
+                obj.log.recordTargetID();
+                obj.log.recordRotation(rots);
+            end
+            
             % Extension
-            obj.ext.showExtension(obj.display, 1);
+            if isempty(obj.log)
+                obj.ext.showExtension(obj.display, "PauseT", 1);
+            else
+                obj.ext.showExtension(obj.display, "Log", obj.log);
+            end
+            
             cl = length(obj.ext.GroupLayers);
             for i=1:length(obj.robGp)
                 id = obj.robGp(i).RobotList(1).ID;
@@ -161,6 +203,24 @@ classdef Trial < handle
                     obj.robGp(i).RobotList(1).Goal = obj.robGp(i).RobotList(1).Location;
                 end
             end
+            
+        end
+        
+        function setLogging(obj, to_exp)
+            if to_exp
+                ro = obj.N_rob;
+            else
+                ro = 0;
+            end
+            if obj.name == ""
+                obj.log = Logging("RecordOption", ro);
+            else
+                obj.log = Logging("File", obj.name, "RecordOption", ro);
+            end
+            clk = clock;
+            disp("Program starts ...");
+            disp("Trial executed on: "+strjoin(string(int32(clk(1:3))),'-')+...
+                " "+strjoin(string(int32(clk(4:6))),':'));
         end
         
         function setRobotTarget(obj)
@@ -274,6 +334,39 @@ classdef Trial < handle
             % update the display
             obj.display.updateMap("Robot", obj.getRobots);
             obj.step_cnt = obj.step_cnt + 1;
+            if ~isempty(obj.log)
+                happended_dock = obj.findHappendedDock();
+                obj.log.record1step(obj.step_cnt, happended_dock);
+            end
+        end
+        
+        function happended_dock = findHappendedDock(obj)
+            happended_dock = zeros(obj.N_rob, 4);
+%             if naargin == 2 && isempty(dock_lst)
+%                 happended_dock = [];
+%                 return
+%             end
+%             cnt = 1;
+            for i = 1:length(obj.robGp)
+                if obj.robGp(i).Size > 1
+                    for j = 1:obj.robGp(i).Size
+                        % check the docking status
+                        gid = obj.robGp(i).groupID;
+                        dirs = [0, 1; 0, -1; -1, 0; 1, 0];  % up, down, left, right
+                        rid = obj.robGp(i).RobotList(j).ID;
+                        for k=1:4
+                            d = obj.robGp(i).RobotList(j).DockJoint(k);
+                            loc = obj.robGp(i).RobotList(j).Location(1:2)+dirs(k,:);
+                            if d && obj.gmap.groupMap(loc(1), loc(2)) == gid
+                                happended_dock(rid, k) = d;
+                            end
+                        end
+%                         cnt = cnt + 1;
+                    end
+%                 else
+%                     cnt = cnt + 1;
+                end
+            end
         end
 
         function dock(obj, g_idx1, g_idx2)
@@ -283,32 +376,6 @@ classdef Trial < handle
         end
 
         %% Extension/Target methods
-        
-        function locs = getSilibingTargetLocs(obj)
-            % TODO!!
-            i = obj.ci;
-            m_id = sort(obj.robotGp(i).modules.getIDs());
-            c_tar_is = obj.ext.tarTree.getchildren(obj.robotGp(i).c_tar_i);
-            if length(c_tar_is) == 1
-                locs = [];
-            else
-                s_id = [];
-                for j=1:2
-                    t = obj.ext.getTargetByIdx(c_tar_is(j));
-                    t_id = sort(t.getDisplayIDs());
-                    if length(t_id) == length(m_id) && all(m_id == t_id)
-                        s = obj.ext.getTargetByIdx(c_tar_is(3-j));
-                        s_id = s.getIDs();
-                    end
-                end
-                locs = [];
-                tar = obj.ext.getTargetByIdx(obj.robotGp(i).c_tar_i);
-                for j=1:length(s_id)
-                    loc = tar.getTarLoc(s_id(j));
-                    locs = [locs; loc];
-                end
-            end
-        end
         
         function [decision, gp] = isTargetCompleted(obj, locs)
             gp = [];

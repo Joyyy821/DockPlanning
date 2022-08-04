@@ -14,7 +14,8 @@ classdef robot < handle
         % robot group properties
         % lead robot position = slave robot position + pos shift
         pos_shift          int32    % Position difference from the lead robot
-        DockJoint          (1, 4) logical % [up, down, left, right]
+        DockJoint          (1, 4) int32 % [up, down, left, right]
+        rotation           double
         ignoredPos         (:, 2) int32
         groupPos           (:, 2) int32
         Location           (1, 3) double  % Current robot location [x, y, z]

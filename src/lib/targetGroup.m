@@ -210,6 +210,11 @@ classdef targetGroup < matlab.mixin.Copyable
                         cut_pos, option, c, exl);
                 end
             end
+            disp("Extended targets on: ");
+            disp("(a)");
+            disp(tar_left.getLocs);
+            disp("(b)");
+            disp(tar_right.getLocs);
         end
         
         function result = CanBeSplit(obj, option, c_i)

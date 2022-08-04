@@ -22,3 +22,6 @@
 myts = TabuSearch();
 % Searching
 [sol, dock, cost] = myts.search();
+disp("Assignment: "); disp(sol);
+disp("Dock: "); disp(dock);
+disp("Cost: "); disp(cost);

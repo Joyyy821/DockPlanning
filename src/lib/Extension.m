@@ -76,8 +76,8 @@ classdef Extension < handle
             for i=obj.Nnode(layer-1)+1:obj.Nnode(layer)
                 temp_id = obj.BFSit(i);
                 targets = obj.tarTree.get(temp_id);
-                disp("ids: "); disp(ids);
-                disp("target ids: "); disp(targets.getDisplayIDs);
+%                 disp("ids: "); disp(ids);
+%                 disp("target ids: "); disp(targets.getDisplayIDs);
                 if all(ismember(ids, targets.getDisplayIDs))
                     tree_id = temp_id;
                 end
@@ -136,13 +136,29 @@ classdef Extension < handle
             end
         end
         
-        function showExtension(obj, display, pause_t)
+        function showExtension(obj, display, options)
+            arguments
+                obj             Extension
+                display         display2D
+                options.Pause   double
+                options.Log     Logging
+            end
+            if isfield(options, "Pause")
+                pause_t = options.Pause;
+            else
+                pause_t = 0;
+            end
+            if isfield(options, "Log")
+                log = options.Log;
+            else
+                log = [];
+            end
             if nargin == 1
                 mapsize = obj.GlobalMap.mapSize;
                 display = display2D(mapsize, "FinalTarget", obj.finTar);
                 pause_t = 0;
-            elseif nargin == 2
-                pause_t = 0;
+%             elseif nargin == 2
+%                 pause_t = 0;
             end
             
             % is_fin = false;
@@ -168,6 +184,9 @@ classdef Extension < handle
                 i = i+1;
                 c_layer = c_layer + 1;
                 display.updateMap("CurrentTarget", new_node);
+                if ~isempty(log)
+                    log.recordExtension(c_layer);
+                end
                 pause(pause_t);
             %     if i >= Size
             %         is_fin = true;

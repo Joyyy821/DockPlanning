@@ -7,32 +7,40 @@ classdef TabuSearch < handle
         dock     % dock status
         rob_loc  % robot initial locations
         rotation % rotation command
+        solutions  % Feasible solutions
+        % parameters
         N_tar
         N_rob
-        solutions  % Feasible solutions
+        isDockIden
     end
     
     methods
-        function obj = TabuSearch(init_point,init_dock, init_loc)
+        function obj = TabuSearch(init_point,init_dock, init_loc, is_dock_ident)
             %TABUSEARCH Construct an instance of this class
             %   Detailed explanation goes here
             if nargin == 0
                 obj.point = [4,4;5,4;5,5;6,5]; % x, y
                 obj.dock = [1,0,0,0;...
-                            1,0,1,0;...
+                            2,0,1,0;...
                             0,1,0,0;...
-                            1,0,1,0;...
-                            1,1,0,0
+                            1,0,2,0;...
+                            1,2,0,0
                             ]; % up, down, left, right
                 obj.rob_loc = [1, 1; 4, 1; 7, 1; 10, 1; 13, 1];
+                obj.isDockIden = false;
 %                 obj.dock = [0,0,0,1;...
 %                             0,1,0,1;...
 %                             0,0,1,0;...
 %                             1,0,1,0]; % up, down, left, right
-            elseif nargin == 3
+            elseif nargin >= 3
                 obj.point = init_point;
                 obj.dock = init_dock;
                 obj.rob_loc = init_loc;
+            end
+            if nargin == 4
+                obj.isDockIden = is_dock_ident;
+            else
+                obj.isDockIden = isempty(find(obj.dock==2,1));
             end
             [obj.N_tar, ~] = size(obj.point);
             [obj.N_rob, ~] = size(obj.dock);
@@ -49,7 +57,8 @@ classdef TabuSearch < handle
         function [sol, dock, cost] = search(obj)
             obj.rotation = zeros(obj.N_rob, 1);
             obj.solutions = [];
-            %% All-zero Dock Input Checking
+            %% Input Validation
+            % check if any robot has no dock joint
             N_invalid = 0;
             for i=1:obj.N_rob
                 if ~any(obj.dock(i,:))
@@ -61,6 +70,15 @@ classdef TabuSearch < handle
                     " out of "+string(obj.N_rob)+" robots having no "+...
                     "avaliable dock sites, but "+string(obj.N_tar)+...
                     " targets are given to connect.");
+            end
+            % check if the dock joints are not indetical but all robots
+            % have only one kind of dock joint (all 1 or all 2).
+            if ~obj.isDockIden
+                if isempty(find(obj.dock==2,1)) && isempty(find(obj.dock==1,1))
+                    error("Invalid input with all robots having only one "+...
+                        "kind of dock joint (all 1 or all 2), which cannot"+...
+                        " be connected.");
+                end
             end
             %% Problem Definition
             
@@ -79,7 +97,7 @@ classdef TabuSearch < handle
             
             TL = round(0.5*nAction);      % Tabu Length
             
-            CandLen = 10;               % Record maximum 5 feasible solution
+            CandLen = 4;               % Maximum number of feasible solutions to be recorded
 
             SearchMulti = 500;           % Allowed multiple iteration times for next solution
 
@@ -211,6 +229,7 @@ classdef TabuSearch < handle
                         disp("Iteration "+string(it)+" :");
                         disp("Found a feasible solution: ")
                         disp(BestSol);
+                        disp("Dock: "); disp(BestSol.Dock);
                     end
                     ExitCode = 3;
 %                     break;
@@ -235,13 +254,16 @@ classdef TabuSearch < handle
 
             disp(' ');
             disp('Best Solution:');
+            disp("(Robot No., Target No.)");
             x = obj.solutions.Position;
             y = 1:nQueen;
             for j = 1:nQueen
-                disp(['Queen #' num2str(j) ' at (' num2str(x(j)) ', ' num2str(y(j)) ')']);
+%                 disp(['Queen #' num2str(j) ' at (' num2str(x(j)) ', ' num2str(y(j)) ')']);
+                disp(['(' num2str(x(j)) ', ' num2str(y(j)) ')']);
             end
             sol = obj.solutions.Position;
             dock = obj.solutions.Dock;
+            disp("Dock: "); disp(dock);
         end
 
         function FindShortestSolution(obj)
@@ -277,7 +299,7 @@ classdef TabuSearch < handle
 %             dock_swap = [obj.dock(x(1),:);obj.dock(x(2),:);...
 %                         obj.dock(x(3),:);obj.dock(x(4),:)];
         
-            z = ConnectionCheck(obj.point, dock_swap);
+            z = ConnectionCheck(obj.point, dock_swap, obj.isDockIden);
         end
 
         function DispExitCode(obj, exitcode)
