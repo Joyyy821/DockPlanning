@@ -172,7 +172,7 @@ classdef display2D < handle
                     path_l(id) = path_l(id) + 1;
                 end
                 % Load dock
-                obj.Robot_Dock = false(N, 4);
+                obj.Robot_Dock = zeros(N, 4);
                 for i=1:N
                     obj.Robot_Dock(i, 1:4) = e(i).DockJoint;
                 end

@@ -121,16 +121,20 @@ classdef GUI2D_exported < matlab.apps.AppBase
                 app.Robot(i).dockers = Robot_dock(i, :);
                 for j=1:4
                     if app.Robot(i).dockers(j)
-                        v = "on";
+                        if app.Robot(i).dockers(j) == 1
+                            set(app.Robot(i).dockHandler(j), 'Color', 'r');
+                        elseif app.Robot(i).dockers(j) == 2
+                            set(app.Robot(i).dockHandler(j), 'Color', '#EDB120');
+                        end
+                        set(app.Robot(i).dockHandler(j), 'visible', 'on');
                     else
-                        v = "off";
+                        set(app.Robot(i).dockHandler(j), 'visible', 'off');
                     end
-                    set(app.Robot(i).dockHandler(j), 'visible', v);
+%                     set(app.Robot(i).dockHandler(j), 'visible', v);
                 end
-                pause(1/app.V_move);
+                pause(1/app.V_move*10);
             end
         end
-        
     end
     
     methods (Access = private)
@@ -429,13 +433,22 @@ classdef GUI2D_exported < matlab.apps.AppBase
                     dock_y = [1, 1; 0, 0; 0, 1; 0, 1] * app.Robot_size(2);
                     if axis == app.UIAxes
                         for i=1:4
+                            if app.Robot(id).dockers(i) == 1
+                                col = 'r';
+                            elseif app.Robot(id).dockers(i) == 2
+                                col = '#EDB120';
+                            else
+                                col = 'w';
+                            end
                             temp_h = line(axis, pos(1)+dock_x(i,:), pos(2)+dock_y(i,:), ...
                                 "LineWidth", 1, ...
-                                "Color", 'r');
+                                "Color", col);
                             app.Robot(id).dockHandler(i) = temp_h;
-                            if ~app.Robot(id).dockers(i)
-                                set(app.Robot(id).dockHandler(i), 'visible', 'off');
-                            end
+%                             if ~app.Robot(id).dockers(i)
+%                                 set(app.Robot(id).dockHandler(i), 'visible', 'off');
+% %                             elseif app.Robot(id).dockers(i) == 2
+% %                                 set(app.Robot(id).dockHandler(i), 'Color', '#EDB120');
+%                             end
                         end
                     end
                     % Display robot ID

@@ -19,7 +19,14 @@
 % A test script
 
 % Initialization with default target and robot settings.
-myts = TabuSearch();
+point = [4,4;5,4;5,5;6,5]; % x, y
+dock = [1,0,0,0;...
+        1,0,1,0;...
+        0,1,0,0;...
+        1,0,1,0
+        ]; % up, down, left, right
+rob_loc = [1, 1; 4, 1; 7, 1; 10, 1];
+myts = TabuSearch(point, dock, rob_loc, true);
 % Searching
 [sol, dock, cost] = myts.search();
 disp("Assignment: "); disp(sol);

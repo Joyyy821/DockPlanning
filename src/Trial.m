@@ -128,7 +128,7 @@ classdef Trial < handle
             end
             obj.tars = targetGroup(Tars);
             [ts_flag, dock] = obj.runTS();
-            if ts_flag
+            if ts_flag == 1
                 obj.tars.setDisplayIDandDock(obj.assignment, dock);
                 % Binary tree construction / extension
                 obj.ext = Extension(obj.tars, obj.gmap);
@@ -137,7 +137,7 @@ classdef Trial < handle
         end
 
         function [ts_flag, dock] = runTS(obj)
-            if obj.N_rob == obj.tars.Size
+            if obj.N_rob
                 % Set tabu search
                 obj.ts = TabuSearch(obj.tars.getLocs, obj.getDock, obj.getAllRobotLoc);
                 disp("Search for valid target assignment...");
@@ -158,6 +158,7 @@ classdef Trial < handle
                 end
             end
             ts_flag = -1;   % Robot has not been set yet.
+            dock = [];
         end
         
         function setDisplay(obj, dock, pause_t)
@@ -277,6 +278,9 @@ classdef Trial < handle
                     obj.setRobotTarget();
 %                     obj.start(i) = true;
                 end
+                if isempty(obj.robGp(i).c_tar_i)
+                    continue
+                end
                 if ~obj.structure_arrive
                     if ~obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i)
                         [occupied, observed] = obj.checkTargetStatus();
@@ -373,6 +377,23 @@ classdef Trial < handle
             obj.robGp(g_idx1).addGroup(obj.robGp(g_idx2));
             obj.robGp(g_idx2) = [];
             obj.robGp(g_idx1).waiting = false;
+        end
+
+        function endSim(obj)
+            % Simulation summary
+            disp("-------------- End of Trial: Simulation Summary -----------------");
+            disp("Target extension steps: "+string(obj.ext.depth));
+            disp("Total time steps: "+string(obj.step_cnt));
+            disp("--------");
+            disp("Total moved steps for each robot:");
+            rs = obj.getRobots;
+            for i=1:obj.N_rob
+                s = rs(i).stepCount;
+                disp("Robot No. "+string(rs(i).ID)+": "+string(s));
+            end
+            if ~isempty(obj.log)
+                obj.log.endRecording;
+            end
         end
 
         %% Extension/Target methods

@@ -7,18 +7,19 @@ Map_Size = [12, 12]; % length*width
 %% Initialization
 % Notice: must initialize targets first before initialize robot group,
 % otherwise the robot group cannot be located on the extension tree.
-trial = Trial();
+trial = Trial("S-4t-5r-3");
 % Map
 trial.gmap = map(Map_Size, 3);
 
 % Robots
-robot_locs = [1, 1; 4, 1; 7, 1; 10, 1];
+robot_locs = [1, 11; 3, 11; 6, 11; 9, 11; 11, 11];
 % robot_locs = [1, 23; 5, 23; 9, 23; 13, 23; 17, 23; 21, 23; ...
 %     3, 19; 11, 19; 19, 19];
 dock = [1,0,0,0;...
-        1,0,1,0;...
+        2,0,1,0;...
         0,1,0,0;...
-        1,0,1,0
+        1,0,2,0;...
+        1,2,0,0
         ]; % up, down, left, right
 % dock = [0,1,0,0;...  1
 %         0,0,0,1;...  2
@@ -46,7 +47,7 @@ tar_locs = [4,4;5,4;5,5;6,5];
 if ~success
     disp("Program exit ...")
 else
-    trial.setDisplay(rotated_dock);
+    trial.setDisplay(rotated_dock, 6);
     
     %% Main loop
     max_steps = 1e6;
@@ -54,4 +55,4 @@ else
         trial.execute();
     end
 end
-trial.log.endRecording;
+trial.endSim;

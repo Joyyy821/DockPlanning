@@ -1,0 +1,491 @@
+Program starts ...
+Trial executed on: 2022-8-5 18:32:35
+Search for valid target assignment...
+Iteration 100: Best Cost = 3
+Iteration 200: Best Cost = 3
+Iteration 230 :
+Found a feasible solution: 
+       Position: [5 2 4 3 1]
+           Dock: [5×4 double]
+           Cost: 2
+    ActionIndex: 25
+
+Dock: 
+     0     1     0     0
+     2     0     1     0
+     0     0     1     0
+     0     1     0     2
+     0     0     1     2
+
+Iteration 300: Best Cost = 2
+Iteration 400: Best Cost = 2
+Iteration 403 :
+Found a feasible solution: 
+       Position: [5 2 4 1 3]
+           Dock: [5×4 double]
+           Cost: 2
+    ActionIndex: 9
+
+Dock: 
+     0     0     1     0
+     2     0     1     0
+     0     1     0     0
+     0     1     0     2
+     0     0     1     2
+
+Iteration 500: Best Cost = 2
+Iteration 600: Best Cost = 2
+Iteration 636 :
+Found a feasible solution: 
+       Position: [3 4 2 5 1]
+           Dock: [5×4 double]
+           Cost: 2
+    ActionIndex: 10
+
+Dock: 
+     0     0     0     1
+     0     2     0     1
+     0     0     0     1
+     1     0     2     0
+     0     0     2     1
+
+Iteration 637 :
+Found a feasible solution: 
+       Position: [1 4 2 5 3]
+           Dock: [5×4 double]
+           Cost: 2
+    ActionIndex: 4
+
+Dock: 
+     0     0     0     1
+     0     2     0     1
+     0     0     0     1
+     1     0     2     0
+     0     0     2     1
+
+Reach maximum length of candidate list.
+Found 4 feasible solutions.
+Exit searching ...
+Exit code: 1
+Candidate list has been filled up. The program considers the number of candidates is sufficient.
+Adjust the CandLen parameter if more/less candidates are desired.
+ 
+Best Solution:
+(Robot No., Target No.)
+(5, 1)
+(2, 2)
+(4, 3)
+(3, 4)
+(1, 5)
+Dock: 
+     0     1     0     0
+     2     0     1     0
+     0     0     1     0
+     0     1     0     2
+     0     0     1     2
+
+sol:
+     5     2     4     3     1
+
+dock: 
+     0     1     0     0
+     2     0     1     0
+     0     0     1     0
+     0     1     0     2
+     0     0     1     2
+
+Best solution valid.
+Extended targets on: 
+(a)
+     4     4
+     5     4
+
+(b)
+     5     8
+     6     8
+
+Extended targets on: 
+(a)
+     4     4
+
+(b)
+     8     4
+
+Extended targets on: 
+(a)
+     5     8
+
+(b)
+     9     8
+
+Current plot held
+Current plot held
+Map dimension has been loaded.
+p_idx: 0
+app robbot path: 
+     1    11
+
+p_idx: 1
+app robbot path: 
+     3    11
+
+p_idx: 2
+app robbot path: 
+     6    11
+
+p_idx: 3
+app robbot path: 
+     9    11
+
+p_idx: 4
+app robbot path: 
+    11    11
+
+Robot position(s), dock sites, and path(s) have been loaded.
+Final target(s) has/have been loaded.
+Current target(s) has/have been loaded.
+Robot 2's goal: [8, 4].
+Replan success from object No. 1
+Robot 2 at step No. 1
+Robot 2 next loc:
+     3    10
+
+Robot 3's goal: [9, 8].
+Replan success from object No. 1
+Robot 3 at step No. 1
+Robot 3 next loc:
+     6    10
+
+Robot 4's goal: [5, 8].
+Replan success from object No. 1
+Robot 4 at step No. 1
+Robot 4 next loc:
+     8    11
+
+Robot 5's goal: [4, 4].
+Replan success from object No. 1
+Robot 5 at step No. 1
+Robot 5 next loc:
+    11    10
+
+Replan success from object No. 1
+Robot 2 at step No. 2
+Robot 2 next loc:
+     3     9
+
+Group 3 stuck.
+Replan success from object No. 1
+Robot 4 at step No. 2
+Robot 4 next loc:
+     8    10
+
+Replan success from object No. 1
+Robot 5 at step No. 2
+Robot 5 next loc:
+    10    10
+
+Replan success from object No. 1
+Robot 2 at step No. 3
+Robot 2 next loc:
+     3     8
+
+Group 3 stuck.
+Replan success from object No. 1
+Robot 4 at step No. 3
+Robot 4 next loc:
+     8     9
+
+Replan success from object No. 1
+Robot 5 at step No. 3
+Robot 5 next loc:
+    10     9
+
+Replan success from object No. 1
+Robot 2 at step No. 4
+Robot 2 next loc:
+     4     8
+
+Group 3 stuck.
+Replan success from object No. 1
+Robot 4 at step No. 4
+Robot 4 next loc:
+     8     8
+
+Replan success from object No. 1
+Robot 5 at step No. 4
+Robot 5 next loc:
+    10     8
+
+Replan success from object No. 1
+Robot 2 at step No. 5
+Robot 2 next loc:
+     4     7
+
+Replan success from object No. 1
+Robot 3 at step No. 2
+Robot 3 next loc:
+     7    10
+
+Replan success from object No. 1
+Robot 4 at step No. 5
+Robot 4 next loc:
+     7     8
+
+Replan success from object No. 1
+Robot 5 at step No. 5
+Robot 5 next loc:
+     9     8
+
+Replan success from object No. 1
+Robot 2 at step No. 6
+Robot 2 next loc:
+     5     7
+
+Group 3 stuck.
+Replan success from object No. 1
+Robot 4 at step No. 6
+Robot 4 next loc:
+     7     7
+
+Replan success from object No. 1
+Robot 5 at step No. 6
+Robot 5 next loc:
+     9     7
+
+Replan success from object No. 1
+Robot 2 at step No. 7
+Robot 2 next loc:
+     5     6
+
+Replan success from object No. 1
+Robot 3 at step No. 3
+Robot 3 next loc:
+     7     9
+
+Replan success from object No. 1
+Robot 4 at step No. 7
+Robot 4 next loc:
+     7     6
+
+Replan success from object No. 1
+Robot 5 at step No. 7
+Robot 5 next loc:
+     9     6
+
+Group 2 stuck.
+Replan success from object No. 1
+Robot 3 at step No. 4
+Robot 3 next loc:
+     8     9
+
+Replan success from object No. 1
+Robot 4 at step No. 8
+Robot 4 next loc:
+     7     7
+
+Replan success from object No. 1
+Robot 5 at step No. 8
+Robot 5 next loc:
+     9     5
+
+Group 2 stuck.
+Group 3 stuck.
+Replan success from object No. 1
+Robot 4 at step No. 9
+Robot 4 next loc:
+     7     6
+
+Replan success from object No. 1
+Robot 5 at step No. 9
+Robot 5 next loc:
+     9     4
+
+Group 2 stuck.
+Replan success from object No. 1
+Robot 3 at step No. 5
+Robot 3 next loc:
+     8     8
+
+Replan success from object No. 1
+Robot 4 at step No. 10
+Robot 4 next loc:
+     7     5
+
+Replan success from object No. 1
+Robot 5 at step No. 10
+Robot 5 next loc:
+     9     3
+
+Group 2 stuck.
+Replan success from object No. 1
+Robot 3 at step No. 6
+Robot 3 next loc:
+     9     8
+
+Replan success from object No. 1
+Robot 4 at step No. 11
+Robot 4 next loc:
+     7     6
+
+Replan success from object No. 1
+Robot 5 at step No. 11
+Robot 5 next loc:
+     8     3
+
+Group 2 stuck.
+Group 3 already at the goal position [9, 8].
+Robot 3's goal: [6, 8].
+Replan success from object No. 1
+Robot 4 at step No. 12
+Robot 4 next loc:
+     7     7
+
+Replan success from object No. 1
+Robot 5 at step No. 12
+Robot 5 next loc:
+     7     3
+
+Group 2 stuck.
+Replan success from object No. 1
+Robot 4 at step No. 13
+Robot 4 next loc:
+     7     8
+
+Replan success from object No. 1
+Robot 5 at step No. 13
+Robot 5 next loc:
+     6     3
+
+Replan success from object No. 1
+Robot 2 at step No. 8
+Robot 2 next loc:
+     6     6
+
+Replan success from object No. 1
+Robot 4 at step No. 14
+Robot 4 next loc:
+     6     8
+
+Replan success from object No. 1
+Robot 5 at step No. 14
+Robot 5 next loc:
+     5     3
+
+Replan success from object No. 1
+Robot 2 at step No. 9
+Robot 2 next loc:
+     6     5
+
+Replan success from object No. 1
+Robot 4 at step No. 15
+Robot 4 next loc:
+     5     8
+
+Replan success from object No. 1
+Robot 5 at step No. 15
+Robot 5 next loc:
+     4     3
+
+Replan success from object No. 1
+Robot 2 at step No. 10
+Robot 2 next loc:
+     7     5
+
+Replan success from object No. 1
+Robot 3 at step No. 7
+Robot 3 next loc:
+     8     8
+
+Group 4 already at the goal position [5, 8].
+Robot 4's goal: [5, 8].
+Replan success from object No. 1
+Robot 5 at step No. 16
+Robot 5 next loc:
+     4     4
+
+Replan success from object No. 1
+Robot 2 at step No. 11
+Robot 2 next loc:
+     7     4
+
+Replan success from object No. 1
+Robot 3 at step No. 8
+Robot 3 next loc:
+     7     8
+
+Group 5 already at the goal position [4, 4].
+Robot 5's goal: [4, 4].
+Replan success from object No. 1
+Robot 2 at step No. 12
+Robot 2 next loc:
+     8     4
+
+Replan success from object No. 1
+Robot 3 at step No. 9
+Robot 3 next loc:
+     6     8
+
+Group 4 already at the goal position [5, 8].
+Robot 4's goal: [5, 5].
+Group 2 already at the goal position [8, 4].
+Robot 2's goal: [5, 4].
+Group 3 already at the goal position [6, 8].
+Robot 3's goal: [6, 5].
+Replan success from object No. 1
+Robot 2 at step No. 13
+Robot 2 next loc:
+     7     4
+
+Replan success from object No. 1
+Robot 2 at step No. 14
+Robot 2 next loc:
+     6     4
+
+Replan success from object No. 1
+Robot 2 at step No. 15
+Robot 2 next loc:
+     5     4
+
+Group 5 already at the goal position [4, 4].
+Robot 5's goal: [4, 4].
+Group 2 already at the goal position [5, 4].
+Robot 2's goal: [5, 4].
+Replan success from object No. 1
+Robot 3 at step No. 10
+Robot 3 next loc:
+     6     7
+
+Robot 4 at step No. 16
+Robot 4 next loc:
+     5     7
+
+Replan success from object No. 1
+Robot 3 at step No. 11
+Robot 3 next loc:
+     6     6
+
+Robot 4 at step No. 17
+Robot 4 next loc:
+     5     6
+
+Replan success from object No. 1
+Robot 3 at step No. 12
+Robot 3 next loc:
+     6     5
+
+Robot 4 at step No. 18
+Robot 4 next loc:
+     5     5
+
+Group 2 already at the goal position [5, 4].
+Robot 2 finished.
+-------------- End of Trial: Simulation Summary -----------------
+Target extension steps: 2
+Total time steps: 26
+--------
+Total moved steps for each robot:
+Robot No. 1: 1
+Robot No. 2: 16
+Robot No. 3: 13
+Robot No. 4: 19
+Robot No. 5: 17

@@ -250,20 +250,24 @@ classdef TabuSearch < handle
             obj.DispExitCode(ExitCode);
 
             % Find best solution for the candidates
-            obj.FindShortestSolution();
-
-            disp(' ');
-            disp('Best Solution:');
-            disp("(Robot No., Target No.)");
-            x = obj.solutions.Position;
-            y = 1:nQueen;
-            for j = 1:nQueen
-%                 disp(['Queen #' num2str(j) ' at (' num2str(x(j)) ', ' num2str(y(j)) ')']);
-                disp(['(' num2str(x(j)) ', ' num2str(y(j)) ')']);
+            if ExitCode
+                obj.FindShortestSolution();
+    
+                disp(' ');
+                disp('Best Solution:');
+                disp("(Robot No., Target No.)");
+                x = obj.solutions.Position;
+                y = 1:nQueen;
+                for j = 1:nQueen
+    %                 disp(['Queen #' num2str(j) ' at (' num2str(x(j)) ', ' num2str(y(j)) ')']);
+                    disp(['(' num2str(x(j)) ', ' num2str(y(j)) ')']);
+                end
+                sol = obj.solutions.Position;
+                dock = obj.solutions.Dock;
+                disp("Dock: "); disp(dock);
+            else
+                sol = []; dock = [];
             end
-            sol = obj.solutions.Position;
-            dock = obj.solutions.Dock;
-            disp("Dock: "); disp(dock);
         end
 
         function FindShortestSolution(obj)
