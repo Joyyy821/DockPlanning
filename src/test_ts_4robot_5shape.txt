@@ -1,0 +1,1313 @@
+-------------------------------------------------
+Tabu search test episodes for 4-robot experiments
+--------------------------
+Test episode for type: 1
+--------------------------
+Trial No. 1 - shape type: S
+Target locations: 
+     4     4
+     5     4
+     5     5
+     6     5
+
+Dock joints: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Array length for chosen candidates: 1
+Iteration 1 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 13
+
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Reach maximum length of candidate list.
+Found 1 feasible solutions.
+Exit searching ...
+Exit code: 1
+Candidate list has been filled up. The program considers the number of candidates is sufficient.
+Adjust the CandLen parameter if more/less candidates are desired.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(4, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Assignment: 
+     3     4     1     2
+
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 2 - shape type: T
+Target locations: 
+     4     5
+     5     5
+     6     5
+     5     4
+
+Dock joints: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Array length for chosen candidates: 1
+Iteration 2 :
+Found a feasible solution: 
+       Position: [3 1 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 2
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Reach maximum length of candidate list.
+Found 1 feasible solutions.
+Exit searching ...
+Exit code: 1
+Candidate list has been filled up. The program considers the number of candidates is sufficient.
+Adjust the CandLen parameter if more/less candidates are desired.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(2, 3)
+(4, 4)
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Assignment: 
+     3     1     2     4
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 3 - shape type: L
+Target locations: 
+     4     4
+     4     5
+     5     5
+     6     5
+
+Dock joints: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Array length for chosen candidates: 1
+Iteration 1 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Reach maximum length of candidate list.
+Found 1 feasible solutions.
+Exit searching ...
+Exit code: 1
+Candidate list has been filled up. The program considers the number of candidates is sufficient.
+Adjust the CandLen parameter if more/less candidates are desired.
+ 
+Best Solution:
+(Robot No., Target No.)
+(4, 1)
+(3, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Assignment: 
+     4     3     1     2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 4 - shape type: 1
+Target locations: 
+     4     4
+     5     4
+     6     4
+     7     4
+
+Dock joints: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Array length for chosen candidates: 2
+Iteration 2 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 8
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Iteration 3 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Reach maximum length of candidate list.
+Found 2 feasible solutions.
+Exit searching ...
+Exit code: 1
+Candidate list has been filled up. The program considers the number of candidates is sufficient.
+Adjust the CandLen parameter if more/less candidates are desired.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(4, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Assignment: 
+     3     1     4     2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 5 - shape type: q
+Target locations: 
+     4     5
+     5     5
+     4     4
+     5     4
+
+Dock joints: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Array length for chosen candidates: 2
+Iteration 1 :
+Found a feasible solution: 
+       Position: [1 4 2 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 9
+
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Iteration 2 :
+Found a feasible solution: 
+       Position: [1 3 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 5
+
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Reach maximum length of candidate list.
+Found 2 feasible solutions.
+Exit searching ...
+Exit code: 1
+Candidate list has been filled up. The program considers the number of candidates is sufficient.
+Adjust the CandLen parameter if more/less candidates are desired.
+ 
+Best Solution:
+(Robot No., Target No.)
+(1, 1)
+(4, 2)
+(2, 3)
+(3, 4)
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Assignment: 
+     1     4     2     3
+
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Cost: 
+     1
+
+--------------------------
+Test episode for type: 2
+--------------------------
+Trial No. 1 - shape type: S
+Target locations: 
+     4     4
+     5     4
+     5     5
+     6     5
+
+Dock joints: 
+     0     1     0     1
+     0     1     0     0
+     0     0     1     0
+     0     1     0     1
+
+Array length for chosen candidates: 10
+Iteration 28 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 5
+
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Iteration 53 :
+Found a feasible solution: 
+       Position: [2 4 1 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 20
+
+Dock: 
+     0     1     0     1
+     0     0     0     1
+     0     0     1     0
+     1     0     1     0
+
+Iteration 87 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 5
+
+Dock: 
+     1     0     1     0
+     0     0     1     0
+     0     0     0     1
+     0     1     0     1
+
+Total number of iterations: 14088
+Found 3 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(4, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Assignment: 
+     3     4     1     2
+
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 2 - shape type: T
+Target locations: 
+     4     5
+     5     5
+     6     5
+     5     4
+
+Dock joints: 
+     1     1     0     1
+     0     0     1     0
+     0     1     0     0
+     0     1     0     0
+
+Array length for chosen candidates: 10
+Iteration 6 :
+Found a feasible solution: 
+       Position: [4 1 3 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 16
+
+Dock: 
+     0     1     1     1
+     1     0     0     0
+     0     0     1     0
+     0     0     0     1
+
+Iteration 48 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 19
+
+Dock: 
+     0     1     1     1
+     0     0     0     1
+     1     0     0     0
+     0     0     1     0
+
+Iteration 151 :
+Found a feasible solution: 
+       Position: [3 1 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 20
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Iteration 281 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 14
+
+Dock: 
+     0     1     1     1
+     1     0     0     0
+     0     0     0     1
+     0     0     1     0
+
+Iteration 328 :
+Found a feasible solution: 
+       Position: [2 1 3 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 15
+
+Dock: 
+     0     1     1     1
+     0     0     0     1
+     0     0     1     0
+     1     0     0     0
+
+Iteration 432 :
+Found a feasible solution: 
+       Position: [4 1 2 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 20
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     1     0     0     0
+     0     0     0     1
+
+Total number of iterations: 3433
+Found 6 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(2, 3)
+(4, 4)
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Assignment: 
+     3     1     2     4
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 3 - shape type: L
+Target locations: 
+     4     4
+     4     5
+     5     5
+     6     5
+
+Dock joints: 
+     0     0     1     1
+     0     0     0     1
+     1     0     1     0
+     0     1     0     0
+
+Array length for chosen candidates: 10
+Iteration 23 :
+Found a feasible solution: 
+       Position: [2 3 1 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     0     0     1     1
+     1     0     0     0
+     0     1     0     1
+     0     0     1     0
+
+Iteration 28 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 15
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Total number of iterations: 11529
+Found 2 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(4, 1)
+(3, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Assignment: 
+     4     3     1     2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 4 - shape type: 1
+Target locations: 
+     4     4
+     5     4
+     6     4
+     7     4
+
+Dock joints: 
+     0     0     1     1
+     1     0     0     0
+     0     1     0     0
+     0     0     1     1
+
+Array length for chosen candidates: 10
+Iteration 4 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 9
+
+Dock: 
+     0     0     1     1
+     0     0     0     1
+     0     0     1     0
+     0     0     1     1
+
+Iteration 5 :
+Found a feasible solution: 
+       Position: [2 4 1 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 4
+
+Dock: 
+     0     0     1     1
+     0     0     0     1
+     0     0     1     0
+     0     0     1     1
+
+Iteration 14 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 16
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Iteration 15 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Total number of iterations: 2016
+Found 4 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(4, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Assignment: 
+     3     1     4     2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 5 - shape type: q
+Target locations: 
+     4     5
+     5     5
+     4     4
+     5     4
+
+Dock joints: 
+     0     1     0     1
+     1     0     0     1
+     1     0     0     0
+     0     0     0     1
+
+Array length for chosen candidates: 10
+Iteration 5 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 19
+
+Dock: 
+     0     1     1     0
+     0     1     0     1
+     1     0     0     0
+     1     0     0     0
+
+Iteration 6 :
+Found a feasible solution: 
+       Position: [2 1 3 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 13
+
+Dock: 
+     0     1     1     0
+     0     1     0     1
+     1     0     0     0
+     1     0     0     0
+
+Iteration 22 :
+Found a feasible solution: 
+       Position: [1 4 2 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 2
+
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Iteration 34 :
+Found a feasible solution: 
+       Position: [3 4 2 1]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 13
+
+Dock: 
+     1     0     1     0
+     1     0     0     1
+     0     1     0     0
+     0     1     0     0
+
+Iteration 35 :
+Found a feasible solution: 
+       Position: [4 3 2 1]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 1
+
+Dock: 
+     1     0     1     0
+     1     0     0     1
+     0     1     0     0
+     0     1     0     0
+
+Iteration 50 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 5
+
+Dock: 
+     0     1     1     0
+     1     0     1     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 74 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 24
+
+Dock: 
+     1     0     0     1
+     1     0     1     0
+     0     1     0     0
+     0     1     0     0
+
+Iteration 238 :
+Found a feasible solution: 
+       Position: [3 2 4 1]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 23
+
+Dock: 
+     1     0     1     0
+     0     1     1     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 325 :
+Found a feasible solution: 
+       Position: [4 1 3 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 2
+
+Dock: 
+     0     1     1     0
+     1     0     1     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 349 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 25
+
+Dock: 
+     1     0     0     1
+     1     0     1     0
+     0     1     0     0
+     0     1     0     0
+
+Reach maximum length of candidate list.
+Found 10 feasible solutions.
+Exit searching ...
+Exit code: 1
+Candidate list has been filled up. The program considers the number of candidates is sufficient.
+Adjust the CandLen parameter if more/less candidates are desired.
+ 
+Best Solution:
+(Robot No., Target No.)
+(2, 1)
+(1, 2)
+(3, 3)
+(4, 4)
+Dock: 
+     0     1     1     0
+     0     1     0     1
+     1     0     0     0
+     1     0     0     0
+
+Assignment: 
+     2     1     3     4
+
+Dock: 
+     0     1     1     0
+     0     1     0     1
+     1     0     0     0
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Test episode for type: 3
+--------------------------
+Trial No. 1 - shape type: S
+Target locations: 
+     4     4
+     5     4
+     5     5
+     6     5
+
+Dock joints: 
+     1     0     0     1
+     0     0     0     2
+     0     1     0     0
+     2     0     2     0
+
+Array length for chosen candidates: 10
+Iteration 45 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 25
+
+Dock: 
+     1     0     1     0
+     0     0     0     2
+     0     0     1     0
+     0     2     0     2
+
+Iteration 74 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 23
+
+Dock: 
+     0     1     0     1
+     0     0     2     0
+     0     0     0     1
+     2     0     2     0
+
+Total number of iterations: 22575
+Found 2 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(4, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     1     0     1
+     0     0     2     0
+     0     0     0     1
+     2     0     2     0
+
+Assignment: 
+     3     4     1     2
+
+Dock: 
+     0     1     0     1
+     0     0     2     0
+     0     0     0     1
+     2     0     2     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 2 - shape type: T
+Target locations: 
+     4     5
+     5     5
+     6     5
+     5     4
+
+Dock joints: 
+     1     2     0     1
+     2     0     0     0
+     1     0     0     0
+     0     2     0     0
+
+Array length for chosen candidates: 10
+Iteration 52 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 3
+
+Dock: 
+     0     1     2     1
+     2     0     0     0
+     0     0     0     1
+     0     0     2     0
+
+Total number of iterations: 26053
+Found 1 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(4, 3)
+(2, 4)
+Dock: 
+     0     1     2     1
+     2     0     0     0
+     0     0     0     1
+     0     0     2     0
+
+Assignment: 
+     3     1     4     2
+
+Dock: 
+     0     1     2     1
+     2     0     0     0
+     0     0     0     1
+     0     0     2     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 3 - shape type: L
+Target locations: 
+     4     4
+     4     5
+     5     5
+     6     5
+
+Dock joints: 
+     1     1     0     0
+     0     0     2     0
+     0     2     2     0
+     1     0     0     0
+
+Array length for chosen candidates: 10
+Iteration 195 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 20
+
+Dock: 
+     0     0     1     1
+     0     0     2     0
+     0     2     0     2
+     1     0     0     0
+
+Total number of iterations: 97696
+Found 1 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(4, 1)
+(3, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     2     0
+     0     2     0     2
+     1     0     0     0
+
+Assignment: 
+     4     3     1     2
+
+Dock: 
+     0     0     1     1
+     0     0     2     0
+     0     2     0     2
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 4 - shape type: 1
+Target locations: 
+     4     4
+     5     4
+     6     4
+     7     4
+
+Dock joints: 
+     0     0     1     2
+     0     0     0     2
+     0     0     1     0
+     1     2     0     0
+
+Array length for chosen candidates: 10
+Iteration 5 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 13
+
+Dock: 
+     0     0     1     2
+     0     0     0     2
+     0     0     1     0
+     0     0     1     2
+
+Iteration 6 :
+Found a feasible solution: 
+       Position: [2 4 1 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     1     2
+     0     0     0     2
+     0     0     1     0
+     0     0     1     2
+
+Iteration 221 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 8
+
+Dock: 
+     0     0     2     1
+     0     0     2     0
+     0     0     0     1
+     0     0     2     1
+
+Iteration 222 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     2     1
+     0     0     2     0
+     0     0     0     1
+     0     0     2     1
+
+Total number of iterations: 2723
+Found 4 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(4, 3)
+(2, 4)
+Dock: 
+     0     0     2     1
+     0     0     2     0
+     0     0     0     1
+     0     0     2     1
+
+Assignment: 
+     3     1     4     2
+
+Dock: 
+     0     0     2     1
+     0     0     2     0
+     0     0     0     1
+     0     0     2     1
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 5 - shape type: q
+Target locations: 
+     4     5
+     5     5
+     4     4
+     5     4
+
+Dock joints: 
+     2     0     0     1
+     2     0     0     2
+     0     0     1     0
+     0     0     0     1
+
+Array length for chosen candidates: 10
+Iteration 4 :
+Found a feasible solution: 
+       Position: [1 4 2 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 24
+
+Dock: 
+     0     1     0     2
+     2     0     0     2
+     0     0     1     0
+     0     0     1     0
+
+Iteration 5 :
+Found a feasible solution: 
+       Position: [1 3 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 5
+
+Dock: 
+     0     1     0     2
+     2     0     0     2
+     0     0     1     0
+     0     0     1     0
+
+Iteration 49 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 24
+
+Dock: 
+     0     2     1     0
+     0     2     0     2
+     1     0     0     0
+     1     0     0     0
+
+Iteration 99 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     2     0     0     1
+     2     0     2     0
+     0     1     0     0
+     0     1     0     0
+
+Iteration 100 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 1
+
+Dock: 
+     2     0     0     1
+     2     0     2     0
+     0     1     0     0
+     0     1     0     0
+
+Iteration 114 :
+Found a feasible solution: 
+       Position: [4 2 3 1]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     1     0     2     0
+     0     2     2     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 115 :
+Found a feasible solution: 
+       Position: [3 2 4 1]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 2
+
+Dock: 
+     1     0     2     0
+     0     2     2     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 131 :
+Found a feasible solution: 
+       Position: [2 1 3 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     0     2     1     0
+     0     2     0     2
+     1     0     0     0
+     1     0     0     0
+
+Total number of iterations: 2132
+Found 8 feasible solutions.
+Exit code: 2
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+ 
+Best Solution:
+(Robot No., Target No.)
+(2, 1)
+(1, 2)
+(3, 3)
+(4, 4)
+Dock: 
+     0     2     1     0
+     0     2     0     2
+     1     0     0     0
+     1     0     0     0
+
+Assignment: 
+     2     1     3     4
+
+Dock: 
+     0     2     1     0
+     0     2     0     2
+     1     0     0     0
+     1     0     0     0
+
+Cost: 
+     1
+

@@ -6,18 +6,21 @@ classdef TabuSearch < handle
         point    % target positions
         dock     % dock status
         rob_loc  % robot initial locations
-        rotation % rotation command
+        isRotation % rotation command
         solutions  % Feasible solutions
         % parameters
         N_tar
         N_rob
         isDockIden
+        CandLen = 1
     end
     
     methods
-        function obj = TabuSearch(init_point,init_dock, init_loc, is_dock_ident)
+        function obj = TabuSearch(init_point,init_dock, init_loc, type)
             %TABUSEARCH Construct an instance of this class
-            %   Detailed explanation goes here
+            %   type = 1: w/o rotation
+            %   type = 2: with rotation
+            %   type = 3: A/B-type dock joint with rotation
             if nargin == 0
                 obj.point = [4,4;5,4;5,5;6,5]; % x, y
                 obj.dock = [1,0,0,0;...
@@ -28,6 +31,7 @@ classdef TabuSearch < handle
                             ]; % up, down, left, right
                 obj.rob_loc = [1, 1; 4, 1; 7, 1; 10, 1; 13, 1];
                 obj.isDockIden = false;
+                obj.isRotation = true;
 %                 obj.dock = [0,0,0,1;...
 %                             0,1,0,1;...
 %                             0,0,1,0;...
@@ -38,9 +42,20 @@ classdef TabuSearch < handle
                 obj.rob_loc = init_loc;
             end
             if nargin == 4
-                obj.isDockIden = is_dock_ident;
-            else
-                obj.isDockIden = isempty(find(obj.dock==2,1));
+                switch type
+                    case 1
+                        obj.isRotation = false;
+                        obj.isDockIden = true;
+                    case 2
+                        obj.isRotation = true;
+                        obj.isDockIden = true;
+                    case 3
+                        obj.isRotation = true;
+                        obj.isDockIden = false;
+                end
+%                 obj.isDockIden = is_dock_ident;
+%             else
+%                 obj.isDockIden = isempty(find(obj.dock==2,1));
             end
             [obj.N_tar, ~] = size(obj.point);
             [obj.N_rob, ~] = size(obj.dock);
@@ -55,7 +70,7 @@ classdef TabuSearch < handle
         end
         
         function [sol, dock, cost] = search(obj)
-            obj.rotation = zeros(obj.N_rob, 1);
+%             obj.rotation = zeros(obj.N_rob, 1);
             obj.solutions = [];
             %% Input Validation
             % check if any robot has no dock joint
@@ -86,7 +101,7 @@ classdef TabuSearch < handle
             
             [nQueen, ~] = size(obj.dock);   % Number of Queens
             
-            ActionList = CreatePermActionList(obj.dock);    % Action List
+            ActionList = CreatePermActionList(obj.dock, obj.isRotation);    % Action List
             
             nAction = numel(ActionList);              % Number of Actions
             
@@ -97,7 +112,7 @@ classdef TabuSearch < handle
             
             TL = round(0.5*nAction);      % Tabu Length
             
-            CandLen = 4;               % Maximum number of feasible solutions to be recorded
+%             CandLen = 4;               % Maximum number of feasible solutions to be recorded
 
             SearchMulti = 500;           % Allowed multiple iteration times for next solution
 
@@ -125,7 +140,7 @@ classdef TabuSearch < handle
             % Initialize Action Tabu Counters
             TC = zeros(nAction, 1);
             
-            opt_it = zeros(CandLen, 1);  opt_i = 1;
+            opt_it = zeros(obj.CandLen, 1);  opt_i = 1;
             
             %% Tabu Search Main Loop
             
@@ -204,7 +219,7 @@ classdef TabuSearch < handle
                 BestCost(it) = BestSol.Cost;
                 
                 % Show Iteration Information
-                if ~rem(it, 100)
+                if ~rem(it, 1000)
                     disp(['Iteration ' num2str(it) ': Best Cost = ' num2str(BestCost(it))]);
                 end
                 

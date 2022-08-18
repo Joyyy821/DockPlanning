@@ -14,7 +14,7 @@
 % Contact Info: sm.kalami@gmail.com, info@yarpiz.com
 %
 
-function ActionList = CreatePermActionList(dock)
+function ActionList = CreatePermActionList(dock, isrotation)
     
     [n, ~] = size(dock);
     nSwap = n*(n-1)/2;
@@ -64,18 +64,20 @@ function ActionList = CreatePermActionList(dock)
             end
         end
     end
-
-    % Add Rotation
-    for i=1:n
-        if all(dock(i,:)==[1,1,0,0]) || all(dock(i,:)==[0,0,1,1])
-            c = c+1;
-            ActionList{c} = [4 i 1];
-        elseif all(dock(i,:))
-            continue
-        else
-            for j=1:3
+    
+    if isrotation
+        % Add Rotation
+        for i=1:n
+            if all(dock(i,:)==[1,1,0,0]) || all(dock(i,:)==[0,0,1,1])
                 c = c+1;
-                ActionList{c} = [4 i j];
+                ActionList{c} = [4 i 1];
+            elseif all(dock(i,:))
+                continue
+            else
+                for j=1:3
+                    c = c+1;
+                    ActionList{c} = [4 i j];
+                end
             end
         end
     end
