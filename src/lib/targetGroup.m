@@ -163,58 +163,45 @@ classdef targetGroup < matlab.mixin.Copyable
             end
         end
         
-        function center_idx = getSplitCenter(obj, option)
+        function [ordered_pos, ordered_option] = getSplitOrder(obj)
             temp_mul = zeros(obj.Size, 1);
-            for i = (obj.Boundary(1, option+1)+1):obj.Boundary(2, option+1)
-                [temp_l, temp_r] = obj.GetSplitNum(i, option);
-                temp_mul(i) = temp_l * temp_r;
+            split_pos = zeros(obj.Size, 1);
+            split_option = zeros(obj.Size, 1);
+            c = 0;
+            for j = 1:2
+                for i = (obj.Boundary(1, j)+1):obj.Boundary(2, j)
+                    c = c + 1;
+                    [temp_l, temp_r] = obj.GetSplitNum(i, j-1);
+                    temp_mul(c) = temp_l * temp_r;
+                    split_pos(c) = i;  split_option(c) = j;
+                end
             end
-            [~, i] = max(temp_mul);
-%             disp("max index");
-%             disp(i);
-            center_idx = i;
+            temp_mul = temp_mul(1:c);
+            split_pos = split_pos(1:c); split_option = split_option(1:c);
+            [~, I] = sort(temp_mul, 'descend');
+            ordered_pos = split_pos(I); ordered_option = split_option(I);
+%             [~, i] = max(temp_mul);
         end
         
-        function [tar_left, tar_right] = TargetSplitting(obj, option, c, exl)
+        function [tar_left, tar_right] = TargetSplitting(obj, c, exl)
             if nargin < 4
                 exl = 1;
             end
             % Try splitting
-            c_i0 = obj.getSplitCenter(option);
-            c_i1 = obj.getSplitCenter(~option);
-            if option
-                c_i = [c_i1, c_i0];
-            else
-                c_i = [c_i0, c_i1];
-            end
-            [tar_left, tar_right] = obj.GetSplitGroup(c_i0, option, c, exl);
-            change_option = obj.CanBeSplit();
-            if ~change_option(~option + 1)
-                i = 2; increament = 2;
-            else
-                i = 1; increament = 1;
-            end
-            delta_i = 0; sign = 0;
-            while ~(obj.isConnected(tar_left) && obj.isConnected(tar_right))
-                option = ~option;
-                if rem(i, 4) == 2   % move right
-                    delta_i = delta_i + 1;
-                    sign = 1;
-                elseif rem(i, 4) == 0
-                    sign = -1;
-                end
-                % Check if the spilt avaliable
-                i = i + increament; cut_pos = c_i(option+1)+sign*delta_i;
-                if obj.CanBeSplit(option, cut_pos)
-                    [tar_left, tar_right] = obj.GetSplitGroup(...
-                        cut_pos, option, c, exl);
+            [pos_lst, option_lst] = obj.getSplitOrder();
+            for i=1:length(pos_lst)
+                [tar_left, tar_right] = obj.GetSplitGroup(...
+                    pos_lst(i), option_lst(i), c, exl);
+                if obj.isConnected(tar_left) && obj.isConnected(tar_right)
+                    disp("Extended targets on: ");
+                    disp("(a)");
+                    disp(tar_left.getLocs);
+                    disp("(b)");
+                    disp(tar_right.getLocs);
+                    break
                 end
             end
-            disp("Extended targets on: ");
-            disp("(a)");
-            disp(tar_left.getLocs);
-            disp("(b)");
-            disp(tar_right.getLocs);
+            error("Cannot find feasible split position");
         end
         
         function result = CanBeSplit(obj, option, c_i)

@@ -6,6 +6,7 @@
 % Project Title: Implementation of Tabu Search for n-Queens Problem
 % Publisher: Yarpiz (www.yarpiz.com)
 % 
+
 % Developer: Mostapha Kalami Heris (Member of Yarpiz Team)
 % 
 % Cite as:
@@ -17,7 +18,7 @@
 % ts;
 
 %% TS 4-module test
-diary("test_ts_4robot_5shape.txt");
+diary("test_ts_4r_5s_v2.txt");
 diary on;
 
 rob_loc = [1, 12; 12, 12; 1, 1; 12, 1];
@@ -40,7 +41,7 @@ diary off;
 %         1,0,1,0
 %         ]; % up, down, left, right
 % rob_loc = [1, 1; 4, 1; 7, 1; 10, 1];
-% myts = TabuSearch(point, dock, rob_loc, true);
+% myts = TabuSearch(point, dock, rob_loc, 2);
 % % Searching
 % [sol, dock, cost] = myts.search();
 % disp("Assignment: "); disp(sol);
@@ -63,18 +64,18 @@ function runTrial(rob_loc, shape_list, type)
         disp("Target locations: "); disp(p);
         disp("Dock joints: "); disp(d);
         myts{i} = TabuSearch(p, d, rob_loc, type);
-        % Set candLen
-        if type == 1 && i >= 4
-            myts{i}.CandLen = 2;
-        elseif type >= 2
-            myts{i}.CandLen = 10;
-        end
+%         % Set candLen
+%         if type == 1 && i >= 4
+%             myts{i}.CandLen = 2;
+%         elseif type >= 2
+%             myts{i}.CandLen = 10;
+%         end
 %         if type >= 2 && i <= 3
 %             myts{i}.CandLen = 4;
 %         elseif type >= 2 && i == 4
 %             myts{i}.CandLen = 10;
 %         end
-        disp("Array length for chosing candidates: "+string(myts{i}.CandLen));
+%         disp("Array length for chosing candidates: "+string(myts{i}.CandLen));
         % Searching and show search result
         [sol, dock, cost] = myts{i}.search();
         disp("Assignment: "); disp(sol);

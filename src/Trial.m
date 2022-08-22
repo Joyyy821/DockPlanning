@@ -114,11 +114,11 @@ classdef Trial < handle
             end
         end
 
-        function [ts_flag, dock] = setTargets(obj, locs, ext_c, ext_l)
-            if nargin == 2
+        function [ts_flag, dock] = setTargets(obj, alg_type, locs, ext_c, ext_l)
+            if nargin == 3
                 ext_c = locs(1,:);
                 ext_l = 3;
-            elseif nargin == 3
+            elseif nargin == 4
                 ext_l = 3;
             end
             [l, ~] = size(locs);
@@ -127,7 +127,7 @@ classdef Trial < handle
                 Tars =[Tars; targetPoint(i, locs(i, :), obj.gmap)];
             end
             obj.tars = targetGroup(Tars);
-            [ts_flag, dock] = obj.runTS();
+            [ts_flag, dock] = obj.runTS(alg_type);
             if ts_flag == 1
                 obj.tars.setDisplayIDandDock(obj.assignment, dock);
                 % Binary tree construction / extension
@@ -136,10 +136,11 @@ classdef Trial < handle
             end
         end
 
-        function [ts_flag, dock] = runTS(obj)
+        function [ts_flag, dock] = runTS(obj, alg_type)
             if obj.N_rob
                 % Set tabu search
-                obj.ts = TabuSearch(obj.tars.getLocs, obj.getDock, obj.getAllRobotLoc);
+                obj.ts = TabuSearch(obj.tars.getLocs, obj.getDock, ...
+                    obj.getAllRobotLoc, alg_type);
                 disp("Search for valid target assignment...");
                 [sol, dock, cost] = obj.ts.search();
                 disp("sol:");disp(sol);

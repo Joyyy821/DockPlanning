@@ -206,7 +206,7 @@ classdef Extension < handle
             end
             t = tree(obj.finTar);
             obj.center = c;
-            t = obj.TreeSplitting(obj.finTar, t, 1, 1);
+            t = obj.TreeSplitting(obj.finTar, t, 1);
             t = obj.getBalanceTree(t);
 %             d = t.depth();
             obj.cur_dt = t.depthtree();
@@ -246,24 +246,17 @@ classdef Extension < handle
     methods (Access = private)
         % option = 0 means cut vertically
         % option = 1 means cut horizontally
-        function tree = TreeSplitting(obj, cur_root, tree, node_idx, option)
+        function tree = TreeSplitting(obj, cur_root, tree, node_idx)
             if cur_root.Size == 1
             else
                 tar_child(2) = targetGroup();
-                [tar_child(1), tar_child(2)] = cur_root.TargetSplitting(option, obj.center, obj.extL);
+                [tar_child(1), tar_child(2)] = cur_root.TargetSplitting(obj.center, obj.extL);
                 id = [];
                 [tree, id(1)] = tree.addnode(node_idx, tar_child(1));
                 [tree, id(2)] = tree.addnode(node_idx, tar_child(2));
-                change_options = [tar_child(1).CanBeSplit(); tar_child(2).CanBeSplit()];
 
                 for i = 1:2
-                    if all(change_options(i, :))
-                        tree = obj.TreeSplitting(tar_child(i), tree, id(i), ~option);
-                    elseif change_options(i, 1)
-                        tree = obj.TreeSplitting(tar_child(i), tree, id(i), 0);
-                    elseif change_options(i, 2)
-                        tree = obj.TreeSplitting(tar_child(i), tree, id(i), 1);
-                    end
+                    tree = obj.TreeSplitting(tar_child(i), tree, id(i));
                 end
             end
         end

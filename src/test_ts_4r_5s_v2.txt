@@ -1,0 +1,1462 @@
+-------------------------------------------------
+Tabu search test episodes for 4-robot experiments
+--------------------------
+Test episode for type: 1
+--------------------------
+Trial No. 1 - shape type: S
+Target locations: 
+     4     4
+     5     4
+     5     5
+     6     5
+
+Dock joints: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Iteration 3 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 2
+
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Iteration 4000: Best Cost = 1
+Iteration 5000: Best Cost = 1
+Total number of iterations: 5019
+Found 1 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+Best sol code: 0
+Only 1 feasible solution, which by default is the optimal solution that has been found.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(4, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Assignment: 
+     3     4     1     2
+
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 2 - shape type: T
+Target locations: 
+     4     5
+     5     5
+     6     5
+     5     4
+
+Dock joints: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Iteration 2 :
+Found a feasible solution: 
+       Position: [3 1 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 9
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Iteration 4000: Best Cost = 1
+Iteration 5000: Best Cost = 1
+Total number of iterations: 5013
+Found 1 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+Best sol code: 0
+Only 1 feasible solution, which by default is the optimal solution that has been found.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(2, 3)
+(4, 4)
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Assignment: 
+     3     1     2     4
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 3 - shape type: L
+Target locations: 
+     4     4
+     4     5
+     5     5
+     6     5
+
+Dock joints: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Iteration 3 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 1
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Iteration 4000: Best Cost = 1
+Iteration 5000: Best Cost = 1
+Total number of iterations: 5019
+Found 1 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+Best sol code: 0
+Only 1 feasible solution, which by default is the optimal solution that has been found.
+ 
+Best Solution:
+(Robot No., Target No.)
+(4, 1)
+(3, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Assignment: 
+     4     3     1     2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 4 - shape type: 1
+Target locations: 
+     4     4
+     5     4
+     6     4
+     7     4
+
+Dock joints: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Iteration 1 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 8
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Iteration 2 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Total number of iterations: 3343
+Found 2 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 1 solutions with shortest sum of distance from 2 feasible solutions.
+Shortest total distance: 40
+Best sol code: 1
+Best solution selected by shortest distance criterion.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(4, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Assignment: 
+     3     1     4     2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 5 - shape type: q
+Target locations: 
+     4     5
+     5     5
+     4     4
+     5     4
+
+Dock joints: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Iteration 1 :
+Found a feasible solution: 
+       Position: [1 4 2 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 1
+
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Iteration 2 :
+Found a feasible solution: 
+       Position: [1 3 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 5
+
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Total number of iterations: 3343
+Found 2 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 2 solutions with shortest sum of distance from 2 feasible solutions.
+Shortest total distance: 44
+Extended targets on: 
+(a)
+     4     1
+     5     1
+
+(b)
+     4     5
+     5     5
+
+Extended targets on: 
+(a)
+     4     1
+
+(b)
+     8     1
+
+Extended targets on: 
+(a)
+     4     5
+
+(b)
+     8     5
+
+Extended targets on: 
+(a)
+     4     1
+     5     1
+
+(b)
+     4     5
+     5     5
+
+Extended targets on: 
+(a)
+     4     1
+
+(b)
+     8     1
+
+Extended targets on: 
+(a)
+     4     5
+
+(b)
+     8     5
+
+--------------- Step 2 ---------------
+Select 2 solutions with minimal extension depth from 2 feasible solutions with shortest total distance.
+Minimal extension depth: 2
+--------------- Step 3 ---------------
+Select 2 solutions with maximal connection number from 2 solutions with shortest total distance and minimal extension steps.
+Maximal connection number: 3
+--------------- Step 4 ---------------
+Randomly select the 1th solution as the best solution from 2 solutions.
+Best sol code: 4
+Best solution randomly selected from the solutions with maximal connection number, minimal extension steps, and shortest total distance.
+ 
+Best Solution:
+(Robot No., Target No.)
+(1, 1)
+(4, 2)
+(2, 3)
+(3, 4)
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Assignment: 
+     1     4     2     3
+
+Dock: 
+     0     1     0     1
+     1     0     0     1
+     0     0     1     0
+     0     0     1     0
+
+Cost: 
+     1
+
+--------------------------
+Test episode for type: 2
+--------------------------
+Trial No. 1 - shape type: S
+Target locations: 
+     4     4
+     5     4
+     5     5
+     6     5
+
+Dock joints: 
+     0     1     0     1
+     1     0     0     0
+     1     0     0     0
+     1     0     0     1
+
+Iteration 10 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 5
+
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Iteration 44 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 19
+
+Dock: 
+     1     0     1     0
+     0     0     1     0
+     0     0     0     1
+     0     1     0     1
+
+Iteration 208 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 16
+
+Dock: 
+     1     0     1     0
+     0     0     0     1
+     0     0     1     0
+     0     1     0     1
+
+Iteration 591 :
+Found a feasible solution: 
+       Position: [2 4 1 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 20
+
+Dock: 
+     0     1     0     1
+     0     0     0     1
+     0     0     1     0
+     1     0     1     0
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Total number of iterations: 3862
+Found 4 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 1 solutions with shortest sum of distance from 4 feasible solutions.
+Shortest total distance: 40
+Best sol code: 1
+Best solution selected by shortest distance criterion.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(4, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Assignment: 
+     3     4     1     2
+
+Dock: 
+     0     1     0     1
+     0     0     1     0
+     0     0     0     1
+     1     0     1     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 2 - shape type: T
+Target locations: 
+     4     5
+     5     5
+     6     5
+     5     4
+
+Dock joints: 
+     1     0     1     1
+     1     0     0     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 9 :
+Found a feasible solution: 
+       Position: [3 1 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 15
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Iteration 33 :
+Found a feasible solution: 
+       Position: [4 1 3 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 18
+
+Dock: 
+     0     1     1     1
+     1     0     0     0
+     0     0     1     0
+     0     0     0     1
+
+Iteration 62 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 19
+
+Dock: 
+     0     1     1     1
+     1     0     0     0
+     0     0     0     1
+     0     0     1     0
+
+Iteration 84 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 1
+
+Dock: 
+     0     1     1     1
+     0     0     0     1
+     1     0     0     0
+     0     0     1     0
+
+Iteration 89 :
+Found a feasible solution: 
+       Position: [2 1 3 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 25
+
+Dock: 
+     0     1     1     1
+     0     0     0     1
+     0     0     1     0
+     1     0     0     0
+
+Iteration 114 :
+Found a feasible solution: 
+       Position: [4 1 2 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 21
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     1     0     0     0
+     0     0     0     1
+
+Iteration 1000: Best Cost = 1
+Total number of iterations: 1873
+Found 6 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 1 solutions with shortest sum of distance from 6 feasible solutions.
+Shortest total distance: 41
+Best sol code: 1
+Best solution selected by shortest distance criterion.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(2, 3)
+(4, 4)
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Assignment: 
+     3     1     2     4
+
+Dock: 
+     0     1     1     1
+     0     0     1     0
+     0     0     0     1
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 3 - shape type: L
+Target locations: 
+     4     4
+     4     5
+     5     5
+     6     5
+
+Dock joints: 
+     1     1     0     0
+     0     1     0     0
+     0     1     0     1
+     0     0     0     1
+
+Iteration 25 :
+Found a feasible solution: 
+       Position: [2 3 1 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 19
+
+Dock: 
+     0     0     1     1
+     1     0     0     0
+     0     1     0     1
+     0     0     1     0
+
+Iteration 44 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Total number of iterations: 3525
+Found 2 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 1 solutions with shortest sum of distance from 2 feasible solutions.
+Shortest total distance: 42
+Best sol code: 1
+Best solution selected by shortest distance criterion.
+ 
+Best Solution:
+(Robot No., Target No.)
+(4, 1)
+(3, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Assignment: 
+     4     3     1     2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     1     0     1
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 4 - shape type: 1
+Target locations: 
+     4     4
+     5     4
+     6     4
+     7     4
+
+Dock joints: 
+     1     1     0     0
+     0     1     0     0
+     0     1     0     0
+     1     1     0     0
+
+Iteration 7 :
+Found a feasible solution: 
+       Position: [2 4 1 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 15
+
+Dock: 
+     0     0     1     1
+     0     0     0     1
+     0     0     1     0
+     0     0     1     1
+
+Iteration 8 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     1     1
+     0     0     0     1
+     0     0     1     0
+     0     0     1     1
+
+Iteration 53 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 17
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Iteration 106 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Total number of iterations: 2335
+Found 4 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 1 solutions with shortest sum of distance from 4 feasible solutions.
+Shortest total distance: 40
+Best sol code: 1
+Best solution selected by shortest distance criterion.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(4, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Assignment: 
+     3     1     4     2
+
+Dock: 
+     0     0     1     1
+     0     0     1     0
+     0     0     0     1
+     0     0     1     1
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 5 - shape type: q
+Target locations: 
+     4     5
+     5     5
+     4     4
+     5     4
+
+Dock joints: 
+     1     0     1     0
+     0     1     0     1
+     0     0     0     1
+     0     0     1     0
+
+Iteration 6 :
+Found a feasible solution: 
+       Position: [2 4 1 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 16
+
+Dock: 
+     1     0     0     1
+     0     1     0     1
+     0     0     1     0
+     0     0     1     0
+
+Iteration 23 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 23
+
+Dock: 
+     0     1     1     0
+     1     0     1     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 43 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 19
+
+Dock: 
+     1     0     0     1
+     1     0     1     0
+     0     1     0     0
+     0     1     0     0
+
+Iteration 44 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 1
+
+Dock: 
+     1     0     0     1
+     1     0     1     0
+     0     1     0     0
+     0     1     0     0
+
+Iteration 79 :
+Found a feasible solution: 
+       Position: [4 1 3 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 20
+
+Dock: 
+     0     1     1     0
+     1     0     1     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 1000: Best Cost = 1
+Total number of iterations: 1960
+Found 5 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 4 solutions with shortest sum of distance from 5 feasible solutions.
+Shortest total distance: 44
+Extended targets on: 
+(a)
+     4     1
+     5     1
+
+(b)
+     4     5
+     5     5
+
+Extended targets on: 
+(a)
+     4     1
+
+(b)
+     8     1
+
+Extended targets on: 
+(a)
+     4     5
+
+(b)
+     8     5
+
+Extended targets on: 
+(a)
+     4     1
+     5     1
+
+(b)
+     4     5
+     5     5
+
+Extended targets on: 
+(a)
+     4     1
+
+(b)
+     8     1
+
+Extended targets on: 
+(a)
+     4     5
+
+(b)
+     8     5
+
+Extended targets on: 
+(a)
+     4     5
+     4     4
+
+(b)
+     8     5
+     8     4
+
+Extended targets on: 
+(a)
+     4     1
+
+(b)
+     4     5
+
+Extended targets on: 
+(a)
+     8     1
+
+(b)
+     8     5
+
+Extended targets on: 
+(a)
+     4     1
+     5     1
+
+(b)
+     4     5
+     5     5
+
+Extended targets on: 
+(a)
+     4     1
+
+(b)
+     8     1
+
+Extended targets on: 
+(a)
+     4     5
+
+(b)
+     8     5
+
+--------------- Step 2 ---------------
+Select 4 solutions with minimal extension depth from 4 feasible solutions with shortest total distance.
+Minimal extension depth: 2
+--------------- Step 3 ---------------
+Select 4 solutions with maximal connection number from 4 solutions with shortest total distance and minimal extension steps.
+Maximal connection number: 3
+--------------- Step 4 ---------------
+Randomly select the 4th solution as the best solution from 4 solutions.
+Best sol code: 4
+Best solution randomly selected from the solutions with maximal connection number, minimal extension steps, and shortest total distance.
+ 
+Best Solution:
+(Robot No., Target No.)
+(4, 1)
+(1, 2)
+(3, 3)
+(2, 4)
+Dock: 
+     0     1     1     0
+     1     0     1     0
+     0     0     0     1
+     0     0     0     1
+
+Assignment: 
+     4     1     3     2
+
+Dock: 
+     0     1     1     0
+     1     0     1     0
+     0     0     0     1
+     0     0     0     1
+
+Cost: 
+     1
+
+--------------------------
+Test episode for type: 3
+--------------------------
+Trial No. 1 - shape type: S
+Target locations: 
+     4     4
+     5     4
+     5     5
+     6     5
+
+Dock joints: 
+     0     1     0     1
+     0     2     0     0
+     1     0     0     0
+     2     0     0     2
+
+Iteration 63 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 2
+
+Dock: 
+     1     0     1     0
+     0     0     0     2
+     0     0     1     0
+     0     2     0     2
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Iteration 4000: Best Cost = 1
+Iteration 5000: Best Cost = 1
+Total number of iterations: 5379
+Found 1 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+Best sol code: 0
+Only 1 feasible solution, which by default is the optimal solution that has been found.
+ 
+Best Solution:
+(Robot No., Target No.)
+(2, 1)
+(1, 2)
+(4, 3)
+(3, 4)
+Dock: 
+     1     0     1     0
+     0     0     0     2
+     0     0     1     0
+     0     2     0     2
+
+Assignment: 
+     2     1     4     3
+
+Dock: 
+     1     0     1     0
+     0     0     0     2
+     0     0     1     0
+     0     2     0     2
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 2 - shape type: T
+Target locations: 
+     4     5
+     5     5
+     6     5
+     5     4
+
+Dock joints: 
+     0     1     2     1
+     0     0     2     0
+     0     1     0     0
+     0     0     0     2
+
+Iteration 7 :
+Found a feasible solution: 
+       Position: [3 1 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 20
+
+Dock: 
+     0     1     2     1
+     0     0     2     0
+     0     0     0     1
+     2     0     0     0
+
+Iteration 48 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 21
+
+Dock: 
+     0     1     2     1
+     2     0     0     0
+     0     0     0     1
+     0     0     2     0
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Total number of iterations: 3542
+Found 2 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 1 solutions with shortest sum of distance from 2 feasible solutions.
+Shortest total distance: 41
+Best sol code: 1
+Best solution selected by shortest distance criterion.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(2, 3)
+(4, 4)
+Dock: 
+     0     1     2     1
+     0     0     2     0
+     0     0     0     1
+     2     0     0     0
+
+Assignment: 
+     3     1     2     4
+
+Dock: 
+     0     1     2     1
+     0     0     2     0
+     0     0     0     1
+     2     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 3 - shape type: L
+Target locations: 
+     4     4
+     4     5
+     5     5
+     6     5
+
+Dock joints: 
+     0     0     1     1
+     2     0     0     0
+     2     0     2     0
+     1     0     0     0
+
+Iteration 83 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     0     0     1     1
+     0     0     2     0
+     0     2     0     2
+     1     0     0     0
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Iteration 3000: Best Cost = 1
+Iteration 4000: Best Cost = 1
+Iteration 5000: Best Cost = 1
+Total number of iterations: 5499
+Found 1 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+Best sol code: 0
+Only 1 feasible solution, which by default is the optimal solution that has been found.
+ 
+Best Solution:
+(Robot No., Target No.)
+(4, 1)
+(3, 2)
+(1, 3)
+(2, 4)
+Dock: 
+     0     0     1     1
+     0     0     2     0
+     0     2     0     2
+     1     0     0     0
+
+Assignment: 
+     4     3     1     2
+
+Dock: 
+     0     0     1     1
+     0     0     2     0
+     0     2     0     2
+     1     0     0     0
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 4 - shape type: 1
+Target locations: 
+     4     4
+     5     4
+     6     4
+     7     4
+
+Dock joints: 
+     1     2     0     0
+     0     0     0     2
+     1     0     0     0
+     1     2     0     0
+
+Iteration 6 :
+Found a feasible solution: 
+       Position: [3 1 4 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 18
+
+Dock: 
+     0     0     2     1
+     0     0     2     0
+     0     0     0     1
+     0     0     2     1
+
+Iteration 7 :
+Found a feasible solution: 
+       Position: [3 4 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     2     1
+     0     0     2     0
+     0     0     0     1
+     0     0     2     1
+
+Iteration 149 :
+Found a feasible solution: 
+       Position: [2 4 1 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 8
+
+Dock: 
+     0     0     1     2
+     0     0     0     2
+     0     0     1     0
+     0     0     1     2
+
+Iteration 150 :
+Found a feasible solution: 
+       Position: [2 1 4 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 11
+
+Dock: 
+     0     0     1     2
+     0     0     0     2
+     0     0     1     0
+     0     0     1     2
+
+Iteration 1000: Best Cost = 1
+Iteration 2000: Best Cost = 1
+Total number of iterations: 2465
+Found 4 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 1 solutions with shortest sum of distance from 4 feasible solutions.
+Shortest total distance: 40
+Best sol code: 1
+Best solution selected by shortest distance criterion.
+ 
+Best Solution:
+(Robot No., Target No.)
+(3, 1)
+(1, 2)
+(4, 3)
+(2, 4)
+Dock: 
+     0     0     2     1
+     0     0     2     0
+     0     0     0     1
+     0     0     2     1
+
+Assignment: 
+     3     1     4     2
+
+Dock: 
+     0     0     2     1
+     0     0     2     0
+     0     0     0     1
+     0     0     2     1
+
+Cost: 
+     1
+
+--------------------------
+Trial No. 5 - shape type: q
+Target locations: 
+     4     5
+     5     5
+     4     4
+     5     4
+
+Dock joints: 
+     1     0     2     0
+     2     0     0     2
+     0     0     1     0
+     0     0     0     1
+
+Iteration 12 :
+Found a feasible solution: 
+       Position: [2 1 3 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     0     2     1     0
+     0     2     0     2
+     1     0     0     0
+     1     0     0     0
+
+Iteration 26 :
+Found a feasible solution: 
+       Position: [1 3 2 4]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     0     1     0     2
+     2     0     0     2
+     0     0     1     0
+     0     0     1     0
+
+Iteration 27 :
+Found a feasible solution: 
+       Position: [1 4 2 3]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 5
+
+Dock: 
+     0     1     0     2
+     2     0     0     2
+     0     0     1     0
+     0     0     1     0
+
+Iteration 42 :
+Found a feasible solution: 
+       Position: [4 3 1 2]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     2     0     0     1
+     2     0     2     0
+     0     1     0     0
+     0     1     0     0
+
+Iteration 57 :
+Found a feasible solution: 
+       Position: [3 2 4 1]
+           Dock: [4¡Á4 double]
+           Cost: 1
+    ActionIndex: 22
+
+Dock: 
+     1     0     2     0
+     0     2     2     0
+     0     0     0     1
+     0     0     0     1
+
+Iteration 1000: Best Cost = 1
+Total number of iterations: 1884
+Found 5 feasible solutions.
+Exit code: 1
+Maximum number of iteration for searching the next candidate has reached.
+The CandLen paremeter could be too large subject to the user input.
+--------------- Step 1 ---------------
+Select 1 solutions with shortest sum of distance from 5 feasible solutions.
+Shortest total distance: 42
+Best sol code: 1
+Best solution selected by shortest distance criterion.
+ 
+Best Solution:
+(Robot No., Target No.)
+(2, 1)
+(1, 2)
+(3, 3)
+(4, 4)
+Dock: 
+     0     2     1     0
+     0     2     0     2
+     1     0     0     0
+     1     0     0     0
+
+Assignment: 
+     2     1     3     4
+
+Dock: 
+     0     2     1     0
+     0     2     0     2
+     1     0     0     0
+     1     0     0     0
+
+Cost: 
+     1
+

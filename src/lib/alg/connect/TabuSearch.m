@@ -3,16 +3,26 @@ classdef TabuSearch < handle
     %   Detailed explanation goes here
     
     properties
+        % 
         point    % target positions
         dock     % dock status
         rob_loc  % robot initial locations
-        isRotation % rotation command
-        solutions  % Feasible solutions
         % parameters
         N_tar
         N_rob
         isDockIden
-        CandLen = 1
+        isRotation % rotation command
+        % search params & statistics
+        N_it        % iteration times for finding one solution
+        solutions   % Feasible solutions
+        opt_sol     % optimal solution
+        ExitCode
+        BestSolCode
+        % Check the disp code methods at the bottom of this class
+        % definition about the meaning for the ExitCode and BestSolCode
+        % attributes.
+        
+%         CandLen = 1
     end
     
     methods
@@ -99,7 +109,7 @@ classdef TabuSearch < handle
             
             CostFunction = @(p) obj.MyCost(p);    % Cost Function
             
-            [nQueen, ~] = size(obj.dock);   % Number of Queens
+%             [nQueen, ~] = size(obj.dock);   % Number of Robots
             
             ActionList = CreatePermActionList(obj.dock, obj.isRotation);    % Action List
             
@@ -113,10 +123,14 @@ classdef TabuSearch < handle
             TL = round(0.5*nAction);      % Tabu Length
             
 %             CandLen = 4;               % Maximum number of feasible solutions to be recorded
+            
+            obj.N_it(1) = 1e3;
+            
+            SearchMulti = 10;           % Allowed multiple iteration times for next solution
 
-            SearchMulti = 500;           % Allowed multiple iteration times for next solution
-
-            ExitCode = 0;             % Indicate why the program stops
+            obj.ExitCode = 0;             % Indicate why the program stops
+            
+            obj.BestSolCode = -1;
 
             %% Initialization
             
@@ -127,7 +141,7 @@ classdef TabuSearch < handle
             
             % Create Initial Solution
             sol = empty_individual;
-            sol.Position = randperm(nQueen);
+            sol.Position = randperm(obj.N_rob);
             sol.Cost = CostFunction(sol.Position);
             sol.Dock = obj.dock;
             
@@ -140,37 +154,39 @@ classdef TabuSearch < handle
             % Initialize Action Tabu Counters
             TC = zeros(nAction, 1);
             
-            opt_it = zeros(obj.CandLen, 1);  opt_i = 1;
+%             opt_it = zeros(obj.CandLen, 1);  
+            last_sol_i = 0;
             
             %% Tabu Search Main Loop
             
             for it = 1:MaxIt
                 
-                % Set maximum iteration number for the next soluion
-                if opt_it(end)
-                    disp("Reach maximum length of candidate list.")
-                    disp("Found "+string(length(obj.solutions))...
-                            +" feasible solutions.");
-%                     disp(obj.solutions);
-                    disp("Exit searching ...")
-                    ExitCode = 1;
-%                     it = it - 1;
-                    break
-                end
-                if any(opt_it)
+%                 % Set maximum iteration number for the next soluion
+%                 if opt_it(end)
+%                     disp("Reach maximum length of candidate list.")
+%                     disp("Found "+string(length(obj.solutions))...
+%                             +" feasible solutions.");
+% %                     disp(obj.solutions);
+%                     disp("Exit searching ...")
+%                     ExitCode = 1;
+% %                     it = it - 1;
+%                     break
+%                 end
+                if length(obj.N_it) > 1
 %                     if opt_it(2) == 0   % length == 1
 %                         prev_it = opt_it(opt_i-1);
 %                     else                % length > 1
 %                         prev_it = opt_it(opt_i-1) - opt_it(opt_i-2);
 %                     end
-                    prev_it = opt_it(1);
-                    if it - opt_it(opt_i-1) > prev_it * SearchMulti
+%                     prev_it = opt_it(1);
+                    mean_it = mean(obj.N_it);
+                    if it - last_sol_i > mean_it * SearchMulti
 %                         disp("Iteration end.");
                         disp("Total number of iterations: "+string(it));
                         disp("Found "+string(length(obj.solutions))...
                             +" feasible solutions.");
 %                         disp(obj.solutions);
-                        ExitCode = 2;
+                        obj.ExitCode = 1;
 %                         it = it - 1;
                         break
                     end
@@ -234,25 +250,34 @@ classdef TabuSearch < handle
                     for i=1:length(obj.solutions)
                         temp_x = obj.solutions(i).Position;
                         if all(BestSol.Position == temp_x)
-                            add_newsol = false;
+                            temp_dock = obj.solutions(i).Dock;
+                            if all(all(BestSol.Dock == temp_dock))
+                                add_newsol = false;
+                            end
                         end
                     end
                     if add_newsol
                         obj.solutions = [obj.solutions BestSol];
-                        opt_it(opt_i) = it;
-                        opt_i = opt_i + 1;
+                        if ~last_sol_i
+                            obj.N_it = [obj.N_it, it];
+                        else
+                            obj.N_it = [obj.N_it, it - obj.N_it(end)];
+                        end
+                        last_sol_i = it;
+%                         opt_it(opt_i) = it;
+%                         opt_i = opt_i + 1;
                         disp("Iteration "+string(it)+" :");
                         disp("Found a feasible solution: ")
                         disp(BestSol);
                         disp("Dock: "); disp(BestSol.Dock);
                     end
-                    ExitCode = 3;
+                    obj.ExitCode = 2;
 %                     break;
                 end
                 
             end
             
-            if ExitCode == 1 || ExitCode == 2
+            if obj.ExitCode == 1
                 it = it - 1;
             end
 
@@ -262,33 +287,82 @@ classdef TabuSearch < handle
             %% Results
             
             % Print exit code
-            obj.DispExitCode(ExitCode);
+            obj.DispExitCode();
 
             % Find best solution for the candidates
-            if ExitCode
-                obj.FindShortestSolution();
+            if obj.ExitCode
+                obj.FindBestSolution();
+                obj.DispBestSolCode();
     
                 disp(' ');
                 disp('Best Solution:');
                 disp("(Robot No., Target No.)");
-                x = obj.solutions.Position;
-                y = 1:nQueen;
-                for j = 1:nQueen
+                x = obj.opt_sol.Position;
+                y = 1:obj.N_rob;
+                for j = 1:obj.N_rob
     %                 disp(['Queen #' num2str(j) ' at (' num2str(x(j)) ', ' num2str(y(j)) ')']);
                     disp(['(' num2str(x(j)) ', ' num2str(y(j)) ')']);
                 end
-                sol = obj.solutions.Position;
-                dock = obj.solutions.Dock;
+                sol = obj.opt_sol.Position;
+                dock = obj.opt_sol.Dock;
                 disp("Dock: "); disp(dock);
-            else
+            else   % No feasible solution
+                obj.opt_sol = BestSol;
                 sol = []; dock = [];
             end
         end
 
-        function FindShortestSolution(obj)
-            dist_sum = inf; best_i = 0;
-            for i=1:length(obj.solutions)
-                x = obj.solutions(i).Position;
+        function FindBestSolution(obj)
+            temp_sol = obj.solutions;
+            if length(temp_sol) == 1
+                obj.opt_sol = temp_sol;
+                obj.BestSolCode = 0;
+                return
+            end
+            % Step 1: select shortest solutions
+            temp_sol = obj.FindShortestSolution(temp_sol);
+            if length(temp_sol) == 1
+                obj.opt_sol = temp_sol;
+                obj.BestSolCode = 1;
+                return
+            elseif length(temp_sol) > 1
+                % Step 2: find min extension steps from the shortest dist
+                % solutions
+                temp_sol = obj.FindMostEfficientSolution(temp_sol);
+                if length(temp_sol) == 1
+                    obj.opt_sol = temp_sol;
+                    obj.BestSolCode = 2;
+                    return
+                elseif length(temp_sol) > 1
+                    % Step 3: find total number of connected dock joints
+                    % and select solution(s) with maximal connected number.
+                    temp_sol = obj.FindMaxConnectedSolution(temp_sol);
+                    if length(temp_sol) == 1
+                        obj.opt_sol = temp_sol;
+                        obj.BestSolCode = 3;
+                        return
+                    elseif length(temp_sol) > 1
+                        % Step 4: randomly select a solution from the
+                        % temp_sol.
+                        obj.opt_sol = obj.RandomlySelectASolution(temp_sol);
+                        obj.BestSolCode = 4;
+                        return
+                    else
+                        error("Error occurs when finding the max connected solution.");
+                    end
+                else
+                    error("Error occurs when finding the most efficient solution.");
+                end
+            else
+                error("Error occurs when finding the shortest solution.");
+            end
+%             obj.rotation = obj.solutions.Rotation;
+        end
+        
+        function selected_sol = FindShortestSolution(obj, temp_sol)
+            dist_sum = inf; best_i = [];
+            for i=1:length(temp_sol)
+                x = temp_sol(i).Position;
                 temp_dist = 0;
                 for j=1:obj.N_tar
                     t = obj.point(j,:);
@@ -299,14 +373,114 @@ classdef TabuSearch < handle
                 if temp_dist < dist_sum
                     dist_sum = temp_dist;
                     best_i = i;
+                elseif temp_dist == dist_sum
+                    best_i = [best_i i];
                 end
             end
-            obj.solutions = obj.solutions(best_i);
-%             obj.rotation = obj.solutions.Rotation;
+            selected_sol = temp_sol(best_i);
+            disp("--------------- Step 1 ---------------");
+            disp("Select "+string(length(selected_sol))+" solutions "+...
+                "with shortest sum of distance from "+...
+                string(length(temp_sol))+" feasible solutions.");
+            disp("Shortest total distance: "+string(dist_sum));
         end
-
+        
+        function selected_sol = FindMostEfficientSolution(obj, temp_sol)
+            % For every solution in temp_sol, initial an extension object
+            % and build the corresponding assembly tree, select the
+            % solution(s) with minimal assembly tree depth.
+            N_sol = length(temp_sol);
+            tars = obj.setTargets();
+            d_min = Inf;  best_i = [];
+            for i=1:N_sol
+                assignment = temp_sol(i).Position;
+                temp_dock = temp_sol(i).Dock;
+                tars.setDisplayIDandDock(assignment, temp_dock);
+                d = obj.getExtensionDepth(tars);
+                if d < d_min
+                    d_min = d;
+                    best_i = i;
+                elseif d == d_min
+                    best_i = [best_i i];
+                end
+            end
+            selected_sol = temp_sol(best_i);
+            disp("--------------- Step 2 ---------------");
+            disp("Select "+string(length(selected_sol))+" solutions "+...
+                "with minimal extension depth from "+...
+                string(N_sol)+" feasible solutions with shortest total distance.");
+            disp("Minimal extension depth: "+string(d_min));
+        end
+        
+        function selected_sol = FindMaxConnectedSolution(obj, temp_sol)
+            N_sol = length(temp_sol);
+            N_max_connect = 0;  best_i = [];
+            for i=1:N_sol
+                temp_dock = obj.rearrangeDock(temp_sol(i));
+                graph = CreateAdjacentMatrix(obj.point, temp_dock, ...
+                    obj.isDockIden);
+                [edge, ~] = find(graph);
+                N_connect = length(edge)/2;
+                if N_connect > N_max_connect
+                    N_max_connect = N_connect;
+                    best_i = i;
+                elseif N_connect == N_max_connect
+                    best_i = [best_i i];
+                end
+            end
+            selected_sol = temp_sol(best_i);
+            disp("--------------- Step 3 ---------------");
+            disp("Select "+string(length(selected_sol))+" solutions "+...
+                "with maximal connection number from "+string(N_sol)+...
+                " solutions with shortest total distance and minimal extension steps.");
+            disp("Maximal connection number: "+string(N_max_connect));
+        end
+        
+        function selected_sol = RandomlySelectASolution(~, temp_sol)
+            if length(temp_sol) <= 1
+                error("Error occurs when randomly select a solution.");
+            end
+            N_sol = length(temp_sol);
+            idx = randi(N_sol);
+            selected_sol = temp_sol(idx);
+            disp("--------------- Step 4 ---------------");
+            disp("Randomly select the "+string(idx)+"th solution as "+...
+                "the best solution from "+string(N_sol)+" solutions.");
+        end
+        
         function d = getManhattanDist(~, p1, p2)
             d = sum(abs(p1 - p2));
+        end
+        
+        function depth = getExtensionDepth(~, tar, ext_c, ext_l)
+%             fintar = obj.setTargets();
+            if nargin == 2
+                ext_c = tar.TargetList(1).Location;
+                ext_l = 3;
+            elseif nargin == 3
+                ext_l = 3;
+            end
+            ext = Extension(tar);
+            t = ext.TargetToTree(ext_c, ext_l);
+            depth = t.depth;
+        end
+        
+        function fintar = setTargets(obj)
+            locs = obj.point;
+            [l, ~] = size(locs);
+            Tars = [];
+            for i = 1:l
+                Tars =[Tars; targetPoint(i, locs(i, :))];
+            end
+            fintar = targetGroup(Tars);
+        end
+        
+        function new_dock = rearrangeDock(~, sol)
+            l = length(sol.Position);
+            new_dock = zeros(l, 4);
+            for i=1:l
+                new_dock(i,:) = sol.Dock(sol.Position(i),:);
+            end
         end
 
         function z = MyCost(obj, x)
@@ -321,7 +495,8 @@ classdef TabuSearch < handle
             z = ConnectionCheck(obj.point, dock_swap, obj.isDockIden);
         end
 
-        function DispExitCode(obj, exitcode)
+        function DispExitCode(obj)
+            exitcode = obj.ExitCode;
             disp("Exit code: "+string(exitcode));
 
             switch exitcode
@@ -333,21 +508,21 @@ classdef TabuSearch < handle
                         " but faied to find any feasible solution subject"+...
                         " to the user input.");
 
-                case 1
-                    % find sufficient candidates
-                    disp("Candidate list has been filled up. The program"+...
-                        " considers the number of candidates is sufficient.");
-                    disp("Adjust the CandLen parameter if more/less"+...
-                        " candidates are desired.");
+%                 case 1
+%                     % find sufficient candidates
+%                     disp("Candidate list has been filled up. The program"+...
+%                         " considers the number of candidates is sufficient.");
+%                     disp("Adjust the CandLen parameter if more/less"+...
+%                         " candidates are desired.");
 
-                case 2
+                case 1
                     % hard to find next candidate
                     disp("Maximum number of iteration for searching the"+...
                         " next candidate has reached.");
                     disp("The CandLen paremeter could be too large "+...
                         "subject to the user input.");
 
-                case 3
+                case 2
                     % reach maximum iteration times and found some feasible
                     % solutions
                     disp("Maximum number of iterations has reached.");
@@ -356,6 +531,30 @@ classdef TabuSearch < handle
                     disp("Consider to tune the parameters CandLen and"+...
                         " SearchMulti to improve the program efficiency.");
 
+            end
+        end
+        
+        function DispBestSolCode(obj)
+            disp("Best sol code: "+string(obj.BestSolCode));
+            switch obj.BestSolCode
+                case -1
+                    disp("No feasible solution.");
+                case 0
+                    disp("Only 1 feasible solution, which by default is "+...
+                        "the optimal solution that has been found.");
+                case 1
+                    disp("Best solution selected by shortest distance criterion.");
+                case 2
+                    disp("Best solution selected by minimal extension steps"+...
+                        " among the solutions with shortest total distance.");
+                case 3
+                    disp("Best solution selected by maximal connection number"+...
+                        " among the solutions with minimal extension steps "+...
+                        "and shortest total distance.");
+                case 4
+                    disp("Best solution randomly selected from the solutions"+...
+                        " with maximal connection number, minimal extension steps"+...
+                        ", and shortest total distance.");
             end
         end
     end
