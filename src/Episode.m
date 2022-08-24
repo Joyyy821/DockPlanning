@@ -1,4 +1,4 @@
-classdef Episode
+classdef Episode < handle
     %EPISODE 此处显示有关此类的摘要
     %   此处显示详细说明
     
@@ -26,8 +26,8 @@ classdef Episode
             %METHOD1 此处显示有关此方法的摘要
             %   此处显示详细说明
             % General properties
-            Map_Size = [12, 12]; % length*width
-            rob_loc = [1, 12; 12, 12; 1, 1; 12, 1];
+            Map_Size = [16, 16]; % length*width
+            rob_loc = [1, 16; 16, 16; 1, 1; 16, 1];
             shape_list = ["S", "T", "L", "1", "q"];
             N = length(shape_list);
             for i=1:N
@@ -42,7 +42,7 @@ classdef Episode
                 obj.trial(i).setLogging(true);
                 t = obj.getTargets(shape_list(i));
                 [success, rotated_dock] = obj.trial(i).setTargets(obj.alg_type,...
-                     t, t(1,:));
+                     t, t(2,:));
                 if ~success
                     disp("Program exit ...")
                 else
@@ -72,6 +72,7 @@ classdef Episode
                 case "q"   % squared shape
                     t = [4, 5; 5, 5; 4, 4; 5, 4];
             end
+            t = t + 2;
         end
 
         function d = getDocks(obj, shape)
@@ -105,7 +106,7 @@ classdef Episode
             end
             if type >= 2
                 % random shuttle
-                dock = rand_rotate(dock);
+                dock = obj.rand_rotate(dock);
         %         for i = 1:N
         %             for j = 1:N
         %                 dock{i} = DoRotation(dock{i}, j
@@ -119,14 +120,14 @@ classdef Episode
             error("The input shape is "+shape+", which is not in the shape list.");
         end
 
-        function new_dock = rand_rotate(~, cell_dock)
+        function new_dock = rand_rotate(obj, cell_dock)
             N_exp = length(cell_dock);
             [N_rob, Nd] = size(cell_dock{1});
-            new_dock = cell(N_exp);
+            new_dock = cell(1, N_exp);
             for i=1:N_exp
                 new_dock{i} = zeros(N_rob, Nd);
                 for j=1:N_rob
-                    new_dock{i}(j,:) = rotate(cell_dock{i}(j,:), randi([0,3],1));
+                    new_dock{i}(j,:) = obj.rotate(cell_dock{i}(j,:), randi([0,3],1));
                 end
             end
         end

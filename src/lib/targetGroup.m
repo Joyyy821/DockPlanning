@@ -173,7 +173,7 @@ classdef targetGroup < matlab.mixin.Copyable
                     c = c + 1;
                     [temp_l, temp_r] = obj.GetSplitNum(i, j-1);
                     temp_mul(c) = temp_l * temp_r;
-                    split_pos(c) = i;  split_option(c) = j;
+                    split_pos(c) = i;  split_option(c) = j-1;
                 end
             end
             temp_mul = temp_mul(1:c);
@@ -184,7 +184,7 @@ classdef targetGroup < matlab.mixin.Copyable
         end
         
         function [tar_left, tar_right] = TargetSplitting(obj, c, exl)
-            if nargin < 4
+            if nargin < 3
                 exl = 1;
             end
             % Try splitting
@@ -198,7 +198,7 @@ classdef targetGroup < matlab.mixin.Copyable
                     disp(tar_left.getLocs);
                     disp("(b)");
                     disp(tar_right.getLocs);
-                    break
+                    return
                 end
             end
             error("Cannot find feasible split position");

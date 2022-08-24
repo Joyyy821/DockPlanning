@@ -30,9 +30,9 @@ classdef Trial < handle
             %   此处显示详细说明
             obj.step_cnt = 0;
             obj.structure_arrive = false;
-            addpath('lib');
-            addpath('lib/display'); addpath('lib/log');
-            addpath('lib/alg'); addpath('lib/alg/connect');
+%             addpath('lib');
+%             addpath('lib/display'); addpath('lib/log');
+%             addpath('lib/alg'); addpath('lib/alg/connect');
             if nargin == 1
                 obj.name = name;
             else
@@ -223,6 +223,7 @@ classdef Trial < handle
             disp("Program starts ...");
             disp("Trial executed on: "+strjoin(string(int32(clk(1:3))),'-')+...
                 " "+strjoin(string(int32(clk(4:6))),':'));
+            disp("Trial: "+obj.name);
         end
         
         function setRobotTarget(obj)
