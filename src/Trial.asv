@@ -77,7 +77,15 @@ classdef Trial < handle
                 options.ExtensionLength  int32
             end
             %% Initialization
-            
+            % Set logging
+            if isfield(options, "isLogging")
+                obj.islogging = options.isLogging;
+            else
+                obj.islogging = [false, false];
+            end
+            if obj.islogging(1)
+                obj.setLogging(obj.islogging(2));
+            end
             % Initialize map object
             if isfield(options, "MapSize")
                 map_size = options.MapSize;
@@ -103,15 +111,6 @@ classdef Trial < handle
                 d = ones(nrob, 4);
             end
             obj.setRobots(rob_loc, d);
-            % Set logging
-            if isfield(options, "isLogging")
-                obj.islogging = options.isLogging;
-            else
-                obj.islogging = [false, false];
-            end
-            if obj.islogging(1)
-                obj.setLogging(obj.islogging(2));
-            end
             % Set target and run tabu search
             if isfield(options, "TargetLocation")
                 t = options.TargetLocation;

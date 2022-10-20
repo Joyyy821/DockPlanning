@@ -39,6 +39,7 @@ classdef Episode < handle
                 d = obj.getDocks(shape_list(i));
                 obj.trial(i).setRobots(rob_loc, d);
                 % Set logging if log is required
+                obj.trial(i).islogging = [true, true];
                 obj.trial(i).setLogging(true);
                 t = obj.getTargets(shape_list(i));
                 [success, rotated_dock] = obj.trial(i).setTargets(obj.alg_type,...
@@ -47,7 +48,6 @@ classdef Episode < handle
                     disp("Program exit ...")
                 else
                     obj.trial(i).setDisplay(rotated_dock, 6);
-
                     % Main loop
                     max_steps = 1e6;
                     while ~obj.trial(i).structure_arrive && ...
