@@ -430,7 +430,11 @@ classdef Trial < handle
                             obj.setRobotTarget();
                         end
                     elseif is_arrive
-                        obj.setRobotTarget();
+                        % Check the pair target
+                        [~, is_occupied] = obj.checkTargetStatus();
+                        if is_occupied(2)
+                            obj.setRobotTarget();
+                        end
                     end
 %                     % TODO: check if the structure has finished
 %                     if obj.rob(i).c_tar_root == 0
@@ -551,25 +555,36 @@ classdef Trial < handle
             is_occupied = [0, 0];
             i = obj.ci;
             tar = obj.ext.getTargetByIdx(obj.robGp(i).c_tar_i);
-            % TODO: define a function to check whether it is PT with depth
-            % -1
-%             is_leaf = obj.ext.isTargetPair(obj.robotGp(i).c_tar_i);
-%             if is_leaf
-%                 dock_tar = obj.ext.tarTree.getparent(obj.robotGp(i).c_tar_i);
-%                 dock_tar = obj.ext.getTargetByIdx(dock_tar);
-%                 dockt_locs = dock_tar.getLocs();
-%             else
-%                 
-%                 dock_tar = obj.ext.tarTree.getsiblings(obj.robotGp(i).c_tar_i);
+            is_leaf = obj.ext.isTargetPair(obj.robGp(i).c_tar_i);
+            if is_leaf
+                observed = true;
+                dock_tar = obj.ext.tarTree.getsiblings(obj.robGp(i).c_tar_i);
+                for i_dt = 1:2
+                    dt = obj.ext.getTargetByIdx(dock_tar(i_dt));
+                    dockt_loc = dt.getLocs(); % should only contain one loc because it's a leaf node
+                    if obj.gmap.workerRobotMap(dockt_loc(1), dockt_loc(2))
+                        if dockt_loc(1) == obj.robGp(i).RobotList(1).Location(1) && ...
+                                dockt_loc(2) == obj.robGp(i).RobotList(1).Location(2)
+                            is_occupied(1) = true;
+                        else
+                            disp("Robot "+string(i)+" detects its dock pair.");
+                            is_occupied(2) = true;
+                        end
+                    end
+                end
+                return
+            end
+                
+%                 dock_tar = obj.ext.tarTree.getsiblings(obj.robGp(i).c_tar_i);
 %                 if  length(dock_tar) == 2
-%                     if dock_tar(1) == obj.robotGp(i).c_tar_i
+%                     if dock_tar(1) == obj.robGp(i).c_tar_i
 %                         dock_tar = dock_tar(2);
 %                     else
 %                         dock_tar = dock_tar(1);
 %                     end
 %                 end
 %             end
-%             
+            
             group_locs = obj.robGp(i).getLocation();
             dist = ceil(sqrt(double(obj.gmap.mapSize(1)^2+obj.gmap.mapSize(2)^2)));
             t_locs = tar.getLocs();
