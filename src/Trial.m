@@ -555,7 +555,7 @@ classdef Trial < handle
             is_occupied = [0, 0];
             i = obj.ci;
             tar = obj.ext.getTargetByIdx(obj.robGp(i).c_tar_i);
-            is_leaf = obj.ext.isTargetPair(obj.robGp(i).c_tar_i);
+            is_leaf = obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i);
             if is_leaf
                 observed = true;
                 dock_tar = obj.ext.tarTree.getsiblings(obj.robGp(i).c_tar_i);
