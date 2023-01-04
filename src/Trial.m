@@ -559,7 +559,7 @@ classdef Trial < handle
             if is_leaf
                 observed = true;
                 dock_tar = obj.ext.tarTree.getsiblings(obj.robGp(i).c_tar_i);
-                for i_dt = 1:2
+                for i_dt = 1:length(dock_tar)
                     dt = obj.ext.getTargetByIdx(dock_tar(i_dt));
                     dockt_loc = dt.getLocs(); % should only contain one loc because it's a leaf node
                     if obj.gmap.workerRobotMap(dockt_loc(1), dockt_loc(2))
@@ -571,6 +571,9 @@ classdef Trial < handle
                             is_occupied(2) = true;
                         end
                     end
+                end
+                if length(dock_tar) == 1
+                    is_occupied(2) = true;
                 end
                 return
             end
