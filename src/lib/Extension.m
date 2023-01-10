@@ -207,6 +207,9 @@ classdef Extension < handle
             t = tree(obj.finTar);
             obj.center = c;
             t = obj.TreeSplitting(obj.finTar, t, 1);
+            if isempty(t)
+                return
+            end
             t = obj.getBalanceTree(t);
 %             d = t.depth();
             obj.cur_dt = t.depthtree();
@@ -250,7 +253,13 @@ classdef Extension < handle
             if cur_root.Size == 1
             else
                 tar_child(2) = targetGroup();
-                [tar_child(1), tar_child(2)] = cur_root.TargetSplitting(obj.center, obj.extL);
+                try
+                    [tar_child(1), tar_child(2)] = cur_root.TargetSplitting(obj.center, obj.extL);
+                catch
+                    warning("Cannot find feasible split position, return an empty tree");
+                    tree = [];
+                    return
+                end
                 id = [];
                 [tree, id(1)] = tree.addnode(node_idx, tar_child(1));
                 [tree, id(2)] = tree.addnode(node_idx, tar_child(2));

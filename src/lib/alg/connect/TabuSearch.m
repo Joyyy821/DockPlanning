@@ -126,7 +126,7 @@ classdef TabuSearch < handle
             
             obj.N_it(1) = 1e3;
             
-            SearchMulti = 10;           % Allowed multiple iteration times for next solution
+            SearchMulti = 3;           % Allowed multiple iteration times for next solution
 
             obj.ExitCode = 0;             % Indicate why the program stops
             
@@ -266,10 +266,10 @@ classdef TabuSearch < handle
                         last_sol_i = it;
 %                         opt_it(opt_i) = it;
 %                         opt_i = opt_i + 1;
-                        disp("Iteration "+string(it)+" :");
-                        disp("Found a feasible solution: ")
-                        disp(BestSol);
-                        disp("Dock: "); disp(BestSol.Dock);
+%                         disp("Iteration "+string(it)+" :");
+%                         disp("Found a feasible solution: ")
+%                         disp(BestSol);
+%                         disp("Dock: "); disp(BestSol.Dock);
                     end
                     obj.ExitCode = 2;
 %                     break;
@@ -397,7 +397,7 @@ classdef TabuSearch < handle
                 temp_dock = temp_sol(i).Dock;
                 tars.setDisplayIDandDock(assignment, temp_dock);
                 d = obj.getExtensionDepth(tars);
-                if d < d_min
+                if d > 0 && d < d_min
                     d_min = d;
                     best_i = i;
                 elseif d == d_min
@@ -462,7 +462,11 @@ classdef TabuSearch < handle
             end
             ext = Extension(tar);
             t = ext.TargetToTree(ext_c, ext_l);
-            depth = t.depth;
+            if isempty(t)
+                depth = -1;
+            else
+                depth = t.depth;
+            end
         end
         
         function fintar = setTargets(obj)

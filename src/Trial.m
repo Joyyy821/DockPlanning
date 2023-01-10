@@ -431,7 +431,7 @@ classdef Trial < handle
                         end
                     elseif is_arrive
                         % Check the pair target
-                        [~, is_occupied] = obj.checkTargetStatus();
+                        [is_occupied, ~] = obj.checkTargetStatus();
                         if is_occupied(2)
                             obj.setRobotTarget();
                         end

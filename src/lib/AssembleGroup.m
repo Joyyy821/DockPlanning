@@ -244,7 +244,7 @@ classdef AssembleGroup < handle
                     break
                 elseif (obj.Size > 1 && cnt == obj.Size-1)
                     % No path can work, consider obstacle expansion
-                    obj.RobotList(1).obstacleExpansion();
+                    obj.obstacleExpansion();
                     obj.RobotList(1).AstarAlg(obj.RobotList(1).Location(1:2), ...
                         obj.RobotList(1).Goal(1:2));
                     
