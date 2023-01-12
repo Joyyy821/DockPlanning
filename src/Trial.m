@@ -429,11 +429,20 @@ classdef Trial < handle
                             end
                             obj.setRobotTarget();
                         end
-                    elseif is_arrive
+                    elseif obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i)
                         % Check the pair target
-                        [is_occupied, ~] = obj.checkTargetStatus();
-                        if is_occupied(2)
+                        [is_occupied, observed] = obj.checkTargetStatus();
+                        if is_arrive && is_occupied(2)
                             obj.setRobotTarget();
+                        elseif ~is_arrive && observed
+                            dock_tar = obj.ext.tarTree.getsiblings(obj.robGp(i).c_tar_i);
+                            t_locs = [];
+                            for j=1:length(dock_tar)
+                                tar = obj.ext.getTargetByIdx(dock_tar(j));
+                                tar = tar.getLocs();
+                                t_locs = [t_locs; tar];
+                            end
+                            obj.robGp(i).setIgnorePos(t_locs);
                         end
                     end
 %                     % TODO: check if the structure has finished
@@ -557,7 +566,12 @@ classdef Trial < handle
             tar = obj.ext.getTargetByIdx(obj.robGp(i).c_tar_i);
             is_leaf = obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i);
             if is_leaf
-                observed = true;
+                t_loc = tar.getLocs();
+                r_loc =  obj.robGp(i).getLocation();
+                dist = sqrt((t_loc(1)-r_loc(1))^2 + (t_loc(2)-r_loc(2))^2);
+                if dist <= obj.gmap.robotDist + 2
+                    observed = true;
+                end
                 dock_tar = obj.ext.tarTree.getsiblings(obj.robGp(i).c_tar_i);
                 for i_dt = 1:length(dock_tar)
                     dt = obj.ext.getTargetByIdx(dock_tar(i_dt));
