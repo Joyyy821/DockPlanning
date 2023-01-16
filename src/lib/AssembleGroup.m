@@ -91,12 +91,12 @@ classdef AssembleGroup < handle
             % get the module group size and the carring direction
             obj.RobotList(1).updateMap();
             map_cp = obj.RobotList(1).CognMap;
-            gp_loc = obj.Boundary;
+            gp_loc = double(obj.Boundary);
             loc = obj.RobotList(1).Location(1:2);
             % Extension length (in the extension direction, opposite from 
             % the module carrying direction): 
             % [left, lower; right, upper];
-            ext_l = gp_loc - [int32(loc); int32(loc)];
+            ext_l = gp_loc - [loc; loc];
             ext_l(1, :) = max(ext_l(1, :), [0, 0]);
             ext_l(2, :) = abs(min(ext_l(2, :), [0, 0]));
             % Combine the cogn map of robot and modules
