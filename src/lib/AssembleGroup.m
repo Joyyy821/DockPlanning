@@ -142,7 +142,8 @@ classdef AssembleGroup < handle
                     [n, ~] = size(path);
                     pos_shift = obj.RobotList(rob_i).pos_shift(1:2);
                     for i=1:n
-                        obj.RobotList(1).Path(i,:) = int32(obj.RobotList(1).Path(i,:)) + pos_shift;
+%                         obj.RobotList(1).Path(i,:) = int32(obj.RobotList(1).Path(i,:)) + pos_shift;
+                        obj.RobotList(1).Path(i,:) = int32(path(i,:)) + pos_shift;
                     end
                 else
                     [n, ~] = size(obj.RobotList(1).Path);
@@ -259,6 +260,7 @@ classdef AssembleGroup < handle
                         disp("Replanned path by obstacle expansion.");
 %                         disp(obj.Path);
                         path = obj.RobotList(1).Path;
+                        obj.priorPlanningID = 1;
                         next_loc = path(2, 1:2);
                         move_dir = next_loc - obj.RobotList(1).Location(1:2);
                         cnt =cnt + 1;
@@ -276,6 +278,7 @@ classdef AssembleGroup < handle
                     return
                 end
             end
+            path = obj.RobotList(obj.priorPlanningID).Path;
             obj.updatePath(path, obj.priorPlanningID);
             result = false;
         end
