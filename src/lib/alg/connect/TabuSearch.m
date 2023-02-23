@@ -118,7 +118,7 @@ classdef TabuSearch < handle
             
             %% Tabu Search Parameters
             
-            MaxIt = 1e5;                      % Maximum Number of Iterations
+            MaxIt = 1e4;                      % Maximum Number of Iterations
             
             TL = round(0.5*nAction);      % Tabu Length
             
@@ -314,6 +314,24 @@ classdef TabuSearch < handle
 
         function FindBestSolution(obj)
             temp_sol = obj.solutions;
+            % Eliminate the non-separable solutions
+            new_sol = [];
+            tars = obj.setTargets();
+            for i=1:length(temp_sol)
+                assignment = temp_sol(i).Position;
+                temp_dock = temp_sol(i).Dock;
+                tars.setDisplayIDandDock(assignment, temp_dock);
+                d = obj.getExtensionDepth(tars);
+                if d > 0
+                    new_sol = [new_sol, temp_sol(i)];
+                end
+            end
+            temp_sol = new_sol;
+            obj.solutions = new_sol;
+            if isempty(new_sol)
+                error("Cannot find feasible solution.")
+            end
+            % Return the only solution direction
             if length(temp_sol) == 1
                 obj.opt_sol = temp_sol;
                 obj.BestSolCode = 0;

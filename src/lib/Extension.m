@@ -250,6 +250,9 @@ classdef Extension < handle
         % option = 0 means cut vertically
         % option = 1 means cut horizontally
         function tree = TreeSplitting(obj, cur_root, tree, node_idx)
+            if isempty(tree)
+                return
+            end
             if cur_root.Size == 1
             else
                 tar_child(2) = targetGroup();

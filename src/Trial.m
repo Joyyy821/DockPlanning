@@ -371,7 +371,7 @@ classdef Trial < handle
                 end
                 obj.robGp(i).c_tar_i = parent_idx;
                 obj.robGp(i).setIgnorePos(ignore_loc);
-                obj.robGp(i).status = true;
+%                 obj.robGp(i).status = true;
                 % TODO: update current target
                 
 %                 obj.robGp(i).dock_loc = obj.getSilibingTargetLocs();
@@ -403,15 +403,17 @@ classdef Trial < handle
                             obj.robGp(i).waiting = true;
                         elseif observed && occupied(2)
                             obj.robGp(i).waiting = false;
+                        elseif obj.robGp(i).waiting &&  occupied(2)
+                            obj.robGp(i).waiting = false;
                         end
                     end
                     is_arrive = obj.robGp(i).move();
                     if is_arrive && ~obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i)
                         [flag, gp] = obj.isTargetCompleted();
-                        if ~flag
-                            obj.robGp(i).waiting = true;
-                        else
-                            obj.robGp(i).waiting = false;
+%                         if ~flag
+                        obj.robGp(i).waiting = true;
+                        if flag
+%                             obj.robGp(i).waiting = false;
                             % dock
                             if length(gp) == 2
                                 [nr, ~] = size(dock_lst);
@@ -428,6 +430,10 @@ classdef Trial < handle
                                 end
                             end
                             obj.setRobotTarget();
+%                             [occupied, observed] = obj.checkTargetStatus();
+%                             if observed && occupied(2)
+%                                 obj.robGp(i).waiting = false;
+%                             end
                         end
                     elseif obj.ext.tarTree.isleaf(obj.robGp(i).c_tar_i)
                         % Check the pair target
@@ -626,27 +632,27 @@ classdef Trial < handle
 %             end
 
             for j = 1:tar.Size
-                if observed
-                    groupid = obj.gmap.groupMap(t_locs(j,1), t_locs(j,2));
-                    if groupid
-                        [g_size, ~] = size(find(obj.gmap.groupMap==groupid));
-                        if g_size == tar.Size  % TODO: 不可以这样判断
-                            is_occupied = [groupid, groupid];
-                            return
+%                 if observed
+                groupid = obj.gmap.groupMap(t_locs(j,1), t_locs(j,2));
+                if groupid
+                    [g_size, ~] = size(find(obj.gmap.groupMap==groupid));
+                    if g_size == tar.Size  % TODO: 不可以这样判断
+                        is_occupied = [groupid, groupid];
+                        return
+                    else
+                        % check target position
+                        r_goal = obj.robGp(i).RobotList(1).Goal;
+                        if obj.gmap.groupMap(r_goal(1), r_goal(2)) == groupid
+                            is_occupied(1) = groupid;
                         else
-                            % check target position
-                            r_goal = obj.robGp(i).RobotList(1).Goal;
-                            if obj.gmap.groupMap(r_goal(1), r_goal(2)) == groupid
-                                is_occupied(1) = groupid;
-                            else
-                                if g_size == tar.Size - obj.robGp(i).Size
-                                    is_occupied(2) = groupid;
-                                end
-%                                 obj.robotGp(i).ignoreDockPair(tar);
+                            if g_size == tar.Size - obj.robGp(i).Size
+                                is_occupied(2) = groupid;
                             end
+%                                 obj.robotGp(i).ignoreDockPair(tar);
                         end
                     end
                 end
+%                 end
             end
 %             if tar.Size == 2
 %                 tl = tar.TargetList(1).Location;

@@ -53,6 +53,7 @@ classdef AssembleGroup < handle
             obj.stuckSteps = 0;
             obj.waiting = false;
             obj.isStarted = false;
+            obj.status = 0;
         end
         
         %% Search methods
@@ -234,10 +235,15 @@ classdef AssembleGroup < handle
                         return
                     end
                     % Update the move direction and count
-                    nextLoc = path(1, 1:2);
-                    loc = obj.RobotList(obj.priorPlanningID).Location(1:2);
-                    move_dir = nextLoc - loc;
-                    cnt =cnt + 1;
+                    if ~isempty(path)
+                        nextLoc = path(1, 1:2);
+                        loc = obj.RobotList(obj.priorPlanningID).Location(1:2);
+                        move_dir = nextLoc - loc;
+                        cnt =cnt + 1;
+                    else
+                        warning("Empty path from robot "+...
+                            string(obj.priorPlanningID));
+                    end
                 elseif decision == 1
                     disp("Replan success from object No. "+...
                         string(obj.priorPlanningID));
@@ -293,6 +299,9 @@ classdef AssembleGroup < handle
                 obj.stuckSteps = 0;
             end
             obj.setGroupLocForRobot();
+            if is_arrive && ~obj.status
+                obj.status = 1;
+            end
             obj.updateMap("add");
         end
         
