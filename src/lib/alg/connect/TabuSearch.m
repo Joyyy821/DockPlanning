@@ -185,7 +185,7 @@ classdef TabuSearch < handle
                         disp("Total number of iterations: "+string(it));
                         disp("Found "+string(length(obj.solutions))...
                             +" feasible solutions.");
-%                         disp(obj.solutions);
+                        disp(obj.solutions);
                         obj.ExitCode = 1;
 %                         it = it - 1;
                         break
@@ -266,10 +266,10 @@ classdef TabuSearch < handle
                         last_sol_i = it;
 %                         opt_it(opt_i) = it;
 %                         opt_i = opt_i + 1;
-%                         disp("Iteration "+string(it)+" :");
-%                         disp("Found a feasible solution: ")
-%                         disp(BestSol);
-%                         disp("Dock: "); disp(BestSol.Dock);
+                        disp("Iteration "+string(it)+" :");
+                        disp("Found a feasible solution: ")
+                        disp(BestSol);
+                        disp("Dock: "); disp(BestSol.Dock);
                     end
                     obj.ExitCode = 2;
 %                     break;

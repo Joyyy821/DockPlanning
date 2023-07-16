@@ -140,7 +140,7 @@ classdef Trial < handle
             else
                 obj.setDisplay(rotated_dock, 3);
                 % Main loop
-                max_steps = 1e6;
+                max_steps = 1e3;
                 while ~obj.structure_arrive && ...
                         obj.step_cnt <= max_steps
                     obj.execute();
