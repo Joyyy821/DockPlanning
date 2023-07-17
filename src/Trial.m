@@ -145,6 +145,9 @@ classdef Trial < handle
                         obj.step_cnt <= max_steps
                     obj.execute();
                 end
+                if obj.step_cnt >= max_steps
+                    disp("Robot endless move: reaching maximum number of steps.")
+                end
             end
             obj.endSim;
         end
