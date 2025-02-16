@@ -479,6 +479,18 @@ classdef Trial < handle
                 happended_dock = obj.findHappendedDock();
                 obj.log.record1step(obj.step_cnt, happended_dock);
             end
+
+            % Exit if all robots stuck
+            all_stuck = true;
+            max_stuck_step = 20;
+            for i=1:length(obj.robGp)
+                if obj.robGp(i).stuckSteps < max_stuck_step
+                    all_stuck = false;
+                end
+            end
+            if all_stuck
+                error("All robots stuck.");
+            end
         end
         
         function happended_dock = findHappendedDock(obj)

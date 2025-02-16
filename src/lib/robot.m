@@ -228,7 +228,11 @@ classdef robot < handle
             else
                 goal = obj.Goal(:, 1:2);
             end
-            obj.AstarAlg(start, goal, posshift);
+            if all(start  == goal)
+                obj.Path = [];
+            else
+                obj.AstarAlg(start, goal, posshift);
+            end
             if obj.Path == Inf
                 path = [];
                 obj.Path = [];
