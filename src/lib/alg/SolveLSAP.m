@@ -10,8 +10,8 @@ function matches = SolveLSAP(tar_locs, robot_locs)
     [N_rob, ~] = size(robot_locs);
     matches = [];
     if N_tar ~= N_rob
-        disp("WARN: Number of targets ("+string(N_tar)+") doesn't match with number of robots ("+str(N_rob)+").");
-        return
+        disp("WARN: Number of targets ("+string(N_tar)+") doesn't match"+...
+            " with number of robots ("+string(N_rob)+").");
     end
 
     % Construct the cost matrix
