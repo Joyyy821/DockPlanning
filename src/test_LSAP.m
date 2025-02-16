@@ -9,6 +9,8 @@ addpath('lib/alg'); addpath('lib/alg/connect');
 %% 1
 str1='shape1-robot15-target12-method1-time';
 disp(str1);
+% Map
+Map_Size = [24, 24]; % length*widthhalf
 % Robots
 robot_locs = [6,2;10,2;14,2;2,6;2,10;2,14;18,22;14,22;10,22;22,19;22,16;22,13;22,10;22,7;22,4];
 dock = [0,0,0,1;...
@@ -30,11 +32,14 @@ dock = [0,0,0,1;...
         ]; % up, down, left, right
 % Targets
 tar_locs = [11,13;12,12;12,13;12,14;13,11;13,12;13,14;13,15;14,12;14,13;14,14;15,13 ];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 13;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
 %% 2
 str1='shape1-robot15-target12-method2-time';
 disp(str1);
+% Map
+Map_Size = [24, 24]; % length*widthhalf
 % Robots
 robot_locs = [6,2;10,2;14,2;2,6;2,10;2,14;18,22;14,22;10,22;22,19;22,16;22,13;22,10;22,7;22,4];
 dock = [0,0,0,1;...
@@ -56,11 +61,14 @@ dock = [0,0,0,1;...
         ]; % up, down, left, right
 % Targets
 tar_locs = [11,13;12,12;12,13;12,14;13,11;13,12;13,14;13,15;14,12;14,13;14,14;15,13 ];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 13;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
 %% 3
 str1='shape1-robot15-target12-method3-time';
 disp(str1);
+% Map
+Map_Size = [24, 24]; % length*widthhalf
 % Robots
 robot_locs = [6,2;10,2;14,2;2,6;2,10;2,14;18,22;14,22;10,22;22,19;22,16;22,13;22,10;22,7;22,4];
 dock = [0,0,0,1;...
@@ -82,11 +90,14 @@ dock = [0,0,0,1;...
         ]; % up, down, left, right
 % Targets
 tar_locs = [11,13;12,12;12,13;12,14;13,11;13,12;13,14;13,15;14,12;14,13;14,14;15,13 ];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 13;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
 %% 4
 str1='shape1half-robot18-target18-method1-time';
 disp(str1);
+% Map
+Map_Size = [30,30]; % length*widthhalf
 % Robots
 robot_locs = [2,2;8,2;14,2;20,2;28,2;...
               2,8;2,14;2,20;2,28;...
@@ -104,11 +115,14 @@ tar_locs = [ 15,17;16,17;...
   13,15;14,15;15,15;16,15;17,15;18,15;...
         14,14;15,14;16,14;17,14;...
               15,13;16,13;];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 15;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
 %% 5
 str1='shape1half-robot18-target18-method2-time';
 disp(str1);
+% Map
+Map_Size = [30,30]; % length*widthhalf
 % Robots
 robot_locs = [2,2;8,2;14,2;20,2;28,2;...
               2,8;2,14;2,20;2,28;...
@@ -126,11 +140,14 @@ tar_locs = [ 15,17;16,17;...
   13,15;14,15;15,15;16,15;17,15;18,15;...
         14,14;15,14;16,14;17,14;...
               15,13;16,13;];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 15;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
 %% 6 
 str1='shape1half-robot18-target18-method3-time';
 disp(str1);
+% Map
+Map_Size = [30,30]; % length*widthhalf
 % Robots
 robot_locs = [2,2;8,2;14,2;20,2;28,2;...
               2,8;2,14;2,20;2,28;...
@@ -161,11 +178,14 @@ tar_locs = [ 15,17;16,17;...
   13,15;14,15;15,15;16,15;17,15;18,15;...
         14,14;15,14;16,14;17,14;...
               15,13;16,13;];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 15;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
 %% 7
 str1='shape2-robot28-target28-method1-time';
 disp(str1);
+% Map
+Map_Size = [30,30]; % length*widthhalf
 % Robots
 robot_locs = [5,2;8,2;11,2;14,2;17,2;20,2;23,2;2,5;2,8;2,11;2,14;2,17;2,20;2,23;25,28;22,28;19,28;16,28;13,28;10,28;7,28;28,25;28,22;28,19;28,16;28,13;28,10;28,7];
 dock = [1,0,0,1;...
@@ -199,11 +219,14 @@ dock = [1,0,0,1;...
         ]; % up, down, left, right
 % Targets
 tar_locs = [12,15;12,16;12,17;13,14;13,15;13,16;13,17;13,18;14,13;14,14;14,15;14,16;15,12;15,13;15,14;15,15;16,13;16,14;16,15;16,16;17,14;17,15;17,16;17,17;17,18;18,15;18,16;18,17 ];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 15;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
 %% 8
 str1='shape2-robot28-target28-method2-time';
 disp(str1);
+% Map
+Map_Size = [30,30]; % length*widthhalf
 % Robots
 robot_locs = [5,2;8,2;11,2;14,2;17,2;20,2;23,2;2,5;2,8;2,11;2,14;2,17;2,20;2,23;25,28;22,28;19,28;16,28;13,28;10,28;7,28;28,25;28,22;28,19;28,16;28,13;28,10;28,7];
 dock = [1,0,0,1;...
@@ -237,11 +260,14 @@ dock = [1,0,0,1;...
             ]; % up, down, left, right
 % Targets
 tar_locs = [12,15;12,16;12,17;13,14;13,15;13,16;13,17;13,18;14,13;14,14;14,15;14,16;15,12;15,13;15,14;15,15;16,13;16,14;16,15;16,16;17,14;17,15;17,16;17,17;17,18;18,15;18,16;18,17 ];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 15;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
 %% 9
 str1='shapehalf-robot6-target6-method3-time';
 disp(str1);
+% Map
+Map_Size = [24,24]; % length*widthhalf
 % Robots
 robot_locs = [10,2;2,10;14,22;22,18;22,14;22,10];
 dock = [1,0,0,1;...
@@ -253,11 +279,14 @@ dock = [1,0,0,1;...
         ]; % up, down, left, right
 % Targets
 tar_locs = [ 11,11;11,12;11,13;12,11;12,12;12,13 ];
-is_valid = isLSAPValid(tar_locs, robot_locs, dock);
+tar_ctr  = 12;
+is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
 
-%% Function: check connectivity
-function is_valid = isLSAPValid(tar_locs, robot_locs, dock)
-    matches = SolveLSAP(tar_locs, robot_locs);
+%% Functions 
+% Check connectivity
+function is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr)
+    ext_locs = getExtendedTargets(tar_locs, tar_ctr, Map_Size);
+    matches = SolveLSAP(ext_locs, robot_locs);
     n_con = ConnectionCheck(tar_locs(matches(:,1),:),dock(matches(:,2),:));
     if n_con > 1
         disp("Hungarian solution is not valid. Found "+string(n_con)+...
@@ -268,3 +297,26 @@ function is_valid = isLSAPValid(tar_locs, robot_locs, dock)
         is_valid = true;
     end
 end
+
+% Extend targets
+function ext_locs = getExtendedTargets(tar_locs, tar_ctr, Map_Size)
+    gmap = map(Map_Size, 3);  % cogn_dist = 3
+    [l, ~] = size(tar_locs);
+    Tars = [];
+    for i = 1:l
+        Tars =[Tars; targetPoint(i, tar_locs(i, :), gmap)];
+    end
+    tars = targetGroup(Tars);
+    docks = ones(l, 4);   % Allow all docking positions to get extension
+    assignment = 1:l;
+    tars.setDisplayIDandDock(assignment, docks);
+    ext = Extension(tars, gmap);
+    ext.TargetToTree(tar_ctr, 3);  % ext_l = 3
+    leaf_ids = ext.tarTree.findleaves();
+    ext_locs = zeros(l, 2);
+    for l_id=leaf_ids
+        leaf_tar = ext.tarTree.get(l_id).TargetList(1);  % targetPoint
+        ext_locs(leaf_tar.ID, :) = leaf_tar.Location;
+    end
+end
+
