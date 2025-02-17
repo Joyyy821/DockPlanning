@@ -1,7 +1,22 @@
-function matrix_adjacent = CreateAdjacentMatrix(point,dock, is_dock_identical)
-%UNTITLED 此处显示有关此函数的摘要
-%   此处显示详细说明
+function matrix_adjacent = CreateAdjacentMatrix(point,dock, is_dock_identical, matrix_type)
+%CREATADJACENTMATRIX Adjacent matrix that shows the connectivity of targets
+%   INPUTS
+%   point: size (N_tar, 2), coordinates of all targets
+%   dock: size (N_tar, 4), dock distributions
+%   is_dock_identical: bool, whether universal docks or N/S docks
+%   matrix_type: int, 1 - connection matrix, 2 - contact matrix, 3 - same
+%   gender matrix for dock = 1, 4 - same gender matrix for dock = 2
+%   (Note: matrix_type = 3 or 4 only applies if is_dock_identical == false)
+%   matrix_type = 1 by default
+%   OUTPUT
+%   matrix_adjacent: size (N_tar, N_tar), adjacent matrix for connectivity
     
+    if nargin == 3
+        matrix_type = 1;  % Set default value
+    elseif nargin == 4 && matrix_type >=3 && is_dock_identical
+        error("No same gender mismatch for universal dock");
+    end
+
     % find the max dimension and create the local map
     map_low_boundary = min(point);
     map_size = max(point)-map_low_boundary+1;
@@ -36,17 +51,44 @@ function matrix_adjacent = CreateAdjacentMatrix(point,dock, is_dock_identical)
     end
     
     % create the adjacent matrix
-    if is_dock_identical
-        connect_val = 2;
-    else
-        connect_val = 3;
-    end
     [dock_len, ~] = size(dock);
+    
+    % Create adjacent matrix according to the input matrix_type
+    switch matrix_type
+        case 1
+            % connection matrix
+            if is_dock_identical
+                connect_val = 2;
+            else
+                connect_val = 3;
+            end
+            matrix_adjacent = connectionMatrix(target_map, map_size, ...
+                point_position, connect_val, dock_len, point_len);
+        case 2
+            % contact matrix
+            matrix_adjacent = contactMatrix(target_map, map_size, ...
+                point_position, dock_len, point_len);
+        case 3
+            % same gender (1) 
+            gender = 1;
+            matrix_adjacent = sameGenderMatrix(target_map, map_size, ...
+                point_position, dock_len, point_len, gender);
+        case 4
+            % same gender (2)
+            gender = 2;
+            matrix_adjacent = sameGenderMatrix(target_map, map_size, ...
+                point_position, dock_len, point_len, gender);
+    end
+
+end
+
+function matrix_adjacent = connectionMatrix(target_map, map_size, ...
+    point_position, connect_val, dock_len, point_len)
     matrix_adjacent = zeros(dock_len, dock_len);
     for j = 1:point_len
         row = point_position(j,1);
         col = point_position(j,2);
-        index = target_map(row, col);
+%         index = target_map(row, col);
         % 
         if row+3 < 3*map_size(1) % up
             if target_map(row+1, col) + target_map(row+2, col) == connect_val
@@ -69,6 +111,67 @@ function matrix_adjacent = CreateAdjacentMatrix(point,dock, is_dock_identical)
             end
         end
     end
-    
+end
+
+function matrix_adjacent = contactMatrix(target_map, map_size, ...
+    point_position, dock_len, point_len)
+    matrix_adjacent = zeros(dock_len, dock_len);
+    for j = 1:point_len
+        row = point_position(j,1);
+        col = point_position(j,2);
+%         index = target_map(row, col);
+        % 
+        if row+3 < 3*map_size(1) % up
+            if target_map(row+3, col)
+                matrix_adjacent(j,target_map(row+3, col)) = 1;
+            end
+        end
+        if row-3 > 0 % down
+            if target_map(row-3, col)
+                matrix_adjacent(j,target_map(row-3, col)) = 1;
+            end
+        end
+        if col-3 > 0 % left
+            if target_map(row, col-3)
+                matrix_adjacent(j,target_map(row, col-3)) = 1;
+            end
+        end
+        if col+3 < 3*map_size(2) % right
+            if target_map(row, col+3)
+                matrix_adjacent(j,target_map(row, col+3)) = 1;
+            end
+        end
+    end
+end
+
+function matrix_adjacent = sameGenderMatrix(target_map, map_size, ...
+    point_position, dock_len, point_len, gender)
+    matrix_adjacent = zeros(dock_len, dock_len);
+    for j = 1:point_len
+        row = point_position(j,1);
+        col = point_position(j,2);
+%         index = target_map(row, col);
+        % 
+        if row+3 < 3*map_size(1) % up
+            if target_map(row+1, col) == gender && target_map(row+2, col) == gender
+                matrix_adjacent(j,target_map(row+3, col)) = 1;
+            end
+        end
+        if row-3 > 0 % down
+            if target_map(row-1, col) == gender && target_map(row-2, col) == gender
+                matrix_adjacent(j,target_map(row-3, col)) = 1;
+            end
+        end
+        if col-3 > 0 % left
+            if target_map(row, col-1) == gender && target_map(row, col-2) == gender
+                matrix_adjacent(j,target_map(row, col-3)) = 1;
+            end
+        end
+        if col+3 < 3*map_size(2) % right
+            if target_map(row, col+1) == gender && target_map(row, col+2) == gender
+                matrix_adjacent(j,target_map(row, col+3)) = 1;
+            end
+        end
+    end
 end
 

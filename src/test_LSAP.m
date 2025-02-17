@@ -33,7 +33,8 @@ dock = [0,0,0,1;...
 % Targets
 tar_locs = [11,13;12,12;12,13;12,14;13,11;13,12;13,14;13,15;14,12;14,13;14,14;15,13 ];
 tar_ctr  = 13;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% 2
 str1='shape1-robot15-target12-method2-time';
@@ -62,7 +63,8 @@ dock = [0,0,0,1;...
 % Targets
 tar_locs = [11,13;12,12;12,13;12,14;13,11;13,12;13,14;13,15;14,12;14,13;14,14;15,13 ];
 tar_ctr  = 13;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% 3
 str1='shape1-robot15-target12-method3-time';
@@ -91,7 +93,8 @@ dock = [0,0,0,1;...
 % Targets
 tar_locs = [11,13;12,12;12,13;12,14;13,11;13,12;13,14;13,15;14,12;14,13;14,14;15,13 ];
 tar_ctr  = 13;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% 4
 str1='shape1half-robot18-target18-method1-time';
@@ -116,7 +119,8 @@ tar_locs = [ 15,17;16,17;...
         14,14;15,14;16,14;17,14;...
               15,13;16,13;];
 tar_ctr  = 15;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% 5
 str1='shape1half-robot18-target18-method2-time';
@@ -141,7 +145,8 @@ tar_locs = [ 15,17;16,17;...
         14,14;15,14;16,14;17,14;...
               15,13;16,13;];
 tar_ctr  = 15;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% 6 
 str1='shape1half-robot18-target18-method3-time';
@@ -179,7 +184,8 @@ tar_locs = [ 15,17;16,17;...
         14,14;15,14;16,14;17,14;...
               15,13;16,13;];
 tar_ctr  = 15;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% 7
 str1='shape2-robot28-target28-method1-time';
@@ -220,7 +226,8 @@ dock = [1,0,0,1;...
 % Targets
 tar_locs = [12,15;12,16;12,17;13,14;13,15;13,16;13,17;13,18;14,13;14,14;14,15;14,16;15,12;15,13;15,14;15,15;16,13;16,14;16,15;16,16;17,14;17,15;17,16;17,17;17,18;18,15;18,16;18,17 ];
 tar_ctr  = 15;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% 8
 str1='shape2-robot28-target28-method2-time';
@@ -261,7 +268,8 @@ dock = [1,0,0,1;...
 % Targets
 tar_locs = [12,15;12,16;12,17;13,14;13,15;13,16;13,17;13,18;14,13;14,14;14,15;14,16;15,12;15,13;15,14;15,15;16,13;16,14;16,15;16,16;17,14;17,15;17,16;17,17;17,18;18,15;18,16;18,17 ];
 tar_ctr  = 15;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% 9
 str1='shapehalf-robot6-target6-method3-time';
@@ -280,14 +288,34 @@ dock = [1,0,0,1;...
 % Targets
 tar_locs = [ 11,11;11,12;11,13;12,11;12,12;12,13 ];
 tar_ctr  = 12;
-is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 1);
+isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, 2);
 
 %% Functions 
 % Check connectivity
-function is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr)
-    ext_locs = getExtendedTargets(tar_locs, tar_ctr, Map_Size);
-    matches = SolveLSAP(ext_locs, robot_locs);
-    n_con = ConnectionCheck(tar_locs(matches(:,1),:),dock(matches(:,2),:));
+function is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr, type)
+    % type = 1 - solve LSAP for PAA (extend the targets)
+    % type = 2 - solve LSAP for translated targets (no target extension)
+
+    % Check algorithm type and solve corresponding LSAP
+    if nargin < 6
+        type = 1;  % default testing on PAA
+    end
+    disp("Select algorithm: "+string(type));
+    if type == 1
+        ext_locs = getExtendedTargets(tar_locs, tar_ctr, Map_Size);
+        matches = SolveLSAP(ext_locs, robot_locs);
+    elseif type == 2
+        trans_locs = getTranslatedTargets(tar_locs, robot_locs);
+        matches = SolveLSAP(trans_locs, robot_locs);
+    else
+        error("Invalid algorithm type: "+string(type));
+    end
+
+    % Check whether solution is valid
+    is_dock_identical = isempty(find(dock==2,1));
+    n_con = ConnectionCheck(tar_locs(matches(:,1),:),dock(matches(:,2),:), ...
+        is_dock_identical);  % Number of connected components
     if n_con > 1
         disp("Hungarian solution is not valid. Found "+string(n_con)+...
             " connected components.");
@@ -296,6 +324,32 @@ function is_valid = isLSAPValid(tar_locs, robot_locs, dock, Map_Size, tar_ctr)
         disp("Solution valid.");
         is_valid = true;
     end
+
+    % Connectivity statistics
+    % # of connections, # of disconnections
+    connect_matrix = CreateAdjacentMatrix(tar_locs(matches(:,1),:), ...
+        dock(matches(:,2),:), is_dock_identical, 1);
+    contact_matrix = CreateAdjacentMatrix(tar_locs(matches(:,1),:), ...
+        dock(matches(:,2),:), is_dock_identical, 2);
+    N_connect = nnz(connect_matrix)/2;  % Number of connected surfaces
+    N_contact = nnz(contact_matrix)/2;
+    if is_dock_identical
+        disp("Number of connected contact surfaces: "+string(N_connect));
+        disp("Number of disconnected contact surfaces: "+string(N_contact - N_connect));
+    else
+        % # of same gender contacts
+        gender_matrix1 = CreateAdjacentMatrix(tar_locs(matches(:,1),:), ...
+            dock(matches(:,2),:), is_dock_identical, 3);
+        gender_matrix2 = CreateAdjacentMatrix(tar_locs(matches(:,1),:), ...
+            dock(matches(:,2),:), is_dock_identical, 4);
+        N_gender1 = nnz(gender_matrix1)/2;
+        N_gender2 = nnz(gender_matrix2)/2;
+        disp("Total contact surfaces: "+string(N_contact));
+        disp("Number of connected contact surfaces: "+string(N_connect));
+        disp("Number of N-N contacts (dock=1): "+string(N_gender1));
+        disp("Number of S-S contacts (dock=2): "+string(N_gender2));
+    end
+    disp("---------------------");
 end
 
 % Extend targets
@@ -319,4 +373,13 @@ function ext_locs = getExtendedTargets(tar_locs, tar_ctr, Map_Size)
         ext_locs(leaf_tar.ID, :) = leaf_tar.Location;
     end
 end
+
+% Move target locations
+function trans_locs = getTranslatedTargets(tar_locs, robot_locs)
+    % Calculate target center and robot center
+    tar_ctr = mean(tar_locs);
+    rob_ctr = mean(robot_locs);
+    trans_locs = tar_locs - tar_ctr + rob_ctr;
+end
+
 

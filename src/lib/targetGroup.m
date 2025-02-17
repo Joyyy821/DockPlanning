@@ -193,11 +193,11 @@ classdef targetGroup < matlab.mixin.Copyable
                 [tar_left, tar_right] = obj.GetSplitGroup(...
                     pos_lst(i), option_lst(i), c, exl);
                 if obj.isConnected(tar_left) && obj.isConnected(tar_right)
-                    disp("Extended targets on: ");
-                    disp("(a)");
-                    disp(tar_left.getLocs);
-                    disp("(b)");
-                    disp(tar_right.getLocs);
+%                     disp("Extended targets on: ");
+%                     disp("(a)");
+%                     disp(tar_left.getLocs);
+%                     disp("(b)");
+%                     disp(tar_right.getLocs);
                     return
                 end
             end
