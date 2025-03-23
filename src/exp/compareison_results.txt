@@ -100,6 +100,43 @@ Hungarian solution is not valid. Found 11 connected components.
 Number of connected contact surfaces: 18
 Number of disconnected contact surfaces: 21
 ---------------------
+shape2-robot28-target28-method3-time
+Select algorithm: 1
+Hungarian solution is not valid. Found 12 connected components.
+Total contact surfaces: 39
+Number of connected contact surfaces: 17
+Number of N-N contacts (dock=1): 0
+Number of S-S contacts (dock=2): 0
+---------------------
+Select algorithm: 2
+Hungarian solution is not valid. Found 11 connected components.
+Total contact surfaces: 39
+Number of connected contact surfaces: 18
+Number of N-N contacts (dock=1): 0
+Number of S-S contacts (dock=2): 0
+---------------------
+shapehalf-robot6-target6-method1-time
+Select algorithm: 1
+Hungarian solution is not valid. Found 4 connected components.
+Number of connected contact surfaces: 2
+Number of disconnected contact surfaces: 5
+---------------------
+Select algorithm: 2
+Hungarian solution is not valid. Found 2 connected components.
+Number of connected contact surfaces: 4
+Number of disconnected contact surfaces: 3
+---------------------
+shapehalf-robot6-target6-method2-time
+Select algorithm: 1
+Hungarian solution is not valid. Found 4 connected components.
+Number of connected contact surfaces: 2
+Number of disconnected contact surfaces: 5
+---------------------
+Select algorithm: 2
+Hungarian solution is not valid. Found 2 connected components.
+Number of connected contact surfaces: 4
+Number of disconnected contact surfaces: 3
+---------------------
 shapehalf-robot6-target6-method3-time
 Select algorithm: 1
 Hungarian solution is not valid. Found 4 connected components.
